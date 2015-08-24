@@ -1,0 +1,70 @@
+from atom.api import (Atom, Unicode, Range, List, Bool)
+
+from enamlx.widgets.table_widget import (
+    TableWidget, TableWidgetRow, TableWidgetItem
+)
+
+from enaml.widgets.api import (
+    Window, Container, PushButton, CheckBox, RadioButton
+)
+from enaml.core.looper import Looper
+from enaml.widgets.spin_box import SpinBox
+
+
+
+class Person(Atom):
+    """ A simple class representing a person object.
+
+    """
+    last_name = Unicode()
+
+    first_name = Unicode()
+
+    age = Range(low=0)
+
+    debug = Bool(False)
+
+class TableModel(Atom):
+    people = List(Person)
+    
+    def add_person(self):
+        people = self.people[:]
+        person = Person(last_name='Doe',first_name='John',age=len(self.people))
+        people.append(person)
+        self.people = people
+    
+    def remove_person(self):
+        people = self.people[:]
+        people.pop()
+        self.people = people
+
+
+enamldef Main(Window):
+    attr model = TableModel(people=[
+                    Person(last_name='Barker',first_name='Bob',age=32),
+                    Person(last_name='Jones',first_name='Jill',age=29),
+                ])
+    Container:
+        PushButton:
+            text = 'Add person'
+            clicked :: model.add_person()
+        PushButton:
+            text = 'Remove person'
+            clicked :: model.remove_person()
+            
+        TableWidget:
+            headers << ['#','First','Last','Age']
+            Looper:
+                iterable << model.people
+                TableWidgetRow:
+                    TableWidgetItem:
+                        checkable = True
+                        checked := loop_item.debug
+                    TableWidgetItem:
+                        text << loop_item.first_name
+                    TableWidgetItem:
+                        text << loop_item.last_name
+                    TableWidgetItem:
+                        SpinBox:
+                            value := loop_item.age
+            
