@@ -1,11 +1,16 @@
 # About
 Additional Qt Widgets for Enaml such as:
 
-1. Table widget (good for small # of items)
-  a. Text/Icons/Checkboxes
-  b. Delegate widgets (any widget can be child of a cell)
-  c. Right click menus per item
-2. Tree widget (todoo....)
+
+#### Featuring ####
+
+Table widget (good for small # of items)
+1. Text/Icons/Checkboxes
+2. Delegate widgets (any widget can be child of a cell)
+3. Right click menus per item
+
+
+Tree widget (todoo....)
 
 # Usage
 
