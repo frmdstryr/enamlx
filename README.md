@@ -1,5 +1,5 @@
 # About
-Additional Qt Widgets for Enaml such as:
+Additional Qt Widgets for Enaml.
 
 
 #### Featuring ####
@@ -11,7 +11,9 @@ Table widget (good for small # of items)
 3. Right click menus per item
 
 
-Tree widget (todoo....)
+TODO:
+1. Tree widget
+2. List widget
 
 # Usage
 
