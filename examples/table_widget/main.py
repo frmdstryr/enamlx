@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+'''
+Created on Aug 23, 2015
+
+@author: jrm
+'''
+
 from atom.api import Atom, Unicode, Range, Bool, observe
 
 import enamlx
