@@ -4,11 +4,12 @@ Created on Aug 23, 2015
 
 @author: jrm
 '''
-from atom.api import (Enum, Bool, observe)
+from atom.api import (Int, Enum, Bool, observe)
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control
 
 class AbstractItemView(Control):
+    current_row = d_(Int())
     
     selection_mode = d_(Enum('extended','none','multi','single','contiguous'))
     
@@ -18,7 +19,7 @@ class AbstractItemView(Control):
     
     alternating_row_colors = d_(Bool(False))
     
-    @observe('scroll_to_bottom','alternating_row_colors',
+    @observe('current_row','scroll_to_bottom','alternating_row_colors',
              'selection_mode','selection_behavior')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
