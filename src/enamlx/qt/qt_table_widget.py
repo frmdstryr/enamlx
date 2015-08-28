@@ -10,6 +10,8 @@ from enamlx.widgets.table_widget import ProxyTableWidgetItem,ProxyTableWidget,Pr
 from enaml.qt.QtGui import QTableWidget,QTableWidgetItem,QSizePolicy
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,\
     AbstractQtWidgetItemGroup
+from atom.property import cached_property
+from enaml.qt import QtGui
 
 
 class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
@@ -17,7 +19,7 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     
     def create_widget(self):
         self.widget = QTableWidget(self.parent_widget())
-
+        
     def init_widget(self):
         super(QtTableWidget, self).init_widget()
         d = self.declaration
@@ -28,6 +30,12 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
         self.set_show_horizontal_header(d.show_horizontal_header)
         self.set_horizontal_stretch(d.horizontal_stretch)
         self.set_vertical_stretch(d.vertical_stretch)
+        self.set_resize_mode(d.resize_mode)
+        if d.vertical_minimum_section_size:
+            self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
+        if d.horizontal_minimum_section_size:
+            self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
+        
     
     def init_signals(self):
         super(QtTableWidget, self).init_signals()
@@ -42,7 +50,7 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     def _refresh_layout(self):
         super(QtTableWidget, self)._refresh_layout()
         self.set_headers(self.declaration.headers)
-        self.set_auto_resize_columns(self.declaration.auto_resize_columns)
+        #self.set_auto_resize_columns(self.declaration.auto_resize_columns)
             
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
@@ -56,11 +64,29 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     def set_word_wrap(self,wrap):
         self.widget.setWordWrap(wrap)
         
+    def set_vertical_minimum_section_size(self,size):
+        self.widget.verticalHeader().setMinimumSectionSize(size)
+        
+    def set_horizontal_minimum_section_size(self,size):
+        self.widget.horizontalHeader().setMinimumSectionSize(size)
+        
     def set_horizontal_stretch(self,stretch):
         self.widget.horizontalHeader().setStretchLastSection(stretch)
         
     def set_vertical_stretch(self,stretch):
         self.widget.verticalHeader().setStretchLastSection(stretch)
+    
+    def set_padding(self,padding):
+        self.widget.setStyleSheet("QTableWidget::item { padding: %ipx }"%padding);
+    
+    def set_resize_mode(self,mode):
+        self.widget.horizontalHeader().setResizeMode({
+            'interactive':QtGui.QHeaderView.ResizeMode.Interactive,
+            'fixed':QtGui.QHeaderView.ResizeMode.Fixed,
+            'stretch':QtGui.QHeaderView.ResizeMode.Stretch,
+            'resize_to_contents':QtGui.QHeaderView.ResizeMode.ResizeToContents,
+            'custom':QtGui.QHeaderView.ResizeMode.Custom
+        }[mode])
     
     def set_show_horizontal_header(self,show):
         header = self.widget.horizontalHeader()
@@ -80,11 +106,19 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     def set_current_column(self,column):
         self.widget.setCurrentCell(self.declaration.current_row,column)
     
-    def rows(self):
+    @cached_property
+    def _rows(self):
         return [child for child in self.children() if isinstance(child, QtTableWidgetRow)]
     
-    def columns(self):
+    @cached_property
+    def _columns(self):
         return [child for child in self.children() if isinstance(child, QtTableWidgetColumn)]
+    
+    def rows(self):
+        return self._rows
+    
+    def columns(self):
+        return self._columns
     
     #--------------------------------------------------------------------------
     # Widget Events

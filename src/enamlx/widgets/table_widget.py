@@ -5,7 +5,7 @@ Created on Jun 3, 2015
 '''
 from atom.api import (
     ContainerList, Int, Unicode, Typed, Bool, 
-    ForwardTyped, observe, set_default
+    Enum, ForwardTyped, observe, set_default
 )
 from enaml.core.declarative import d_
 from enaml.widgets.control import ProxyControl
@@ -64,16 +64,21 @@ class TableWidget(AbstractItemView):
     hug_height = set_default('ignore')
     proxy = Typed(ProxyTableWidget)
     
+    padding = d_(Int(3))
+    
     auto_resize_columns = d_(Bool(True))
+    resize_mode = d_(Enum('interactive','fixed','stretch','resize_to_contents','custom'))
     
     show_grid = d_(Bool(True))
     word_wrap = d_(Bool(False))
     
     show_vertical_header = d_(Bool(True))
     vertical_stretch = d_(Bool(False))
+    vertical_minimum_section_size = d_(Int(0))
     
     show_horizontal_header = d_(Bool(True))
     horizontal_stretch = d_(Bool(False))
+    horizontal_minimum_section_size = d_(Int(0))
     
     sortable = d_(Bool(True))
     headers = d_(ContainerList(Unicode()))
@@ -89,7 +94,7 @@ class TableWidget(AbstractItemView):
     
     @observe('sortable','headers','word_wrap','auto_resize_columns','current_index',
              'show_grid','show_vertical_header','show_horizontal_header',
-             'vertical_stretch','horizontal_stretch',
+             'vertical_stretch','horizontal_stretch','resize_mode','padding',
              )
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
@@ -102,7 +107,6 @@ class TableWidgetItem(AbstractWidgetItem):
     proxy = Typed(ProxyTableWidgetItem)
     column = d_(Int())
     
-
 class TableWidgetRow(AbstractWidgetItemGroup):
     """ Simply a helper that sets the row for its children """
     column = d_(Int())

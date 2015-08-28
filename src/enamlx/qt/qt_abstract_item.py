@@ -9,11 +9,12 @@ from enaml.core.pattern import Pattern
 from enaml.qt.q_resource_helpers import get_cached_qicon
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt.QtGui import QListWidgetItem, QTreeWidgetItem, QTableWidgetItem
+from enaml.qt.QtGui import QAbstractItemView
 from enaml.qt.QtGui import QIcon
 from enaml.qt.QtCore import Qt,QSize
 
 from functools import wraps
+from enaml.qt import QtGui
 
 def except_delegate(f):
     """ Only calls the function if control is not
@@ -26,6 +27,10 @@ def except_delegate(f):
     return wrapped
 
 class AbstractQtWidgetItemGroup(QtControl):
+    
+    def refresh_style_sheet(self):
+        pass # Takes a lot of time
+    
     #--------------------------------------------------------------------------
     # Signal Handlers
     #--------------------------------------------------------------------------
@@ -75,7 +80,7 @@ class AbstractQtWidgetItemGroup(QtControl):
     
 
 class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
-    widget = Instance((QListWidgetItem,QTreeWidgetItem,QTableWidgetItem))
+    widget = Instance(QAbstractItemView)
     delegate = Instance(QtWidget)
     
     def create_widget(self):
@@ -85,8 +90,20 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
         
         if self.delegate:
             self.widget = self.parent_widget()
+            
+    @property
+    def view_widget(self):
+        parent = self
+        widget = parent.parent_widget()
+        while not isinstance(widget,QAbstractItemView):
+            parent = parent.parent()
+            widget = parent.parent_widget()
+        return widget
     
+        
     def init_widget(self):
+        #super(AbstractQtWidgetItem, self).init_widget()
+        self.declaration.column = self.parent().items().index(self)
         d = self.declaration
         self.set_selectable(d.selectable)
         self.set_editable(d.editable)
@@ -103,6 +120,14 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
             self.set_icon_size(d.icon_size)
         if d.tool_tip:
             self.set_tool_tip(d.tool_tip)
+        if d.width:
+            self.set_width(d.width)
+        if d.text_alignment:
+            self.set_text_alignment(d.text_alignment)
+    
+    def set_width(self,width):
+        #print('width=%s,col=%s'%(width,self.declaration.column))
+        self.view_widget.setColumnWidth(self.declaration.column,width)
     
     @except_delegate
     def set_tool_tip(self, tool_tip):
@@ -135,7 +160,16 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     
     @except_delegate
     def set_text_alignment(self, alignment):
-        self.widget.setTextAlignment(alignment)
+        h,v = alignment
+        self.widget.setTextAlignment({'left':Qt.AlignLeft,
+                                      'right':Qt.AlignRight,
+                                      'center':Qt.AlignHCenter,
+                                      'justify':Qt.AlignJustify,
+                                      }[h] | {
+                                        'center':Qt.AlignVCenter,
+                                        'top':Qt.AlignTop,
+                                        'bottom':Qt.AlignBottom,
+                                      }[v])
     
     @except_delegate
     def set_checkable(self, checkable):

@@ -4,7 +4,7 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import (Int, Bool, Unicode, ContainerList, Typed, Coerced, Event, observe)
+from atom.api import (Int, Enum, Bool, Unicode, ContainerList, Typed, Coerced, Event, observe)
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control
 from enaml.icon import Icon
@@ -50,6 +50,10 @@ class AbstractWidgetItem(AbstractWidgetItemGroup):
     
     text = d_(Unicode())
     
+    text_alignment = d_(Enum(*[(h,v) for h in ('left','right','center','justify') for v in ('center','top','bottom')]))
+    
+    width = d_(Int())
+    
     tool_tip = d_(Unicode())
     
     icon = d_(Typed(Icon))
@@ -60,7 +64,7 @@ class AbstractWidgetItem(AbstractWidgetItemGroup):
     
     data = d_(ContainerList())
     
-    @observe('text','icon','icon_size','data','tool_tip')
+    @observe('text','icon','icon_size','data','tool_tip','width','text_alignment')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
