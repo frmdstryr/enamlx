@@ -11,14 +11,16 @@ Table widget (good for small # of items)
 3. Right click menus per item
 
 
-TODO:
-
-1. Tree widget
-2. List widget
-
 DoubleSpinBox
 
 1. SpinBox that works with float values
+
+
+
+Working on...
+1. Table View (same as TableWidget but for large number of items)
+2. Tree widget
+3. List widget
 
 # Usage
 
