@@ -10,7 +10,6 @@ from enamlx.widgets.table_widget import ProxyTableWidgetItem,ProxyTableWidget,Pr
 from enaml.qt.QtGui import QTableWidget,QTableWidgetItem,QSizePolicy
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,\
     AbstractQtWidgetItemGroup
-from atom.property import cached_property
 from enaml.qt import QtGui
 
 
@@ -109,19 +108,11 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     def set_current_column(self,column):
         self.widget.setCurrentCell(self.declaration.current_row,column)
     
-    @cached_property
-    def _rows(self):
+    def rows(self):
         return [child for child in self.children() if isinstance(child, QtTableWidgetRow)]
     
-    @cached_property
-    def _columns(self):
-        return [child for child in self.children() if isinstance(child, QtTableWidgetColumn)]
-    
-    def rows(self):
-        return self._rows
-    
     def columns(self):
-        return self._columns
+        return [child for child in self.children() if isinstance(child, QtTableWidgetColumn)]
     
     #--------------------------------------------------------------------------
     # Widget Events
@@ -241,11 +232,9 @@ class QtTableWidgetItem(AbstractQtWidgetItem, ProxyTableWidgetItem):
         
     def set_column(self, column):
         pass
-        
-        
+    
 class QtTableWidgetRow(AbstractQtTableWidgetItemGroup, ProxyTableWidgetRow):
     pass
-
 
 class QtTableWidgetColumn(AbstractQtTableWidgetItemGroup, ProxyTableWidgetColumn):
     pass

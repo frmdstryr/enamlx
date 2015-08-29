@@ -14,7 +14,6 @@ from enaml.qt.QtGui import QIcon
 from enaml.qt.QtCore import Qt,QSize
 
 from functools import wraps
-from enaml.qt import QtGui
 
 def except_delegate(f):
     """ Only calls the function if control is not
@@ -247,8 +246,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     def destroy(self):
         """ WidgetItems are not QtWidgets and cannot be destroyed, 
             they must be cleaned up by the parent view.  """
-        if not self.delegate:
-            self.widget = None
+        self.widget = None # Destroyed by parent
         super(AbstractQtWidgetItem, self).destroy()
     
     
