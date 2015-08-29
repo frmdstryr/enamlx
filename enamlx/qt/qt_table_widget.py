@@ -15,6 +15,7 @@ from enaml.qt import QtGui
 
 
 class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
+    """ DO NOT USE THIS FOR TABLES WITH > ~300 rows """
     widget = Typed(QTableWidget)
     
     def create_widget(self):
@@ -44,8 +45,10 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
         self.widget.currentCellChanged.connect(self.on_current_cell_changed)
          
     def init_layout(self):
+        self.widget.blockSignals(True)
         for child in self.rows():
             self.child_added(child)
+        self.widget.blockSignals(False)
             
     def _refresh_layout(self):
         super(QtTableWidget, self)._refresh_layout()

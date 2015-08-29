@@ -75,10 +75,21 @@ class AbstractQtWidgetItemGroup(QtControl):
         return False
         
     def items(self):
-        return [c for c in self.children() if isinstance(c,AbstractQtWidgetItem)]
+        return [it for it in self]
     
-    
+    def __iter__(self):
+        for c in self.children():
+            if isinstance(c,AbstractQtWidgetItem):
+                yield c
 
+    
+    def __getitem__(self,key):
+        try:
+            return self.items()[key]
+        except IndexError:
+            return None
+        
+    
 class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     widget = Instance(QAbstractItemView)
     delegate = Instance(QtWidget)
