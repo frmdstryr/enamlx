@@ -1,0 +1,122 @@
+import os
+import time
+import random
+from threading import Thread
+from atom.api import (Atom, Unicode, Range, List, Bool)
+
+from enamlx.widgets.table_view import (
+    TableView, TableViewRow, TableViewItem
+)
+
+from enaml.widgets.api import (
+    Window, Container, PushButton, CheckBox, RadioButton
+)
+from enaml.core.looper import Looper
+from enaml.widgets.spin_box import SpinBox
+from enaml.image import Image
+from enaml.icon import Icon,IconImage
+from enaml.application import deferred_call
+
+def icon_path(name):
+    path = os.getcwd()
+    return os.path.join(path,'../','images','icons','%s.png'%name)
+
+def load_image(name):
+    with open(icon_path(name),'rb') as f:
+        data = f.read()
+    return Image(data=data)
+
+def load_icon(name):
+    img = load_image(name)
+    icg = IconImage(image=img) 
+    return Icon(images=[icg])
+
+class Person(Atom):
+    """ A simple class representing a person object.
+
+    """
+    last_name = Unicode()
+
+    first_name = Unicode()
+
+    age = Range(low=0)
+
+    debug = Bool(False)
+    
+    def __repr__(self, *args, **kwargs):
+        return "Person(first_name={p.first_name},last_name={p.last_name})".format(p=self)
+
+class TableModel(Atom):
+    people = List(Person)
+    
+    def add_person(self):
+        people = self.people[:]
+        person = Person(last_name='Doe',first_name='John',age=len(self.people))
+        people.append(person)
+        self.people = people
+    
+    def remove_person(self):
+        people = self.people[:]
+        people.pop()
+        self.people = people
+        
+
+data_model = TableModel(people=[
+    Person(last_name='Barker-%i'%i,
+           first_name='Bob%i'%i,
+           age=i,
+           debug=bool(i&1))
+    for i in range(1000) # 10000
+])
+
+def update_data():
+    """ Test what happens when we update text!"""
+    while True:
+        time.sleep(1)
+        person = data_model.people[random.randint(0,10)]
+        print("Updating %s"%person)
+        # Always update in the ui thread!
+        deferred_call(setattr,person,'debug',not person.debug)
+        # It flipping works!
+
+t = Thread(target=update_data)
+t.daemon=True
+t.start()
+
+enamldef Main(Window):
+    attr model = data_model
+    Container:
+        PushButton:
+            text = 'Add person'
+            clicked :: model.add_person()
+        PushButton:
+            text = 'Remove person'
+            clicked :: model.remove_person()
+            
+        TableView:
+            minimum_size = (640,360)
+            headers << ['#','First','Last','Age','Color']
+            Looper:
+                iterable << model.people
+                TableViewRow:
+                    clicked :: print("Row %s clicked!"%loop_index)
+                    TableViewItem:
+                        checkable = True
+                        checked := loop_item.debug
+                        icon << loop_item.debug and load_icon('bug') or None
+                    TableViewItem:
+                        text := loop_item.first_name
+                        clicked :: print("Clicked %s"%loop_item.first_name)
+                    TableViewItem:
+                        text << loop_item.last_name
+                        double_clicked :: print("Double clicked %s"%loop_item.last_name)
+                    TableViewItem:
+                        # TODO: delegates
+                        SpinBox:
+                            value := loop_item.age
+                    TableViewItem:
+                        text << str(loop_index)
+                        foreground << loop_index&1 and 'red' or 'blue'
+                        background = 'white'
+                        text_alignment = ('center','top')
+            

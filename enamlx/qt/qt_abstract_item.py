@@ -15,6 +15,19 @@ from enaml.qt.QtCore import Qt,QSize
 
 from functools import wraps
 
+TEXT_H_ALIGNMENTS = {
+    'left':0x01,#Qt.AlignLeft,
+    'right':0x02, #Qt.AlignRight,
+    'center':0x04, #Qt.AlignHCenter,
+    'justify':0x08,#Qt.AlignJustify,
+}
+
+TEXT_V_ALIGNMENTS = {
+    'top':0x20,#Qt.AlignTop,
+    'bottom':0x40,#Qt.AlignBottom,
+    'center':0x80,#Qt.AlignVCenter,
+}
+
 def except_delegate(f):
     """ Only calls the function if control is not
     delegated to a child widget. """
@@ -74,6 +87,7 @@ class AbstractQtWidgetItemGroup(QtControl):
         return False
         
     def items(self):
+        # TODO: Cache these as it's slow!
         return [it for it in self]
     
     def __iter__(self):
@@ -81,7 +95,6 @@ class AbstractQtWidgetItemGroup(QtControl):
             if isinstance(c,AbstractQtWidgetItem):
                 yield c
 
-    
     def __getitem__(self,key):
         try:
             return self.items()[key]
@@ -171,15 +184,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     @except_delegate
     def set_text_alignment(self, alignment):
         h,v = alignment
-        self.widget.setTextAlignment({'left':Qt.AlignLeft,
-                                      'right':Qt.AlignRight,
-                                      'center':Qt.AlignHCenter,
-                                      'justify':Qt.AlignJustify,
-                                      }[h] | {
-                                        'center':Qt.AlignVCenter,
-                                        'top':Qt.AlignTop,
-                                        'bottom':Qt.AlignBottom,
-                                      }[v])
+        self.widget.setTextAlignment(TEXT_H_ALIGNMENTS[h] | TEXT_V_ALIGNMENTS[v])
     
     @except_delegate
     def set_checkable(self, checkable):
