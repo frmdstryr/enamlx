@@ -16,6 +16,10 @@ TODO:
 1. Tree widget
 2. List widget
 
+DoubleSpinBox
+
+1. SpinBox that works with float values
+
 # Usage
 
 ```python
