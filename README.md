@@ -18,6 +18,7 @@ DoubleSpinBox
 
 
 Working on...
+
 1. Table View (same as TableWidget but for large number of items)
 2. Tree widget
 3. List widget
