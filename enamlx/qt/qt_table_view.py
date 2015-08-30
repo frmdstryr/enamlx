@@ -4,22 +4,17 @@ Created on Aug 28, 2015
 
 @author: jrm
 '''
-# -*- coding: utf-8 -*-
-from enaml.qt import QtGui
 from enaml.application import timed_call
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
-'''
-Created on Aug 20, 2015
-
-@author: jrm
-'''
 from atom.api import Typed,Instance,Int,ContainerList,observe
 from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
 from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTableViewColumn,ProxyTableViewRow
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
-    TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
+    TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
 from enaml.qt.QtGui import QTableView
 from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex
+
+
 
 
 class QAtomTableModel(QAbstractTableModel):
@@ -37,6 +32,9 @@ class QAtomTableModel(QAbstractTableModel):
         return self.view.headers
     
     def rowCount(self, parent=None):
+        d = self.view.declaration
+        if d.iterable:
+            return len(d.iterable)
         return len(self.items)
     
     def columnCount(self, parent=None):
@@ -47,6 +45,9 @@ class QAtomTableModel(QAbstractTableModel):
         if not item:
             return None
         d = item.declaration
+        
+        self.view.declaration.current_row = index.row()
+        self.view.declaration.current_column = index.column()
         
         if role == Qt.DisplayRole:
             return d.text
@@ -67,12 +68,21 @@ class QAtomTableModel(QAbstractTableModel):
             return get_cached_qcolor(d.foreground)
         elif role == Qt.BackgroundRole and d.background:
             return get_cached_qcolor(d.background)
+        #elif role == Qt.SizeHintRole and d.width:
+        #    return 
         return None
     
     def itemAt(self,index):
         if not index.isValid():
             return None
-        return self.items[index.row()][index.column()]
+        d = self.view.declaration
+        #if index.row()+d.prefetch_size>len(self.items): # prefetch
+        #    self.fetchMore(index)
+        i = index.row()-d.iterable_index
+        try:
+            return self.items[i][index.column()]
+        except IndexError:
+            return None
         
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -80,6 +90,15 @@ class QAtomTableModel(QAbstractTableModel):
         elif orientation == Qt.Vertical and role == Qt.DisplayRole:
             return col
         return None
+
+#     def canFetchMore(self, index):
+#         return len(self.items)<len(self.view.declaration.iterable)
+#     
+#     def fetchMore(self, index):
+#         d = self.view.declaration
+#         r = index.row() if index.isValid() else len(self.items)
+#         print("Fetch more row=%s!"%r)
+#         d.iterable_index = r # Foreces window to load more
 
 
 class QtTableView(QtAbstractItemView, ProxyTableView):
@@ -95,7 +114,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     # Contains all the rows
     items = ContainerList(default=[])
     
-
     # Refreshing the view on every update makes it really slow
     # So if we defer refreshing until everything is added it's fast :) 
     _pending_refreshes = Int(0)
@@ -103,8 +121,10 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def create_widget(self):
         self.widget = QTableView(self.parent_widget())
         self.model = QAtomTableModel(view=self,parent=self.widget)
+        #loading = TableViewItem(text='',tool_tip='loading',proxy=ProxyTableViewItem())
+        #self.items = [[] for i in range(len(self.declaration.iterable))]
         
-    @observe('items','headers')
+    @observe('items','headers','declaration.iterable_index')
     def _refresh_view(self,change):
         """ Defer until later so the view is only updated after all items
         are added. """
@@ -114,7 +134,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def init_widget(self):
         super(QtTableView, self).init_widget()
         d = self.declaration
-        #self.widget.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+        self.set_model(self.model)
         self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
         self.set_show_vertical_header(d.show_vertical_header)
@@ -137,22 +157,46 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.widget.pressed.connect(self.on_item_pressed)
          
     def init_layout(self):
-        self.widget.blockSignals(True)
         for child in self.rows():
             self.child_added(child)
-        self.widget.blockSignals(False)
+            
             
     def _refresh_layout(self):
         """ Refreshes the layout only when this is the last refresh queued. """
         if self._pending_refreshes==1:
             self.model.layoutChanged.emit()
+            self._refresh_sizes()
+            
         self._pending_refreshes -=1
+        
+    def _refresh_sizes(self):
+        if self.items:
+            header = self.widget.horizontalHeader()
+            
+            for i,item in enumerate(self.items[0]):
+                header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
+                if item.declaration.width:
+                    header.resizeSection(i,item.declaration.width)
     
-    def _observe_model(self,change):
-        self.set_model(change['value'])
+    #def _observe_model(self,change):
+    #    self.set_model(change['value'])
         
     def set_model(self,model):
         self.widget.setModel(model)
+        
+    def set_iterable_index(self,index):
+        pass
+        
+    def set_current_row(self,row):
+        """ If we get close to a boarder"""
+        print("Current row = %s"%row)
+        
+        return
+        #self.widget.setCurrentIndex(self.widget.indexAt(row,self.declaration.current_column))
+    
+    def set_current_column(self,column):
+        return
+        #self.widget.setCurrentIndex(self.widget.indexAt(self.declaration.current_row,column))
     
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
@@ -182,13 +226,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding);
     
     def set_resize_mode(self,mode):
-        self.widget.horizontalHeader().setResizeMode({
-            'interactive':QtGui.QHeaderView.ResizeMode.Interactive,
-            'fixed':QtGui.QHeaderView.ResizeMode.Fixed,
-            'stretch':QtGui.QHeaderView.ResizeMode.Stretch,
-            'resize_to_contents':QtGui.QHeaderView.ResizeMode.ResizeToContents,
-            'custom':QtGui.QHeaderView.ResizeMode.Custom
-        }[mode])
+        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
         
     def set_show_horizontal_header(self,show):
         header = self.widget.horizontalHeader()
@@ -199,12 +237,10 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         header.show() if show else header.hide()
             
     def set_auto_resize_columns(self,enabled):
+        return
         if enabled:
             self.widget.resizeColumnsToContents()
             
-    def set_current_column(self,column):
-        self.widget.setCurrentCell(self.declaration.current_row,column)
-    
     def rows(self):
         return [child for child in self.children() if isinstance(child, QtTableViewRow)]
     
@@ -239,12 +275,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         item.parent().declaration.entered()
         item.declaration.entered()
     
-    
-    def on_current_cell_changed(self):    
-        """ Delegate event handling to the proxy """
-        self.declaration.current_row = self.widget.currentRow()
-        self.declaration.current_column = self.widget.currentColumn()
-    
     #--------------------------------------------------------------------------
     # Child Events
     #--------------------------------------------------------------------------
@@ -258,18 +288,18 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
                 if swap:
                     x,y = y,x
                 item.model_index = self.model.createIndex(x,y)
-                
                 if item.delegate:
                     self.widget.setIndexWidget(item.model_index,item.delegate.widget)
-            
+                
             self.items.append(child)
+            #print("Added %s"%len(self.items))
             
             
-
     def child_removed(self, child):
         """  Handle the child removed event for a QtTableView."""
         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
             self.items.remove(child)
+            pass
         
 class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
     
@@ -306,6 +336,8 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
         
     def refresh_model(self, change):
         """ Notify the model that data has changed in this cell! """
+        #if change['name']=='width':
+        #    return self.set_width(change['value'])
         parent = self.parent().parent()
         parent.model.dataChanged.emit(self.model_index,self.model_index)
     

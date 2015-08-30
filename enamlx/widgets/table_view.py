@@ -4,9 +4,10 @@ Created on Jun 3, 2015
 @author: jrm
 '''
 from atom.api import (
-    ContainerList, Int, Unicode, Typed, Bool, 
+    ContainerList, Int, Unicode, Typed, Bool,Instance,
     Enum, ForwardTyped, observe, set_default
 )
+from collections import Iterable
 from enaml.core.declarative import d_
 from enaml.widgets.control import ProxyControl
 from enamlx.widgets.abstract_item_view import AbstractItemView
@@ -18,7 +19,7 @@ class ProxyTableView(ProxyControl):
     declaration = ForwardTyped(lambda: TableView)
     
     def set_current_row(self,row):
-        raise NotImplementedError
+        pass
     
     def set_current_column(self,column):
         raise NotImplementedError
@@ -65,7 +66,21 @@ class TableView(AbstractItemView):
     sortable = d_(Bool(True))
     headers = d_(ContainerList(Unicode()))
     
-    current_column = d_(Int())
+    current_row = d_(Int(),writable=False)
+    current_column = d_(Int(),writable=False)
+    
+    
+    
+    visible_rows = d_(Int(),writable=False)
+    visible_columns = d_(Int(),writable=False)
+    
+    #: The iterable to use when creating the items for the looper.
+    iterable = d_(Instance(Iterable))
+    
+    # Where our data comes from
+    iterable_index = d_(Int(0)) # Current fetch index
+    iterable_fetch_size = d_(Int(200)) # fetch results
+    iterable_prefetch = d_(Int(20)) # Fetch when we get this far away
     
     def items(self):
         """ Get the items defined in the TableView.
@@ -75,8 +90,8 @@ class TableView(AbstractItemView):
         return [c for c in self.children if isinstance(c, allowed)]
     
     @observe('sortable','headers','word_wrap','auto_resize_columns','current_index',
-             'show_grid','show_vertical_header','show_horizontal_header',
-             'vertical_stretch','horizontal_stretch','resize_mode','padding',
+             'show_grid','show_vertical_header','show_horizontal_header','resize_mode',
+             'vertical_stretch','horizontal_stretch','padding',
              )
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
@@ -87,10 +102,11 @@ class TableView(AbstractItemView):
 
 class TableViewItem(AbstractWidgetItem):
     proxy = Typed(ProxyTableViewItem)
+    resize_mode = d_(Enum('interactive','fixed','stretch','resize_to_contents','custom'))
     column = d_(Int())
     
     @observe('text','icon','icon_size','data','tool_tip','width','text_alignment',
-             'row','checked','selected','checkable','selectable','editable')
+             'row','checked','selected','checkable','selectable','editable','resize_mode')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """

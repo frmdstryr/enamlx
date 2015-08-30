@@ -9,8 +9,7 @@ from enaml.core.pattern import Pattern
 from enaml.qt.q_resource_helpers import get_cached_qicon
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt.QtGui import QAbstractItemView
-from enaml.qt.QtGui import QIcon
+from enaml.qt.QtGui import QAbstractItemView,QIcon,QHeaderView
 from enaml.qt.QtCore import Qt,QSize
 
 from functools import wraps
@@ -26,6 +25,14 @@ TEXT_V_ALIGNMENTS = {
     'top':0x20,#Qt.AlignTop,
     'bottom':0x40,#Qt.AlignBottom,
     'center':0x80,#Qt.AlignVCenter,
+}
+
+RESIZE_MODES = {
+    'interactive':QHeaderView.Interactive,
+    'fixed':QHeaderView.Fixed,
+    'stretch':QHeaderView.Stretch,
+    'resize_to_contents':QHeaderView.ResizeToContents,
+    'custom':QHeaderView.Custom
 }
 
 def except_delegate(f):
@@ -158,7 +165,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     
     @except_delegate
     def set_checked(self, checked):
-        checked = checked and Qt.CheckState.Checked or Qt.CheckState.Unchecked
+        checked = checked and Qt.Checked or Qt.Unchecked
         self.widget.setCheckState(checked)
     
     @except_delegate 
@@ -190,27 +197,27 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     def set_checkable(self, checkable):
         flags = self.widget.flags()
         if checkable:
-            flags |= Qt.ItemFlag.ItemIsUserCheckable
+            flags |= Qt.ItemIsUserCheckable
         else:
-            flags &= ~Qt.ItemFlag.ItemIsUserCheckable
+            flags &= ~Qt.ItemIsUserCheckable
         self.widget.setFlags(flags)
     
     @except_delegate
     def set_selectable(self, selectable):
         flags = self.widget.flags()
         if selectable:
-            flags |= Qt.ItemFlag.ItemIsSelectable
+            flags |= Qt.ItemIsSelectable
         else:
-            flags &= ~Qt.ItemFlag.ItemIsSelectable
+            flags &= ~Qt.ItemIsSelectable
         self.widget.setFlags(flags)
     
     @except_delegate
     def set_editable(self, editable):
         flags = self.widget.flags()
         if editable:
-            flags |= Qt.ItemFlag.ItemIsEditable
+            flags |= Qt.ItemIsEditable
         else:
-            flags &= ~Qt.ItemFlag.ItemIsEditable
+            flags &= ~Qt.ItemIsEditable
         self.widget.setFlags(flags)
     
     @except_delegate

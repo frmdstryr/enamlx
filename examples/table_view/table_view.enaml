@@ -117,6 +117,6 @@ enamldef Main(Window):
                     TableViewItem:
                         text << str(loop_index)
                         foreground << loop_index&1 and 'red' or 'blue'
-                        background = 'white'
+                        background = 'green'
                         text_alignment = ('center','top')
             

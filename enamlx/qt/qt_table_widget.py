@@ -9,8 +9,7 @@ from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
 from enamlx.widgets.table_widget import ProxyTableWidgetItem,ProxyTableWidget,ProxyTableWidgetColumn,ProxyTableWidgetRow
 from enaml.qt.QtGui import QTableWidget,QTableWidgetItem,QSizePolicy
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,\
-    AbstractQtWidgetItemGroup
-from enaml.qt import QtGui
+    AbstractQtWidgetItemGroup, RESIZE_MODES
 
 
 class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
@@ -82,13 +81,7 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
         self.widget.setStyleSheet("QTableWidget::item { padding: %ipx }"%padding);
     
     def set_resize_mode(self,mode):
-        self.widget.horizontalHeader().setResizeMode({
-            'interactive':QtGui.QHeaderView.ResizeMode.Interactive,
-            'fixed':QtGui.QHeaderView.ResizeMode.Fixed,
-            'stretch':QtGui.QHeaderView.ResizeMode.Stretch,
-            'resize_to_contents':QtGui.QHeaderView.ResizeMode.ResizeToContents,
-            'custom':QtGui.QHeaderView.ResizeMode.Custom
-        }[mode])
+        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
     
     def set_show_horizontal_header(self,show):
         header = self.widget.horizontalHeader()
