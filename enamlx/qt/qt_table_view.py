@@ -46,9 +46,6 @@ class QAtomTableModel(QAbstractTableModel):
             return None
         d = item.declaration
         
-        self.view.declaration.current_row = index.row()
-        self.view.declaration.current_column = index.column()
-        
         if role == Qt.DisplayRole:
             return d.text
         elif role == Qt.ToolTipRole:
@@ -75,10 +72,11 @@ class QAtomTableModel(QAbstractTableModel):
     def itemAt(self,index):
         if not index.isValid():
             return None
+        self.view.current_index = index
         d = self.view.declaration
         #if index.row()+d.prefetch_size>len(self.items): # prefetch
         #    self.fetchMore(index)
-        i = index.row()-d.iterable_index
+        i = max(0,index.row()-d.iterable_index)
         try:
             return self.items[i][index.column()]
         except IndexError:
@@ -114,6 +112,8 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     # Contains all the rows
     items = ContainerList(default=[])
     
+    current_index = Instance(QModelIndex)
+    
     # Refreshing the view on every update makes it really slow
     # So if we defer refreshing until everything is added it's fast :) 
     _pending_refreshes = Int(0)
@@ -130,7 +130,15 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         are added. """
         self._pending_refreshes +=1
         timed_call(200,self._refresh_layout)
-        
+    
+    def _observe_current_index(self,change):
+        index = change['value']
+        self.declaration.current_row = index.row()
+        self.declaration.current_column = index.column()
+        tl_index = self.widget.indexAt(self.widget.rect().topLeft())
+        br_index = self.widget.indexAt(self.widget.rect().bottomRight())
+        self.declaration.visible_rect = [tl_index.row(),br_index.column(),br_index.row(),tl_index.column()] 
+    
     def init_widget(self):
         super(QtTableView, self).init_widget()
         d = self.declaration
@@ -189,8 +197,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         
     def set_current_row(self,row):
         """ If we get close to a boarder"""
-        print("Current row = %s"%row)
-        
+        #print("Current row = %s"%row)
         return
         #self.widget.setCurrentIndex(self.widget.indexAt(row,self.declaration.current_column))
     

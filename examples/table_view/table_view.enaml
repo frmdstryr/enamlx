@@ -111,7 +111,6 @@ enamldef Main(Window):
                         text << loop_item.last_name
                         double_clicked :: print("Double clicked %s"%loop_item.last_name)
                     TableViewItem:
-                        # TODO: delegates
                         SpinBox:
                             value := loop_item.age
                     TableViewItem:

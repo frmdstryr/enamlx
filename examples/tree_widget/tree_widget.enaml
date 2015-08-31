@@ -66,6 +66,7 @@ enamldef Main(Window):
                 iterable << model.people
                 TreeWidgetItem: 
                     text << str(loop_index)
+                    
                     TreeWidgetItemColumn:
                         checkable = True
                         checked := loop_item.debug
@@ -79,7 +80,7 @@ enamldef Main(Window):
                             value << loop_item.age
                         
                     TreeWidgetItem: # Child item
-                        text << str(loop_index)
+                        text << 'child %s'%loop_index
                     
                     # Going arbitrarily deep?
                     

@@ -37,33 +37,38 @@ class ItemViewLooper(Looper):
         if change['type'] == 'update' and self.is_initialized:
             self.refresh_items()
     
-    @observe('item_view.current_row')    
+    @observe('item_view.visible_rect')    
     def _prefetch_items(self,change):
         """ When the current_row in the model changes (whether from scrolling) or
         set by the application. Make sure the results are loaded!
         
         """
-        if change['type'] == 'update' and self.is_initialized:
+        if self.is_initialized:
+            print("Checking prefix")
             view = self.item_view
             
             upper_limit = view.iterable_index+view.iterable_fetch_size-view.iterable_prefetch
             lower_limit = max(0,view.iterable_index+view.iterable_prefetch)
             offset = int(view.iterable_fetch_size/2.0)
+            upper_visible_row = view.visible_rect[2]
+            lower_visible_row = view.visible_rect[0]
+            print("Visible rect = %s"%view.visible_rect)
             
-            if view.current_row > upper_limit:
-                next_index = upper_limit+offset
+            if upper_visible_row >= upper_limit:
+                next_index = max(0,upper_visible_row-offset) # Center on current row
+                # Going up works... 
                 if next_index>view.iterable_index:
                     print("Auto prefetch upper limit %s!"%upper_limit)
                     view.iterable_index = next_index
-            elif view.iterable_index>0 and view.current_row < lower_limit:
-                next_index = max(0,lower_limit-offset)
+                    
+            # But doewn doesnt?
+            elif view.iterable_index>0 and lower_visible_row < lower_limit:
+                next_index = max(0,lower_visible_row-offset) # Center on current row
+                # Going down works
                 if next_index<view.iterable_index:
-                    print("Auto prefetch lower limit %s!"%lower_limit)
+                    print("Auto prefetch lower limit=%s, iterable=%s, setting next=%s!"%(lower_limit,view.iterable_index,next_index))
                     view.iterable_index = next_index
             
-        
-        
-        
     @property
     def windowed_iterable(self):
         """ That returns only the window """

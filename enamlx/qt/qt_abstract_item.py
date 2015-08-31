@@ -130,10 +130,14 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
             widget = parent.parent_widget()
         return widget
     
+    
+    def _default_column(self):
+        return self.parent().items().index(self)
+        
         
     def init_widget(self):
         #super(AbstractQtWidgetItem, self).init_widget()
-        self.declaration.column = self.parent().items().index(self)
+        self.declaration.column = self._default_column()
         d = self.declaration
         self.set_selectable(d.selectable)
         self.set_editable(d.editable)
@@ -253,7 +257,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     
     @except_delegate
     def is_checked(self):
-        return self.widget.checkState() == Qt.CheckState.Checked
+        return self.widget.checkState() == Qt.Checked
     
     def destroy(self):
         """ WidgetItems are not QtWidgets and cannot be destroyed, 

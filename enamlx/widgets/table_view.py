@@ -66,13 +66,12 @@ class TableView(AbstractItemView):
     sortable = d_(Bool(True))
     headers = d_(ContainerList(Unicode()))
     
-    current_row = d_(Int(),writable=False)
-    current_column = d_(Int(),writable=False)
+    current_row = d_(Int())
+    current_column = d_(Int())
     
-    
-    
-    visible_rows = d_(Int(),writable=False)
-    visible_columns = d_(Int(),writable=False)
+    # Visibile are in view top, right, bottom, left
+    visible_rect = d_(ContainerList(Int())) 
+    #visible_bottom_right_index = d_(Instance(QModelIndex))
     
     #: The iterable to use when creating the items for the looper.
     iterable = d_(Instance(Iterable))
@@ -98,7 +97,7 @@ class TableView(AbstractItemView):
         """
         # The superclass handler implementation is sufficient.
         super(TableView, self)._update_proxy(change)
-        
+    
 
 class TableViewItem(AbstractWidgetItem):
     proxy = Typed(ProxyTableViewItem)
