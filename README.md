@@ -1,6 +1,9 @@
 # About
 Additional Qt Widgets for Enaml.
 
+_Note: This is in an alpha state but still usable_
+
+
 
 #### Featuring ####
 
