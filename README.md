@@ -6,7 +6,7 @@ Additional Qt Widgets for Enaml.
 
 __Table widget__
 
-Ggood for small # of items.
+Good for small # of items.
 
 1. Text/Icons/Checkboxes
 2. Delegate widgets (any widget can be child of a cell)
