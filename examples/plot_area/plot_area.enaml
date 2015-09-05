@@ -1,0 +1,78 @@
+"""
+Demonstrating the examples from pyqtgraph
+"""
+
+from atom.api import (Atom, Unicode, Range, List, Bool)
+
+from enaml.widgets.api import (
+    Window, Container, DockArea,DockItem,PushButton, CheckBox, RadioButton
+)
+from enaml.core.looper import Looper
+from enaml.widgets.spin_box import SpinBox
+
+import numpy as np
+from enamlx.widgets.api import PlotArea,PlotItemArray,PlotItemArray3D
+from enaml.layout.dock_layout import VSplitLayout
+from enamlx.widgets.double_spin_box import DoubleSpinBox
+from enaml.widgets.dual_slider import DualSlider
+
+
+enamldef Main(Window):
+    minimum_size = (960,640)
+    Container:
+        DockArea:
+            layout = VSplitLayout(
+                'basic',
+                'multi',
+                'range',
+                'scatter',
+            )
+            DockItem:
+                name = 'basic'
+                PlotArea:
+                    PlotItemArray:
+                        title = 'Basic array plotting'
+                        y << np.random.normal(size=100)
+                        label_left = 'Value'
+                        background = 'blue'
+                    
+            DockItem:
+                name = 'multi'
+                title = 'Multiple curves'
+                PlotArea:
+                    PlotItemArray:
+                        line_pen = 'g'
+                        y << np.random.normal(size=100)
+                        PlotItemArray:
+                            line_pen = 'b'
+                            y << np.random.normal(size=100)+10
+                        PlotItemArray:
+                            line_pen = 'r'
+                            y << np.random.normal(size=100)+20 
+            DockItem:
+                name = 'range'
+                title = 'View range'
+                Container:
+                    padding = 0
+                    PlotArea:
+                        PlotItemArray: range_plot:
+                            auto_range = (False,True)
+                            #range_x << (range_slider.low_value,range_slider.high_value)
+                            #range_x :: range_slider.low_value,range_slider.high_value = map(int,change['value'])
+                            y << np.random.normal(size=100)
+                    DualSlider: range_slider:
+                        minimum = -10
+                        maximum = 110
+                        low_value << int(range_plot.range_x[0])
+                        low_value :: range_plot.range_x[0] = change['value']
+                        
+                        high_value << int(range_plot.range_x[1])
+                        high_value :: range_plot.range_x[1] = change['value']
+            DockItem:
+                name = 'scatter'
+                Container:
+                    PlotItemArray3D:
+                        minimum_size = (360,360)
+                        x = np.linspace(-10,10,100)
+                        y = np.linspace(-10,10,51)
+                        z = np.random.normal(size=100)

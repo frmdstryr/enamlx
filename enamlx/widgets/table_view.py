@@ -66,8 +66,8 @@ class TableView(AbstractItemView):
     sortable = d_(Bool(True))
     headers = d_(ContainerList(Unicode()))
     
-    current_row = d_(Int())
-    current_column = d_(Int())
+    current_row = d_(Int(0))
+    current_column = d_(Int(0))
     
     # Visibile are in view top, right, bottom, left
     visible_rect = d_(ContainerList(Int())) 
@@ -88,15 +88,17 @@ class TableView(AbstractItemView):
         allowed = (TableViewRow,TableViewColumn,TableViewItem)
         return [c for c in self.children if isinstance(c, allowed)]
     
-    @observe('sortable','headers','word_wrap','auto_resize_columns','current_index',
+    @observe('sortable','headers','word_wrap','auto_resize_columns','current_column',
              'show_grid','show_vertical_header','show_horizontal_header','resize_mode',
-             'vertical_stretch','horizontal_stretch','padding',
-             )
+             'vertical_stretch','horizontal_stretch','padding',)
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
         # The superclass handler implementation is sufficient.
+        print("Update proxy %s"%change)
         super(TableView, self)._update_proxy(change)
+        
+    
     
 
 class TableViewItem(AbstractWidgetItem):

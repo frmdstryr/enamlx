@@ -22,6 +22,10 @@ class ItemViewLooper(Looper):
     #--------------------------------------------------------------------------
     # Observers
     #--------------------------------------------------------------------------
+    @observe('item_view.iterable')
+    def _observe_iterable(self, change):
+        super(ItemViewLooper, self)._observe_iterable(change)
+            
     def _observe_item_view(self, change):
         """ A private observer for the `window_size` attribute.
 

@@ -12,7 +12,7 @@ from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTab
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
     TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
 from enaml.qt.QtGui import QTableView
-from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex
+from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex,QPoint
 
 
 
@@ -72,7 +72,8 @@ class QAtomTableModel(QAbstractTableModel):
     def itemAt(self,index):
         if not index.isValid():
             return None
-        self.view.current_index = index
+        self.view.visible_index = index
+        self.view.current_index = self.view.widget.currentIndex()
         d = self.view.declaration
         #if index.row()+d.prefetch_size>len(self.items): # prefetch
         #    self.fetchMore(index)
@@ -113,6 +114,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     items = ContainerList(default=[])
     
     current_index = Instance(QModelIndex)
+    visible_index = Instance(QModelIndex) # Last updated index
     
     # Refreshing the view on every update makes it really slow
     # So if we defer refreshing until everything is added it's fast :) 
@@ -124,21 +126,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         #loading = TableViewItem(text='',tool_tip='loading',proxy=ProxyTableViewItem())
         #self.items = [[] for i in range(len(self.declaration.iterable))]
         
-    @observe('items','headers','declaration.iterable_index')
-    def _refresh_view(self,change):
-        """ Defer until later so the view is only updated after all items
-        are added. """
-        self._pending_refreshes +=1
-        timed_call(200,self._refresh_layout)
-    
-    def _observe_current_index(self,change):
-        index = change['value']
-        self.declaration.current_row = index.row()
-        self.declaration.current_column = index.column()
-        tl_index = self.widget.indexAt(self.widget.rect().topLeft())
-        br_index = self.widget.indexAt(self.widget.rect().bottomRight())
-        self.declaration.visible_rect = [tl_index.row(),br_index.column(),br_index.row(),tl_index.column()] 
-    
     def init_widget(self):
         super(QtTableView, self).init_widget()
         d = self.declaration
@@ -150,6 +137,8 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.set_horizontal_stretch(d.horizontal_stretch)
         self.set_vertical_stretch(d.vertical_stretch)
         self.set_resize_mode(d.resize_mode)
+        self.set_current_row(d.current_row)
+        self.set_current_column(d.current_column)
         if d.vertical_minimum_section_size:
             self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
@@ -167,8 +156,19 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def init_layout(self):
         for child in self.rows():
             self.child_added(child)
-            
-            
+     
+     
+    #--------------------------------------------------------------------------
+    # Observers
+    #--------------------------------------------------------------------------
+           
+    @observe('items','headers','declaration.iterable_index')
+    def _refresh_view(self,change):
+        """ Defer until later so the view is only updated after all items
+        are added. """
+        self._pending_refreshes +=1
+        timed_call(200,self._refresh_layout)
+    
     def _refresh_layout(self):
         """ Refreshes the layout only when this is the last refresh queued. """
         if self._pending_refreshes==1:
@@ -178,6 +178,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self._pending_refreshes -=1
         
     def _refresh_sizes(self):
+        """ Refresh column sizes when the data changes. """
         if self.items:
             header = self.widget.horizontalHeader()
             
@@ -186,9 +187,32 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
                 if item.declaration.width:
                     header.resizeSection(i,item.declaration.width)
     
-    #def _observe_model(self,change):
-    #    self.set_model(change['value'])
+                    
+    def _observe_current_index(self,change):
+        index = change['value']
+        self.declaration.current_row = index.row()
+        self.declaration.current_column = index.column()
         
+    def _observe_visible_index(self,change):
+        """ Determine which rows and columns are visible,
+        this is hacked to work and probably wont in all cases.
+        """
+        index = change['value']
+        # Try the simple way
+        r = self.widget.rect()
+        tl_index = self.widget.indexAt(r.topLeft())
+        br_index = self.widget.indexAt(r.bottomRight())
+        
+        if not br_index.isValid():
+            br_index = self.widget.indexAt(r.bottomLeft())
+            if not br_index.isValid():
+                br_index = index
+        
+        self.declaration.visible_rect = [tl_index.row(),br_index.column(),br_index.row(),tl_index.column()]
+    #--------------------------------------------------------------------------
+    # Widget Setters
+    #--------------------------------------------------------------------------
+    
     def set_model(self,model):
         self.widget.setModel(model)
         
@@ -196,14 +220,18 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         pass
         
     def set_current_row(self,row):
-        """ If we get close to a boarder"""
-        #print("Current row = %s"%row)
-        return
-        #self.widget.setCurrentIndex(self.widget.indexAt(row,self.declaration.current_column))
+        d = self.declaration
+        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        if not index.isValid():
+            return
+        self.widget.scrollTo(index)
     
     def set_current_column(self,column):
-        return
-        #self.widget.setCurrentIndex(self.widget.indexAt(self.declaration.current_row,column))
+        d = self.declaration
+        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        if not index.isValid():
+            return
+        self.widget.scrollTo(index)
     
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
@@ -294,7 +322,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
                 x,y = len(self.items),i
                 if swap:
                     x,y = y,x
-                item.model_index = self.model.createIndex(x,y)
+                item.model_index = self.model.index(x,y)
                 if item.delegate:
                     self.widget.setIndexWidget(item.model_index,item.delegate.widget)
                 

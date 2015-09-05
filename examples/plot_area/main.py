@@ -13,7 +13,7 @@ from enaml.qt.qt_application import QtApplication
 
 if __name__ == '__main__':
     with enaml.imports():
-        from table_widget import Main
+        from plot_area import Main
 
     app = QtApplication()
     view = Main()
