@@ -20,6 +20,7 @@ from enaml.widgets.dual_slider import DualSlider
 enamldef Main(Window):
     minimum_size = (960,640)
     Container:
+        padding = 0
         DockArea:
             layout = VSplitLayout(
                 'basic',
