@@ -35,7 +35,6 @@ enamldef Main(Window):
                         title = 'Basic array plotting'
                         y << np.random.normal(size=100)
                         label_left = 'Value'
-                        background = 'blue'
                     
             DockItem:
                 name = 'multi'
@@ -58,6 +57,7 @@ enamldef Main(Window):
                     PlotArea:
                         PlotItemArray: range_plot:
                             auto_range = (False,True)
+                            background = 'white'
                             #range_x << (range_slider.low_value,range_slider.high_value)
                             #range_x :: range_slider.low_value,range_slider.high_value = map(int,change['value'])
                             y << np.random.normal(size=100)

@@ -72,7 +72,9 @@ class PlotItem(Control):
     
     antialias = d_(Bool(False))
     
+    # Set auto range for each axis
     auto_range = d_(Enum(True,False,(True,True),(True,False),(False,True),(False,False)))
+    
     # These mean nothing if auto_range is true
     range_x = d_(ContainerList(default=[0,100]))
     range_y = d_(ContainerList(default=[0,100]))

@@ -13,6 +13,7 @@ from pyqtgraph.graphicsItems.PlotItem.PlotItem import PlotItem
 from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
 from pyqtgraph.graphicsItems.PlotDataItem import PlotDataItem
 from pyqtgraph.graphicsItems.GraphicsObject import GraphicsObject
+from enaml.qt.q_resource_helpers import get_cached_qcolor
 
 def gl_view_widget():
     from pyqtgraph.opengl import GLViewWidget
@@ -68,6 +69,8 @@ class AbstractQtPlotItem(QtControl):
             self.set_label_bottom(d.label_bottom)
         self.set_antialias(d.antialias)
         self.set_aspect_locked(d.aspect_locked)
+        if d.background:
+            self.set_background(d.background)
         self._refresh_plot()
         self.set_auto_range(d.auto_range)
         
@@ -81,31 +84,30 @@ class AbstractQtPlotItem(QtControl):
             
     def _format_style(self):
         data = {}
-        if self.declaration.line_pen:
-            data['pen'] = self.declaration.line_pen
-        if self.declaration.shadow_pen:
-            data['shadowPen'] = self.declaration.shadow_pen
-        if self.declaration.fill_level:
-            data['fillLevel'] = self.declaration.fill_level
-        if self.declaration.fill_brush:
-            data['fillBrush'] = self.declaration.fill_brush
-        if self.declaration.step_mode:
-            data['stepMode'] = self.declaration.step_mode
-        if self.declaration.background:
-            data['background'] = self.declaration.background
-            print("BACKGROUND SET")
+        d = self.declaration
+        if d.line_pen:
+            data['pen'] = d.line_pen
+        if d.shadow_pen:
+            data['shadowPen'] = d.shadow_pen
+        if d.fill_level:
+            data['fillLevel'] = d.fill_level
+        if d.fill_brush:
+            data['fillBrush'] = d.fill_brush
+        if d.step_mode:
+            data['stepMode'] = d.step_mode
+        #if d.background:
+        #    data['background'] = d.background
+        if d.symbol:
+            data['symbol'] = d.symbol
+            if d.symbol_pen:
+                data['symbolPen'] = d.symbol_pen
+            if d.symbol_brush:
+                data['symbolBrush'] = d.symbol_brush
+            if d.symbol_size:
+                data['symbolSize'] = d.symbol_size
             
-        if self.declaration.symbol:
-            data['symbol'] = self.declaration.symbol
-            if self.declaration.symbol_pen:
-                data['symbolPen'] = self.declaration.symbol_pen
-            if self.declaration.symbol_brush:
-                data['symbolBrush'] = self.declaration.symbol_brush
-            if self.declaration.symbol_size:
-                data['symbolSize'] = self.declaration.symbol_size
-            
-        if self.declaration.antialias:
-            data['antialias'] = self.declaration.antialias
+        if d.antialias:
+            data['antialias'] = d.antialias
             
         return data
         
@@ -126,16 +128,17 @@ class AbstractQtPlotItem(QtControl):
         #self.widget.setAspectLocked(locked)
     
     def set_background(self, background):
-        self._refresh_plot()
-        #self.widget.setBackground(background)
+        color = get_cached_qcolor(background) if background else None
+        if isinstance(self.parent(), AbstractQtPlotItem):
+            self.parent().parent_widget().setBackground(color)
+        else:
+            self.parent_widget().setBackground(color)
         
     def set_line_pen(self,pen):
-        return
-        #self.widget.setPen(pen)
+        self.widget.setPen(pen)
         
     def set_shadow_pen(self,pen):
-        return
-        #self.widget.setShadowPen(pen)
+        self.widget.setShadowPen(pen)
     
     def set_grid(self,grid):
         self.widget.showGrid(grid[0],grid[1],self.declaration.grid_alpha)
