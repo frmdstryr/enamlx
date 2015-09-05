@@ -23,6 +23,11 @@ DoubleSpinBox
 
 1. SpinBox that works with float values
 
+PlotItem
+
+1. Plot widgets using PyQtGraph
+![plot item](https://lh6.googleusercontent.com/zjcBnE4FGfP06ihd20tULTeX98k3eMlcqXJp0K-4rRnRDvFUTT9fXPfaUxUwcmY3PQS7PbHgH6KIcJAbhqagHSNCR7rQiVGT9vd_v0xz7LInDFOy5t6c7Nd3pA967qzxPe3kUFk) 
+
 
 
 Working on...
