@@ -25,7 +25,7 @@ enamldef Main(Window):
                 'basic',
                 'multi',
                 'range',
-                'scatter',
+                #'scatter',
             )
             DockItem:
                 name = 'basic'
@@ -68,11 +68,11 @@ enamldef Main(Window):
                         
                         high_value << int(range_plot.range_x[1])
                         high_value :: range_plot.range_x[1] = change['value']
-            DockItem:
-                name = 'scatter'
-                Container:
-                    PlotItemArray3D:
-                        minimum_size = (360,360)
-                        x = np.linspace(-10,10,100)
-                        y = np.linspace(-10,10,51)
-                        z = np.random.normal(size=100)
+#             DockItem:
+#                 name = 'scatter'
+#                 Container:
+#                     PlotItemArray3D: # TODO, does not work
+#                         minimum_size = (360,360)
+#                         x = np.linspace(-10,10,100)
+#                         y = np.linspace(-10,10,51)
+#                         z = np.random.normal(size=100)
