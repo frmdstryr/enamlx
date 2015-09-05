@@ -35,7 +35,7 @@ __PlotItem__
 Plot widgets using PyQtGraph
 
 
-![plot item](https://lh6.googleusercontent.com/zjcBnE4FGfP06ihd20tULTeX98k3eMlcqXJp0K-4rRnRDvFUTT9fXPfaUxUwcmY3PQS7PbHgH6KIcJAbhqagHSNCR7rQiVGT9vd_v0xz7LInDFOy5t6c7Nd3pA967qzxPe3kUFk) 
+![plot item](https://lh5.googleusercontent.com/YL1zjRjm78aiSFxP7Ab3DD1DInEL1ko351TQewCERru8dY5IO7ZufQRBgpStnTWKZMDDxJoBHBFg7h-6lJ9sPHmM-gUTuj-WE_OjveYNXKMYas_IrvicwMFkQE0cNhcK4U9I4GU) 
 
 
 
