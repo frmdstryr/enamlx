@@ -5,7 +5,7 @@ from enamlx.widgets.table_widget import (
 )
 
 from enaml.widgets.api import (
-    Window, Container, PushButton, CheckBox, RadioButton
+    Window, Container, PushButton, CheckBox, RadioButton, Menu, Action
 )
 from enaml.core.looper import Looper
 from enaml.widgets.spin_box import SpinBox
@@ -54,16 +54,27 @@ enamldef Main(Window):
             
         TableWidget:
             headers << ['#','First','Last','Age']
+            
             Looper:
                 iterable << model.people
                 TableWidgetRow:
+                    
                     TableWidgetItem:
                         checkable = True
                         checked := loop_item.debug
+                        toggled :: print("Toggled %s"%loop_index)
                     TableWidgetItem:
                         text << loop_item.first_name
+                        clicked :: print("Clicked %s"%loop_item.first_name)
                     TableWidgetItem:
                         text << loop_item.last_name
+                        
+                        Menu:
+                            #context_menu = True
+                            Action:
+                                text = 'Test'
+                                triggered :: "Right cliked on %s"%loop_item.last_name
+                        
                     TableWidgetItem:
                         SpinBox:
                             value := loop_item.age

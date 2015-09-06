@@ -67,8 +67,10 @@ class PlotItem(Control):
     
     multi_axis = d_(Bool(True))
     
-    log_mode = d_(Tuple(bool,default=(False,False))) # x,y
+    axis_left_ticks = d_(Callable())
+    axis_bottom_ticks = d_(Callable())
     
+    log_mode = d_(Tuple(bool,default=(False,False))) # x,y
     
     antialias = d_(Bool(False))
     
@@ -88,7 +90,8 @@ class PlotItem(Control):
              'fill_brush','fill_level','multi_axis','title',
              'label_left','label_right','label_top','label_bottom',
              'grid','grid_alpha','log_mode','antialias','auto_range',
-             'auto_downsample','clip_to_view','step_mode','aspect_locked',)
+             'auto_downsample','clip_to_view','step_mode','aspect_locked',
+             'axis_left_ticks','axis_bottom_ticks')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """

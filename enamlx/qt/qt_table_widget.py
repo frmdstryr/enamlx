@@ -10,6 +10,8 @@ from enamlx.widgets.table_widget import ProxyTableWidgetItem,ProxyTableWidget,Pr
 from enaml.qt.QtGui import QTableWidget,QTableWidgetItem,QSizePolicy
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,\
     AbstractQtWidgetItemGroup, RESIZE_MODES
+from enaml.widgets.menu import Menu
+from enaml.qt.qt_menu import QtMenu
 
 
 class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
@@ -37,6 +39,13 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
         
     
     def init_signals(self):
+#         self.widget.itemActivated.connect(self.on_item_activated)
+#         self.widget.itemClicked.connect(self.on_item_clicked)
+#         self.widget.itemDoubleClicked.connect(self.on_item_double_clicked)
+#         self.widget.itemEntered.connect(self.on_item_entered)
+#         self.widget.itemPressed.connect(self.on_item_pressed)
+#         self.widget.customContextMenuRequested.connect(self.on_custom_context_menu_requested)
+#         
         super(QtTableWidget, self).init_signals()
         self.widget.itemChanged.connect(self.on_item_changed)
         self.widget.itemSelectionChanged.connect(self.on_item_selection_changed)
@@ -107,9 +116,41 @@ class QtTableWidget(QtAbstractItemView, ProxyTableWidget):
     def columns(self):
         return [child for child in self.children() if isinstance(child, QtTableWidgetColumn)]
     
+    
     #--------------------------------------------------------------------------
     # Widget Events
     #--------------------------------------------------------------------------
+    def item_at(self,index):
+        if not index.isValid():
+            return
+        item = self.widget.item(index.row(),index.column())
+        return item._proxy_ref
+    
+    def _check_item_toggled(self, item):
+        checked = item.is_checked()
+        if checked!=item.declaration.checked:
+            item.parent().declaration.checked = checked 
+            item.parent().declaration.toggled(checked)   
+            item.declaration.checked = checked 
+            item.declaration.toggled(checked)
+    
+    def on_item_selection_changed(self):    
+        """ Delegate event handling to the proxy """
+        for child in self.children():
+            if isinstance(child,AbstractQtWidgetItemGroup):
+                child.on_item_selection_changed()
+    
+    def on_item_changed(self,item):    
+        """ Delegate event handling to the proxy """
+        item._proxy_ref.on_item_changed()
+        
+    def on_item_selection_changed(self):    
+        """ Delegate event handling to the proxy """
+        for child in self.children():
+            if isinstance(child,AbstractQtWidgetItemGroup):
+                child.on_item_selection_changed()
+
+    
     def on_current_cell_changed(self):    
         """ Delegate event handling to the proxy """
         self.declaration.current_row = self.widget.currentRow()
@@ -190,9 +231,15 @@ class AbstractQtTableWidgetItemGroup(AbstractQtWidgetItemGroup):
     def widget(self):
         return self.parent_widget()
     
+    @property
+    def is_destroyed(self):
+        return True
+    
+    
     def set_selectable(self,selectable):
         for child in self.items():
             child.declaration.selectable = selectable
+    
             
     def set_row(self,row):
         self.declaration.row = row
@@ -216,6 +263,14 @@ class QtTableWidgetItem(AbstractQtWidgetItem, ProxyTableWidgetItem):
             self.widget = QTableWidgetItem()            
             # Save a reference to the proxy 
             self.widget._proxy_ref = self
+            
+    def activate_top_down(self):
+        #print("activate top down %s"%([c for c in self.children()],))
+        for child in self.children():
+            if isinstance(child, QtMenu):
+                # Move it to the parent and wrap it in a conditional 
+                child.declaration._parent = self.parent()
+        super(QtTableWidgetItem, self).activate_top_down()
         
     def __repr__(self):
         return "QtTableWidgetItem(row=%s,col=%s,text=%s)"%(self.declaration.row,self.declaration.column,self.declaration.text)

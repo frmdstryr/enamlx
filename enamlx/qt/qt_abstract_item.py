@@ -13,6 +13,7 @@ from enaml.qt.QtGui import QAbstractItemView,QIcon,QHeaderView
 from enaml.qt.QtCore import Qt,QSize
 
 from functools import wraps
+from enaml.qt.qt_menu import QtMenu
 
 TEXT_H_ALIGNMENTS = {
     'left':0x01,#Qt.AlignLeft,
@@ -111,12 +112,15 @@ class AbstractQtWidgetItemGroup(QtControl):
     
 class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     widget = Instance(QAbstractItemView)
+    menu = Instance(QtMenu)
     delegate = Instance(QtWidget)
     
     def create_widget(self):
         for child in self.children():
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
+            elif isinstance(child, QtMenu):
+                self.menu = child
         
         if self.delegate:
             self.widget = self.parent_widget()
@@ -241,7 +245,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
     
     def on_item_selection_changed(self):
         selected = self.is_selected()
-        if selected != self.declaration.selected:
+        if selected is not None and (selected != self.declaration.selected):
             self.declaration.selected = selected
             self.declaration.selection_changed(selected)
             

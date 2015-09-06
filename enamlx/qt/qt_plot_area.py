@@ -4,14 +4,13 @@ Created on Aug 31, 2015
 
 @author: jrm
 '''
+import types
 from atom.api import (ForwardInstance,Instance, Typed)
 
 from enamlx.widgets.plot_area import ProxyPlotArea
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtCore import QRect,QPoint
 from pyqtgraph.graphicsItems.PlotItem.PlotItem import PlotItem
 from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
-from pyqtgraph.graphicsItems.PlotDataItem import PlotDataItem
 from pyqtgraph.graphicsItems.GraphicsObject import GraphicsObject
 from enaml.qt.q_resource_helpers import get_cached_qcolor
 
@@ -71,6 +70,13 @@ class AbstractQtPlotItem(QtControl):
         self.set_aspect_locked(d.aspect_locked)
         if d.background:
             self.set_background(d.background)
+            
+        if d.axis_left_ticks:
+            self.set_axis_left_ticks(d.axis_left_ticks)
+        
+        if d.axis_bottom_ticks:
+            self.set_axis_bottom_ticks(d.axis_bottom_ticks)
+            
         self._refresh_plot()
         self.set_auto_range(d.auto_range)
         
@@ -139,6 +145,20 @@ class AbstractQtPlotItem(QtControl):
         
     def set_shadow_pen(self,pen):
         self.widget.setShadowPen(pen)
+    
+    def set_axis_left_ticks(self,callback):
+        self.set_axis_ticks('left', callback)
+    
+    def set_axis_bottom_ticks(self,callback):
+        self.set_axis_ticks('bottom', callback)
+    
+    def set_axis_ticks(self,axis_name,callback):
+        axis = self.widget.getAxis(axis_name)
+        
+        # Save ref 
+        if not hasattr(axis, '_tickStrings'):
+            axis._tickStrings = axis.tickStrings
+        axis.tickStrings = types.MethodType(callback,axis,axis.__class__) if callback else axis._tickStrings
     
     def set_grid(self,grid):
         self.widget.showGrid(grid[0],grid[1],self.declaration.grid_alpha)

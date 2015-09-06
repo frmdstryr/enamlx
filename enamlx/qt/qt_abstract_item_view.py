@@ -6,8 +6,8 @@ Created on Aug 20, 2015
 '''
 from atom.api import Instance
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtGui import QAbstractItemView
-from enamlx.qt.qt_abstract_item import AbstractQtWidgetItemGroup
+from enaml.qt.QtCore import Qt
+from enaml.qt.QtGui import QAbstractItemView,QCursor,QCheckBox,QApplication
 
 SELECTION_MODES = {
     'extended':QAbstractItemView.ExtendedSelection,
@@ -36,14 +36,21 @@ class QtAbstractItemView(QtControl):
         self.set_alternating_row_colors(d.alternating_row_colors)
         
         self.init_signals()
-        
+
     def init_signals(self):
         """ Connect signals """
-        self.widget.itemActivated.connect(self.on_item_activated)
-        self.widget.itemClicked.connect(self.on_item_clicked)
-        self.widget.itemDoubleClicked.connect(self.on_item_double_clicked)
-        self.widget.itemEntered.connect(self.on_item_entered)
-        self.widget.itemPressed.connect(self.on_item_pressed)
+        self.widget.activated.connect(self.on_item_activated)
+        self.widget.clicked.connect(self.on_item_clicked)
+        self.widget.doubleClicked.connect(self.on_item_double_clicked)
+        self.widget.entered.connect(self.on_item_entered)
+        self.widget.pressed.connect(self.on_item_pressed)
+        self.widget.customContextMenuRequested.connect(self.on_custom_context_menu_requested)
+    
+    
+    def item_at(self,index):
+        if not index.isValid():
+            return
+        return self.widget.model().itemAt(index)
         
     def _refresh_layout(self):
         self.set_scroll_to_bottom(self.declaration.scroll_to_bottom)
@@ -64,33 +71,54 @@ class QtAbstractItemView(QtControl):
     #--------------------------------------------------------------------------
     # Widget Events
     #--------------------------------------------------------------------------
-    def on_item_activated(self,item):
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_activated()
+
+    def on_item_activated(self, index):
+        item = self.item_at(index)
+        if not item:
+            return
+        item.parent().declaration.activated()
+        item.declaration.activated()
         
-    def on_item_clicked(self,item):
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_clicked()
+    def on_item_clicked(self, index):
+        item = self.item_at(index)
+        if not item:
+            return
+        self._check_item_toggled(item)
+        item.parent().declaration.clicked()
+        item.declaration.clicked()
         
-    def on_item_double_clicked(self,item):
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_double_clicked()
+    def on_item_double_clicked(self, index):
+        item = self.item_at(index)
+        if not item:
+            return
+        item.parent().declaration.double_clicked()
+        item.declaration.double_clicked()
+        
+    def _check_item_toggled(self, item):
+        """ Check if the item was toggled """
+        pass
+        
+    def on_item_pressed(self,index):
+        item = self.item_at(index)
+        if not item:
+            return
+        item.parent().declaration.pressed()
+        item.declaration.pressed()
     
-    def on_item_pressed(self,item):
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_pressed()
-    
-    def on_item_changed(self,item):    
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_changed()
+    def on_item_entered(self,index):
+        item = self.item_at(index)
+        if not item:
+            return
+        item.parent().declaration.entered()
+        item.declaration.entered()
         
-    def on_item_entered(self,item):    
-        """ Delegate event handling to the proxy """
-        item._proxy_ref.on_item_entered()
-        
-    def on_item_selection_changed(self):    
-        """ Delegate event handling to the proxy """
-        for child in self.children():
-            if isinstance(child,AbstractQtWidgetItemGroup):
-                child.on_item_selection_changed()
+    def on_custom_context_menu_requested(self,pos):
+        item = self.item_at(pos)
+        if not item or not item.menu:
+            return
+        else:
+            item.menu.popup()
+            
+
+
                                 

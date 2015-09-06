@@ -11,8 +11,8 @@ from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
 from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTableViewColumn,ProxyTableViewRow
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
     TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
-from enaml.qt.QtGui import QTableView
-from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex,QPoint
+from enaml.qt.QtGui import QTableView,QCursor,QApplication
+from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex
 
 
 
@@ -68,6 +68,33 @@ class QAtomTableModel(QAbstractTableModel):
         #elif role == Qt.SizeHintRole and d.width:
         #    return 
         return None
+    
+    def flags(self, index):
+        item = self.itemAt(index)
+        if not item:
+            return Qt.NoItemFlags
+        d = item.declaration
+        flags = Qt.ItemIsEnabled
+        if d.editable:
+            flags |= Qt.ItemIsEditable
+        if d.checkable:
+            flags |= Qt.ItemIsUserCheckable
+        if d.selectable:
+            flags |= Qt.ItemIsSelectable
+        return flags
+    
+    def setData(self, index,value,role=Qt.EditRole):
+        item = self.itemAt(index)
+        if not item:
+            return False
+        if role==Qt.CheckStateRole:
+            checked = value==Qt.Checked
+            if checked!=item.declaration.checked:
+                item.declaration.checked = checked
+                item.declaration.toggled(checked)
+        else:
+            return super(QAtomTableModel, self).setData()
+        return True
     
     def itemAt(self,index):
         if not index.isValid():
@@ -145,13 +172,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
         self.set_headers(d.headers)
     
-    def init_signals(self):
-        """ Connect signals """
-        self.widget.activated.connect(self.on_item_activated)
-        self.widget.clicked.connect(self.on_item_clicked)
-        self.widget.doubleClicked.connect(self.on_item_double_clicked)
-        self.widget.entered.connect(self.on_item_entered)
-        self.widget.pressed.connect(self.on_item_pressed)
+
          
     def init_layout(self):
         for child in self.rows():
@@ -209,6 +230,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
                 br_index = index
         
         self.declaration.visible_rect = [tl_index.row(),br_index.column(),br_index.row(),tl_index.column()]
+        
     #--------------------------------------------------------------------------
     # Widget Setters
     #--------------------------------------------------------------------------
@@ -283,34 +305,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         return [child for child in self.children() if isinstance(child, QtTableViewColumn)]
     
     #--------------------------------------------------------------------------
-    # Widget Events
-    #--------------------------------------------------------------------------
-    def on_item_activated(self, index):
-        item = self.model.itemAt(index)
-        item.parent().declaration.activated()
-        item.declaration.activated()
-        
-    def on_item_clicked(self, index):
-        item = self.model.itemAt(index)
-        item.parent().declaration.clicked()
-        item.declaration.clicked()
-        
-    def on_item_double_clicked(self, index):
-        item = self.model.itemAt(index)
-        item.parent().declaration.double_clicked()
-        item.declaration.double_clicked()
-        
-    def on_item_pressed(self,index):
-        item = self.model.itemAt(index)
-        item.parent().declaration.pressed()
-        item.declaration.pressed()
-    
-    def on_item_entered(self,index):    
-        item = self.model.itemAt(index)
-        item.parent().declaration.entered()
-        item.declaration.entered()
-    
-    #--------------------------------------------------------------------------
     # Child Events
     #--------------------------------------------------------------------------
     def child_added(self, child):
@@ -322,19 +316,17 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
                 x,y = len(self.items),i
                 if swap:
                     x,y = y,x
-                item.model_index = self.model.index(x,y)
+                item.model_index = self.model.index(x,y) if self.model.hasIndex(x,y) else self.model.createIndex(x,y)#index(x,y)
                 if item.delegate:
                     self.widget.setIndexWidget(item.model_index,item.delegate.widget)
                 
             self.items.append(child)
-            #print("Added %s"%len(self.items))
             
             
     def child_removed(self, child):
         """  Handle the child removed event for a QtTableView."""
         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
             self.items.remove(child)
-            pass
         
 class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
     

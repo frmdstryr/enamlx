@@ -16,6 +16,8 @@ from enaml.widgets.spin_box import SpinBox
 from enaml.image import Image
 from enaml.icon import Icon,IconImage
 from enaml.application import deferred_call
+from enaml.widgets.menu import Menu
+from enaml.widgets.action import Action
 
 def icon_path(name):
     path = os.getcwd()
@@ -103,10 +105,16 @@ enamldef Main(Window):
                     TableViewItem:
                         checkable = True
                         checked := loop_item.debug
+                        toggled :: print("toggled %s"%loop_index)
                         icon << loop_item.debug and load_icon('bug') or None
                     TableViewItem:
                         text := loop_item.first_name
                         clicked :: print("Clicked %s"%loop_item.first_name)
+                        Menu:
+                            context_menu = True 
+                            Action:
+                                text = 'Test'
+                                triggered :: 'Clicked test'
                     TableViewItem:
                         text << loop_item.last_name
                         double_clicked :: print("Double clicked %s"%loop_item.last_name)
