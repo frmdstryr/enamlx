@@ -5,8 +5,6 @@ Created on Aug 23, 2015
 @author: jrm
 '''
 import cProfile,pstats,cStringIO
-import sys
-sys.path.append('../../')
 
 import enamlx
 enamlx.install()
@@ -16,7 +14,7 @@ from enaml.qt.qt_application import QtApplication
 
 if __name__ == '__main__':
     with enaml.imports():
-        from table_view import Main
+        from tree_view import Main
 
     app = QtApplication()
     view = Main()
@@ -26,6 +24,7 @@ if __name__ == '__main__':
     view.show()
 
     app.start()
+    
     profiler.disable()
     s = cStringIO.StringIO()
     ps = pstats.Stats(profiler, stream=s).sort_stats('time')

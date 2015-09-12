@@ -93,16 +93,15 @@ class AbstractQtWidgetItemGroup(QtControl):
             if item.is_checked():
                 return True
         return False
+    
         
     def items(self):
-        # TODO: Cache these as it's slow!
-        return [it for it in self]
+        return [c for c in self.children() if isinstance(c,AbstractQtWidgetItem)]
     
     def __iter__(self):
-        for c in self.children():
-            if isinstance(c,AbstractQtWidgetItem):
-                yield c
-
+        for it in self.items():
+            yield it
+        
     def __getitem__(self,key):
         try:
             return self.items()[key]

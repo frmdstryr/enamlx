@@ -62,8 +62,8 @@ enamldef Main(Window):
                             #range_x :: range_slider.low_value,range_slider.high_value = map(int,change['value'])
                             y << np.random.normal(size=100)
                     DualSlider: range_slider:
-                        minimum = -10
-                        maximum = 110
+                        minimum = 0
+                        maximum = 100
                         low_value << int(range_plot.range_x[0])
                         low_value :: range_plot.range_x[0] = change['value']
                         

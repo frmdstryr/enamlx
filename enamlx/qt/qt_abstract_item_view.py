@@ -6,8 +6,8 @@ Created on Aug 20, 2015
 '''
 from atom.api import Instance
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtCore import Qt
-from enaml.qt.QtGui import QAbstractItemView,QCursor,QCheckBox,QApplication
+from enaml.qt.QtCore import QAbstractItemModel
+from enaml.qt.QtGui import QAbstractItemView
 
 SELECTION_MODES = {
     'extended':QAbstractItemView.ExtendedSelection,
@@ -25,6 +25,10 @@ SELECTION_BEHAVIORS = {
 
 class QtAbstractItemView(QtControl):
     widget = Instance(QAbstractItemView)
+    
+    # Model used by the table view 
+    # Simply takes data from the declaration
+    model = Instance(QAbstractItemModel)
     
     def init_widget(self):
         super(QtAbstractItemView, self).init_widget()
@@ -67,6 +71,10 @@ class QtAbstractItemView(QtControl):
             
     def set_alternating_row_colors(self,enabled):
         self.widget.setAlternatingRowColors(enabled)
+        
+    
+    def set_model(self,model):
+        self.widget.setModel(model)
         
     #--------------------------------------------------------------------------
     # Widget Events

@@ -1,7 +1,7 @@
 from atom.api import (Atom, Unicode, Range, List, Bool, ForwardInstance)
 
 from enamlx.widgets.api import (
-    TreeWidget, TreeWidgetItem #TreeWidgetRow, 
+    TreeView, TreeViewItem, TreeViewColumn, 
 )
 
 from enaml.widgets.api import (
@@ -10,7 +10,6 @@ from enaml.widgets.api import (
 from enaml.core.looper import Looper
 from enaml.widgets.spin_box import SpinBox
 from atom.instance import ForwardInstance
-from enamlx.widgets.tree_widget import TreeWidgetColumn
 
 
 
@@ -45,13 +44,11 @@ class Model(Atom):
 
 enamldef Main(Window):
     attr model = Model(people=[
-                    Person(last_name='Jones',first_name='Bob',age=32,children=[
-                        Person(last_name='Jones',first_name='Jill',age=1),
-                        Person(last_name='Jones',first_name='Jack',age=3),
+                    Person(last_name='Jones-%i'%i,first_name='Bob-%i'%i,age=i,children=[
+                        Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
+                        Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
                         ]
-                    ),
-                    Person(last_name='Thompson',first_name='Walter',age=39),
-                ])
+                    ) for i in range(1000)])
     Container:
         PushButton:
             text = 'Add person'
@@ -60,27 +57,46 @@ enamldef Main(Window):
             text = 'Remove person'
             clicked :: model.remove_person()
             
-        TreeWidget:
+        TreeView:
             headers << ['#','Debug','First','Last','Age']
+            #TreeViewItem:
+            #   text = 'People'
             Looper:
                 iterable << model.people
-                TreeWidgetItem: 
+                TreeViewItem: 
                     text << str(loop_index)
                     
-                    TreeWidgetColumn:
+                    
+                    TreeViewColumn:
                         checkable = True
                         checked := loop_item.debug
-                    TreeWidgetColumn:
+                    TreeViewColumn:
                         text << loop_item.first_name
-                    TreeWidgetColumn:
+                    TreeViewColumn:
                         text << loop_item.last_name
-                    
-                    TreeWidgetColumn:
+                
+                    TreeViewColumn:
                         SpinBox:
                             value << loop_item.age
-                        
-                    TreeWidgetItem: # Child item
-                        text << 'child %s'%loop_index
                     
-                    # Going arbitrarily deep?
                     
+                    attr parent_index = loop_index
+                    attr parent_item = loop_item
+                    Looper:
+                        iterable << loop_item.children
+                        TreeViewItem: # Child item
+                            text << 'child %s.%s'%(parent_index,loop_index)
+                            TreeViewColumn:
+                                checkable = True
+                                checked := loop_item.debug
+                            TreeViewColumn:
+                                text << loop_item.first_name
+                            TreeViewColumn:
+                                text << loop_item.last_name
+                            TreeViewColumn:
+                                #text << str(loop_item.age)
+                                SpinBox:
+                                    value << loop_item.age
+                
+                # Going arbitrarily deep?
+                

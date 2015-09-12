@@ -8,20 +8,23 @@ from enaml.application import timed_call
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 from atom.api import Typed,Instance,Int,ContainerList,observe
 from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
-from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTableViewColumn,ProxyTableViewRow
+from enamlx.widgets.tree_view import ProxyTreeViewItem,ProxyTreeView,ProxyTreeViewColumn
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
     TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
-from enaml.qt.QtGui import QTableView,QCursor,QApplication
-from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex
+from enaml.qt.QtGui import QTreeView
+from enaml.qt.QtCore import Qt,QAbstractItemModel,QModelIndex
+from enaml.core.pattern import Pattern
+from enaml.qt.qt_widget import QtWidget
+from atom.property import cached_property
+from enaml.qt.qt_menu import QtMenu
 
 
-
-
-class QAtomTableModel(QAbstractTableModel):
+class QAtomTreeModel(QAbstractItemModel):
     
     def __init__(self,view,*args,**kwargs):
-        self.view = view # Link back to the view as we cannot inherit from Atom and QAbstractTableModel
-        super(QAtomTableModel, self).__init__(*args,**kwargs)
+        self.view = view # Link back to the view as we cannot inherit from Atom and QAbstractTreeModel
+        self.rootItem = QtTreeViewItem(model_index=QModelIndex())
+        super(QAtomTreeModel, self).__init__(*args,**kwargs)
         
     @property
     def items(self):
@@ -31,19 +34,29 @@ class QAtomTableModel(QAbstractTableModel):
     def headers(self):
         return self.view.headers
     
-    def rowCount(self, parent=None):
-        d = self.view.declaration
-        if d.iterable:
-            return len(d.iterable)
-        return len(self.items)
+    def rowCount(self, parent):
+        if parent.column() > 0:
+            return 0
+        elif parent.isValid():
+            items = parent.internalPointer().items()
+        else:
+            items = self.items()
+        return len(items)
     
-    def columnCount(self, parent=None):
-        return len(self.headers)
+    def columnCount(self, parent):
+        if parent and parent.isValid():
+            return len(parent.internalPointer().columns())
+        else:
+            return len(self.headers)
     
     def data(self, index, role):
         item = self.itemAt(index)
         if not item:
             return None
+        #if item.delegate:
+            #self.view.widget.setIndexWidget(index,item.delegate.widget)
+        #    return None
+        #print("data(index = (%s,%s),item=%s)"%(index.row(),index.column(),item.declaration.text))
         d = item.declaration
         
         if role == Qt.DisplayRole:
@@ -93,22 +106,44 @@ class QAtomTableModel(QAbstractTableModel):
                 item.declaration.checked = checked
                 item.declaration.toggled(checked)
         else:
-            return super(QAtomTableModel, self).setData()
+            return super(QAtomTreeModel, self).setData()
         return True
+    
+    def index(self, row, column, parent=None):
+        parent = parent or QModelIndex()
+        #print("Index=(%s,%s),Parent=(%s,%s)"%(row,column,parent.row(),parent.column()))
+        #if not self.hasIndex(row, column, parent):
+        #    assert False
+        #    return QModelIndex()
+        
+        if not parent.isValid():
+            childItem = self.items()[row]
+            return self.createIndex(row, column, childItem)
+        else:
+            parentItem = parent.internalPointer()
+        childItem = parentItem[row]
+        if childItem:
+            return self.createIndex(row, column, childItem)
+        else:
+            return QModelIndex()
+
+    def parent(self, index):
+        if not index.isValid():
+            return QModelIndex()
+        #print("Parent of (%s,%s)"%(index.row(),index.column()))
+        childItem = index.internalPointer()
+        parentItem = childItem.parent()
+        if parentItem==self.view:
+            return QModelIndex()
+        return self.createIndex(parentItem.row(), 0, parentItem)
     
     def itemAt(self,index):
         if not index.isValid():
             return None
-        self.view.visible_index = index
-        self.view.current_index = self.view.widget.currentIndex()
-        d = self.view.declaration
-        #if index.row()+d.prefetch_size>len(self.items): # prefetch
-        #    self.fetchMore(index)
-        i = max(0,index.row()-d.iterable_index)
-        try:
-            return self.items[i][index.column()]
-        except IndexError:
-            return None
+        #self.view.visible_index = index
+        #self.view.current_index = self.view.widget.currentIndex()
+        item = index.internalPointer().columns()[index.column()]
+        return item
         
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -122,25 +157,13 @@ class QAtomTableModel(QAbstractTableModel):
         self.view.items = []
         self.endResetModel()
 
-#     def canFetchMore(self, index):
-#         return len(self.items)<len(self.view.declaration.iterable)
-#     
-#     def fetchMore(self, index):
-#         d = self.view.declaration
-#         r = index.row() if index.isValid() else len(self.items)
-#         print("Fetch more row=%s!"%r)
-#         d.iterable_index = r # Foreces window to load more
-
-
-class QtTableView(QtAbstractItemView, ProxyTableView):
-    widget = Typed(QTableView)
+class QtTreeView(QtAbstractItemView, ProxyTreeView):
+    widget = Typed(QTreeView)
     
     # Contains the headers
     headers = ContainerList(default=[])
     
-    # Contains all the rows
-    items = ContainerList(default=[])
-    
+    model_index = Instance(QModelIndex,(),{})
     current_index = Instance(QModelIndex)
     visible_index = Instance(QModelIndex) # Last updated index
     
@@ -149,36 +172,28 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     _pending_refreshes = Int(0)
     
     def create_widget(self):
-        self.widget = QTableView(self.parent_widget())
-        self.model = QAtomTableModel(view=self,parent=self.widget)
-        #loading = TableViewItem(text='',tool_tip='loading',proxy=ProxyTableViewItem())
-        #self.items = [[] for i in range(len(self.declaration.iterable))]
+        self.widget = QTreeView(self.parent_widget())
+        self.model = QAtomTreeModel(view=self,parent=self.widget)
         
     def init_widget(self):
-        super(QtTableView, self).init_widget()
+        super(QtTreeView, self).init_widget()
         d = self.declaration
         self.set_model(self.model)
-        self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
-        self.set_show_vertical_header(d.show_vertical_header)
         self.set_show_horizontal_header(d.show_horizontal_header)
         self.set_horizontal_stretch(d.horizontal_stretch)
-        self.set_vertical_stretch(d.vertical_stretch)
         self.set_resize_mode(d.resize_mode)
         self.set_current_row(d.current_row)
         self.set_current_column(d.current_column)
-        if d.vertical_minimum_section_size:
-            self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
         self.set_headers(d.headers)
-    
+        self.set_show_root(d.show_root)
 
          
     def init_layout(self):
-        for child in self.rows():
-            self.child_added(child)
-     
+        for i,item in enumerate(self.items()):
+            item.model_index = self.model.index(i,0)
      
     #--------------------------------------------------------------------------
     # Observers
@@ -202,7 +217,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def _refresh_sizes(self):
         """ Refresh column sizes when the data changes. """
         if self.items:
-            header = self.widget.horizontalHeader()
+            header = self.widget.header()
             
             for i,item in enumerate(self.items[0]):
                 header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
@@ -235,10 +250,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     #--------------------------------------------------------------------------
     # Widget Setters
     #--------------------------------------------------------------------------
-    
-    def set_model(self,model):
-        self.widget.setModel(model)
-        
     def set_iterable_index(self,index):
         pass
         
@@ -265,29 +276,26 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def set_show_grid(self,show):
         self.widget.setShowGrid(show)
         
+    def set_show_root(self,show):
+        self.widget.setRootIsDecorated(show)
+        
     def set_word_wrap(self,wrap):
         self.widget.setWordWrap(wrap)
         
-    def set_vertical_minimum_section_size(self,size):
-        self.widget.verticalHeader().setMinimumSectionSize(size)
-        
     def set_horizontal_minimum_section_size(self,size):
-        self.widget.horizontalHeader().setMinimumSectionSize(size)
+        self.widget.header().setMinimumSectionSize(size)
         
     def set_horizontal_stretch(self,stretch):
-        self.widget.horizontalHeader().setStretchLastSection(stretch)
+        self.widget.header().setStretchLastSection(stretch)
         
-    def set_vertical_stretch(self,stretch):
-        self.widget.verticalHeader().setStretchLastSection(stretch)
-    
     def set_padding(self,padding):
-        self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding);
+        self.widget.setStyleSheet("QTreeView::item { padding: %ipx }"%padding);
     
     def set_resize_mode(self,mode):
-        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
+        self.widget.header().setResizeMode(RESIZE_MODES[mode])
         
     def set_show_horizontal_header(self,show):
-        header = self.widget.horizontalHeader()
+        header = self.widget.header()
         header.show() if show else header.hide()
         
     def set_show_vertical_header(self,show):
@@ -299,44 +307,34 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         if enabled:
             self.widget.resizeColumnsToContents()
             
-    def rows(self):
-        return [child for child in self.children() if isinstance(child, QtTableViewRow)]
+    @cached_property
+    def _items(self):
+        return [child for child in self.children() if isinstance(child, QtTreeViewItem) and not isinstance(child, QtTreeViewColumn)]
     
-    def columns(self):
-        return [child for child in self.children() if isinstance(child, QtTableViewColumn)]
+    def items(self):
+        return self._items
     
     #--------------------------------------------------------------------------
     # Child Events
     #--------------------------------------------------------------------------
     def child_added(self, child):
-        """ Handle the child added event for a QtTableView."""
-        if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-            # Update model index for each
-            swap = isinstance(child, QtTableViewColumn)
-            for i,item in enumerate(child.items()):
-                x,y = len(self.items),i
-                if swap:
-                    x,y = y,x
-                item.model_index = self.model.index(x,y) if self.model.hasIndex(x,y) else self.model.createIndex(x,y,item)#index(x,y)
-                if item.delegate:
-                    self.widget.setIndexWidget(item.model_index,item.delegate.widget)
-                
-            self.items.append(child)
-            
-            
+        """ Handle the child added event for a QtTreeView."""
+        self.members()['_items'].reset(self)
+        #if isinstance(child,(QtTreeViewItem)):
+        #    self.items.append(child)
+             
+             
     def child_removed(self, child):
-        """  Handle the child removed event for a QtTableView."""
-        if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-            #item = child.items()[0]
-            #self.model.beginRemoveRows(item.model_index,1,1)
-            self.items.remove(child)
-            #self.model.endRemoveRows()
-    
+        """  Handle the child removed event for a QtTreeView."""
+        self.members()['_items'].reset(self)
+        #if isinstance(child,(QtTreeViewColumn)):
+        #    self.items.remove(child)
+        
     def destroy(self):
         self.model.clear()
-        super(QtTableView, self).destroy()
-    
-class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
+        super(QtTreeView, self).destroy()
+        
+class AbstractQtTreeViewItemGroup(AbstractQtWidgetItemGroup):
     
     def create_widget(self):
         pass
@@ -362,23 +360,111 @@ class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
             child.declaration.row = row
                 
                 
-class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
-    widget = Instance(QTableView)
+class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
+    widget = Instance(QTreeView)
+    items = ContainerList()
     model_index = Instance(QModelIndex)
+    
+    
+    def create_widget(self):
+        for child in self.children():
+            if isinstance(child,(Pattern,QtWidget)) and not isinstance(child, QtTreeViewItem):
+                self.delegate = child
+            elif isinstance(child, QtMenu):
+                self.menu = child
+        
+        if self.delegate:
+            self.widget = self.parent_widget()
 
     def init_widget(self):
-        return # do nothing as there is no widget!
+        self.set_model_index()
+    
+    def set_model_index(self,index=None):
+        index = index or self.parent().model_index
+        r,c = self.row(),self.column()
+        self.model_index = self.tree_view().model.index(r,c,index)
+        #print(self,self.parent(),r,c,self.model_index.row(),self.model_index.column(),index.row(),index.column(),self.delegate)
         
+    
+    
+    def init_layout(self):
+        view = self.tree_view()
+        if self.delegate:
+            view.widget.setIndexWidget(self.model_index,self.delegate.widget) 
+            
+          
+         
     def refresh_model(self, change):
         """ Notify the model that data has changed in this cell! """
-        #if change['name']=='width':
-        #    return self.set_width(change['value'])
-        parent = self.parent().parent()
+        parent = self.tree_view()
+        return
         parent.model.dataChanged.emit(self.model_index,self.model_index)
-                
         
-class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):
-    pass
-
-class QtTableViewColumn(AbstractQtTableViewItemGroup, ProxyTableViewColumn):
-    pass
+    def row(self):
+        parent = self.parent()
+        items = parent.items()
+        return items.index(self)
+    
+    def column(self):
+        return 0 
+        
+    def tree_view(self):
+        parent = self.parent()
+        while not isinstance(parent,QtTreeView):
+            parent = parent.parent()
+        return parent
+    
+    @cached_property
+    def _items(self):
+        return [c for c in self.children() if isinstance(c, QtTreeViewItem) and not isinstance(c, QtTreeViewColumn)]
+    
+    def items(self):
+        return self._items
+    
+    @cached_property
+    def _columns(self):
+        return [self] + [c for c in self.children() if isinstance(c, QtTreeViewColumn)]
+    
+    def columns(self):
+        return self._columns
+    
+    def child_added(self, child):
+        self.members()['_items'].reset(self)
+        self.members()['_columns'].reset(self)
+        
+    def child_removed(self, child):
+        self.members()['_items'].reset(self)
+        self.members()['_columns'].reset(self)
+        
+    
+class QtTreeViewColumn(QtTreeViewItem,ProxyTreeViewColumn):
+    
+    def create_widget(self):
+        for child in self.children():
+            if isinstance(child, (Pattern, QtWidget)):
+                self.delegate = child
+        if self.delegate:
+            self.widget = self.tree_view().widget
+        else:
+            self.widget = self.parent_widget()
+    
+    def set_model_index(self,index=None):
+        # Set it as index of row
+        super(QtTreeViewColumn, self).set_model_index(index or self.parent().parent().model_index) 
+    
+    def row(self):
+        return self.parent().row()
+        
+    def column(self):
+        parent = self.parent()
+        columns = parent.columns()
+        return columns.index(self)
+            
+    #def init_layout(self):
+    #    return QtTreeViewItem.init_layout(self)
+    
+    
+    
+    def _default_column(self):
+        return self.parent().columns().index(self)
+        

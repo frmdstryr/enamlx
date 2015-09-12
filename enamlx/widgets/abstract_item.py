@@ -17,7 +17,7 @@ class AbstractWidgetItemGroup(Control):
     
     checked = d_(Bool())
     
-    selectable = d_(Bool())
+    selectable = d_(Bool(True))
     
     editable = d_(Bool())
     

@@ -6,11 +6,123 @@ Looper that only shows visible elements
 
 @author: jrm
 '''
-from atom.api import Instance
+from atom.api import Instance,ContainerList,List
 from enaml.core.looper import Looper,sortedmap,new_scope,recursive_expand
 from enaml.core.declarative import d_
 from atom.atom import observe
 from enamlx.widgets.abstract_item_view import AbstractItemView
+
+class ListLooper(Looper):
+    """ A looper handles ContainerList updates """
+    
+    items = ContainerList()
+    
+    _expanded = List()
+    
+    def _observe_iterable(self, change):
+        if not self.is_initialized:
+            return
+        elif change['type'] == 'update':
+            self.refresh_items()
+        elif change['type'] == 'container':
+            if change['operation'] == 'append':
+                self.append_items([change['item']])
+            elif change['operation'] == 'extend':
+                self.append_items(change['items'])
+            elif change['operation'] == 'insert':
+                self.insert_item(change['index'],change['item'])
+            elif change['operation'] == 'remove':
+                self.remove_items([change['item']])
+            elif change['operation'] == 'pop':
+                self.pop_item(change['index'])
+            elif change['operation'] in ['reverse','sort']:
+                self.refresh_items()
+    
+    def remove_items(self,old_items):
+        for item in old_items:
+            index = self.items.index(item)
+            self.pop_item(index)
+            
+    def pop_item(self,index):
+        for iteration in self.items.pop(index):
+            for old in iteration:
+                if not old.is_destroyed:
+                    old.destroy()
+    
+    def insert_item(self,loop_index,loop_item):
+        
+        iteration = []
+        self._iter_data[loop_item] = iteration
+        for nodes, key, f_locals in self.pattern_nodes:
+            with new_scope(key, f_locals) as f_locals:
+                f_locals['loop_index'] = loop_index
+                f_locals['loop_item'] = loop_item
+                for node in nodes:
+                    child = node(None)
+                    if isinstance(child, list):
+                        iteration.extend(child)
+                    else:
+                        iteration.append(child)
+        
+        expanded = []
+        recursive_expand(sum([iteration], []), expanded)
+        # Where do I insert it!
+        self.parent.insert_children(self, expanded)
+        
+        self.items.insert(loop_index,iteration)
+    
+    def append_item(self,item):
+        self.insert_item(len(self.items),item)
+    
+    def refresh_items(self):
+        """ Refresh the items of the pattern.
+
+        This method destroys the old items and creates and initializes
+        the new items.
+
+        """
+        old_items = self.items[:]# if self._dirty else []
+        old_iter_data = self._iter_data# if self._dirty else {}
+        iterable = self.iterable
+        pattern_nodes = self.pattern_nodes
+        new_iter_data = sortedmap()
+        new_items = []
+
+        if iterable is not None and len(pattern_nodes) > 0:
+            for loop_index, loop_item in enumerate(iterable):
+                iteration = old_iter_data.get(loop_item)
+                if iteration is not None:
+                    new_iter_data[loop_item] = iteration
+                    new_items.append(iteration)
+                    old_items.remove(iteration)
+                    continue
+                iteration = []
+                new_iter_data[loop_item] = iteration
+                new_items.append(iteration)
+                for nodes, key, f_locals in pattern_nodes:
+                    with new_scope(key, f_locals) as f_locals:
+                        f_locals['loop_index'] = loop_index
+                        f_locals['loop_item'] = loop_item
+                        for node in nodes:
+                            child = node(None)
+                            if isinstance(child, list):
+                                iteration.extend(child)
+                            else:
+                                iteration.append(child)
+        
+        for iteration in old_items:
+            for old in iteration:
+                if not old.is_destroyed:
+                    old.destroy()
+
+        if len(new_items) > 0:
+            expanded = []
+            recursive_expand(sum(new_items, []), expanded)
+            self._expanded = expanded
+            self.parent.insert_children(self, expanded)
+
+        self.items = new_items
+        self._iter_data = new_iter_data
 
 class ItemViewLooper(Looper):
     """ A looper that only creates the objects 
@@ -48,7 +160,6 @@ class ItemViewLooper(Looper):
         
         """
         if self.is_initialized:
-            print("Checking prefix")
             view = self.item_view
             
             upper_limit = view.iterable_index+view.iterable_fetch_size-view.iterable_prefetch
@@ -64,6 +175,7 @@ class ItemViewLooper(Looper):
                 if next_index>view.iterable_index:
                     print("Auto prefetch upper limit %s!"%upper_limit)
                     view.iterable_index = next_index
+                    #view.model().reset()
                     
             # But doewn doesnt?
             elif view.iterable_index>0 and lower_visible_row < lower_limit:
@@ -72,6 +184,7 @@ class ItemViewLooper(Looper):
                 if next_index<view.iterable_index:
                     print("Auto prefetch lower limit=%s, iterable=%s, setting next=%s!"%(lower_limit,view.iterable_index,next_index))
                     view.iterable_index = next_index
+                    #view.model().reset()
             
     @property
     def windowed_iterable(self):

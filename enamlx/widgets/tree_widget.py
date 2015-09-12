@@ -103,7 +103,7 @@ class TreeWidgetItem(AbstractWidgetItem):
     column = d_(Int())
     
     
-class TreeWidgetItemColumn(TreeWidgetItem):
+class TreeWidgetColumn(TreeWidgetItem):
     """ Simply a helper that sets the row for its children """
     
 

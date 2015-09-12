@@ -12,7 +12,6 @@ from enaml.qt.QtGui import QTreeWidget,QTreeWidgetItem,QIcon
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,\
     AbstractQtWidgetItemGroup, except_delegate, TEXT_H_ALIGNMENTS,\
     TEXT_V_ALIGNMENTS
-from atom.property import cached_property
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
 from enaml.qt.q_resource_helpers import get_cached_qicon
@@ -128,7 +127,9 @@ class QtTreeWidget(QtAbstractItemView, ProxyTreeWidget):
     def on_item_entered(self,item,index):    
         """ Delegate event handling to the proxy """
         item._proxy_ref.columns()[index].on_item_entered()
-    
+
+    def on_item_selection_changed(self,*args):
+        pass
     #--------------------------------------------------------------------------
     # Child Events
     #--------------------------------------------------------------------------
@@ -139,7 +140,7 @@ class QtTreeWidget(QtAbstractItemView, ProxyTreeWidget):
             if child.delegate:
                 self.widget.setItemWidget(child.item,child.declaration.column,child.delegate.widget)
             for item in child.children():
-                if isinstance(item, QtTreeWidgetItemColumn):
+                if isinstance(item, QtTreeWidgetColumn):
                     if item.delegate:
                         self.widget.setItemWidget(child.widget,item.declaration.column,item.delegate.widget)
                 elif isinstance(item, QtTreeWidgetItem):
@@ -201,7 +202,7 @@ class QtTreeWidgetItem(AbstractQtWidgetItem, ProxyTreeWidgetItem):
         return self.parent().items().index(self)
     
     def items(self):
-        return [c for c in self.children() if isinstance(c, QtTreeWidgetItem) and not isinstance(c, QtTreeWidgetItemColumn)]
+        return [c for c in self.children() if isinstance(c, QtTreeWidgetItem) and not isinstance(c, QtTreeWidgetColumn)]
         
     def set_row(self, row):
         pass
@@ -209,21 +210,21 @@ class QtTreeWidgetItem(AbstractQtWidgetItem, ProxyTreeWidgetItem):
     @except_delegate
     def set_text(self, text):
         self.widget.setText(self.declaration.column,text)
-        
+         
     @except_delegate
     def set_text_alignment(self, alignment):
         h,v = alignment
         self.widget.setTextAlignment(self.declaration.column,TEXT_H_ALIGNMENTS[h] | TEXT_V_ALIGNMENTS[v])
-    
+     
     @except_delegate
     def set_checked(self, checked):
         checked = checked and Qt.Checked or Qt.Unchecked
         self.widget.setCheckState(self.declaration.column,checked)
-        
+         
     @except_delegate
     def set_tool_tip(self, tool_tip):
         self.widget.setData(self.declaration.column,Qt.ToolTipRole,tool_tip)
-    
+     
     @except_delegate 
     def set_icon(self,icon):
         if icon:
@@ -231,24 +232,24 @@ class QtTreeWidgetItem(AbstractQtWidgetItem, ProxyTreeWidgetItem):
         else:
             qicon = QIcon()
         self.widget.setIcon(self.declaration.column,qicon)
-    
+     
     @except_delegate
     def set_icon_size(self, size):
         self.widget.setIconSize(self.declaration.column,QSize(*size))
-    
-    @except_delegate
-    def set_selected(self, selected):
-        self.widget.setSelected(self.declaration.column,selected)
-        
+     
+    #@except_delegate
+    #def set_selected(self, selected):
+    #    self.widget.setSelected(self.declaration.column,selected)
+         
     @except_delegate
     def is_checked(self):
         return self.widget.checkState(self.declaration.column) == Qt.Checked
-        
+         
     def columns(self):
         """ Return columns of this child with self being the first column """
-        return [self]+[c for c in self.children() if isinstance(c,QtTreeWidgetItemColumn)]
+        return [self]+[c for c in self.children() if isinstance(c,QtTreeWidgetColumn)]
 
-class QtTreeWidgetItemColumn(QtTreeWidgetItem):
+class QtTreeWidgetColumn(QtTreeWidgetItem):
     
     def create_widget(self):
         for child in self.children():

@@ -11,12 +11,10 @@ from collections import Iterable
 from enaml.core.declarative import d_
 from enaml.widgets.control import ProxyControl
 from enamlx.widgets.abstract_item_view import AbstractItemView
-from enamlx.widgets.abstract_item import (
-    AbstractWidgetItem, AbstractWidgetItemGroup
-)
+from enamlx.widgets.abstract_item import AbstractWidgetItem
 
-class ProxyTableView(ProxyControl):
-    declaration = ForwardTyped(lambda: TableView)
+class ProxyTreeView(ProxyControl):
+    declaration = ForwardTyped(lambda: TreeView)
     
     def set_current_row(self,row):
         pass
@@ -24,28 +22,22 @@ class ProxyTableView(ProxyControl):
     def set_current_column(self,column):
         raise NotImplementedError
     
-class ProxyTableViewRow(ProxyControl):
-    declaration = ForwardTyped(lambda: TableViewRow)
-    
-    def set_row(self,row):
-        raise NotImplementedError
-    
-class ProxyTableViewColumn(ProxyControl):
-    declaration = ForwardTyped(lambda: TableViewColumn)
+class ProxyTreeViewColumn(ProxyControl):
+    declaration = ForwardTyped(lambda: TreeViewColumn)
     
     def set_column(self,column):
         raise NotImplementedError
     
-class ProxyTableViewItem(ProxyControl):
-    declaration = ForwardTyped(lambda: TableViewItem)
+class ProxyTreeViewItem(ProxyControl):
+    declaration = ForwardTyped(lambda: TreeViewItem)
     
     def refresh_model(self,change):
         raise NotImplementedError
     
-class TableView(AbstractItemView):
+class TreeView(AbstractItemView):
     hug_width = set_default('ignore')
     hug_height = set_default('ignore')
-    proxy = Typed(ProxyTableView)
+    proxy = Typed(ProxyTreeView)
     
     padding = d_(Int(3))
     
@@ -54,10 +46,7 @@ class TableView(AbstractItemView):
     
     show_grid = d_(Bool(True))
     word_wrap = d_(Bool(False))
-    
-    show_vertical_header = d_(Bool(True))
-    vertical_stretch = d_(Bool(False))
-    vertical_minimum_section_size = d_(Int(0))
+    show_root = d_(Bool(True))
     
     show_horizontal_header = d_(Bool(True))
     horizontal_stretch = d_(Bool(False))
@@ -81,27 +70,19 @@ class TableView(AbstractItemView):
     iterable_fetch_size = d_(Int(200)) # fetch results
     iterable_prefetch = d_(Int(20)) # Fetch when we get this far away
     
-    def items(self):
-        """ Get the items defined in the TableView.
-        A table item is one of TableViewItem.
-        """
-        allowed = (TableViewRow,TableViewColumn,TableViewItem)
-        return [c for c in self.children if isinstance(c, allowed)]
-    
     @observe('sortable','headers','word_wrap','auto_resize_columns','current_column',
-             'show_grid','show_vertical_header','show_horizontal_header','resize_mode',
-             'vertical_stretch','horizontal_stretch','padding',)
+             'show_grid','show_root','show_horizontal_header','resize_mode','horizontal_stretch','padding',)
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
         # The superclass handler implementation is sufficient.
-        super(TableView, self)._update_proxy(change)
+        super(TreeView, self)._update_proxy(change)
         
     
     
 
-class TableViewItem(AbstractWidgetItem):
-    proxy = Typed(ProxyTableViewItem)
+class TreeViewItem(AbstractWidgetItem):
+    proxy = Typed(ProxyTreeViewItem)
     resize_mode = d_(Enum('interactive','fixed','stretch','resize_to_contents','custom'))
     column = d_(Int())
     
@@ -112,22 +93,9 @@ class TableViewItem(AbstractWidgetItem):
         """
         self.proxy.refresh_model(change)
     
-class TableViewRow(AbstractWidgetItemGroup):
-    """ Use this to build a table by defining the rows. 
-    """
-    column = d_(Int())
-    
-    @observe('row','checked','selected','checkable','selectable','editable')
-    def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
-        pass
-        #self.proxy.refresh(change)
-        
-class TableViewColumn(AbstractWidgetItemGroup):
+class TreeViewColumn(TreeViewItem):
     """ Use this to build a table by defining the columns. 
     """
-    column = d_(Int())
 
     @observe('row','checked','selected','checkable','selectable','editable')
     def _update_proxy(self, change):
