@@ -4,7 +4,7 @@ Created on Mar 2, 2016
 
 @author: frmdstryr
 '''
-from setuptools import setup
+from setuptools import setup,find_packages
 
 setup(
     name='enamlx',
@@ -16,7 +16,7 @@ setup(
     license=open('LICENSE').read(),
     url='https://github.com/frmdstryr/enamlx',
     download_url='https://github.com/frmdstryr/enamlx/archive/master.zip',
-    packages=['enamlx', 'enamlx.core', 'enamlx.qt', 'enamlx.widgets'],
+    packages=find_packages(),
     include_package_data=True,
     install_requires=['enaml'],
     zip_safe=False,
