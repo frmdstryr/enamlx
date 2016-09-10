@@ -6,39 +6,32 @@ Created on Aug 28, 2015
 '''
 from enaml.application import timed_call
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
-from atom.api import Typed,Instance,Int,ContainerList,observe
+from atom.api import Typed,Instance,Int,observe
 from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
 from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTableViewColumn,ProxyTableViewRow
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
     TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
-from enaml.qt.QtGui import QTableView,QCursor,QApplication
-from enaml.qt.QtCore import Qt,QAbstractTableModel,QModelIndex
-
-
+from enaml.qt.QtGui import QTableView
+from enaml.qt.QtCore import Qt,QAbstractTableModel
 
 
 class QAtomTableModel(QAbstractTableModel):
+    """ Model that pulls it's data from the TableViewItems """
     
-    def __init__(self,view,*args,**kwargs):
-        self.view = view # Link back to the view as we cannot inherit from Atom and QAbstractTableModel
-        super(QAtomTableModel, self).__init__(*args,**kwargs)
-        
-    @property
-    def items(self):
-        return self.view.items
-    
-    @property
-    def headers(self):
-        return self.view.headers
+    def setDeclaration(self,declaration):
+        self.declaration = declaration
     
     def rowCount(self, parent=None):
-        d = self.view.declaration
-        if d.iterable:
-            return len(d.iterable)
-        return len(self.items)
+        d = self.declaration
+        if d.vertical_headers:
+            return len(d.vertical_headers)
+        return len(d.items)
     
     def columnCount(self, parent=None):
-        return len(self.headers)
+        d = self.declaration
+        if d.horizontal_headers:
+            return len(d.horizontal_headers)
+        return len(d.items)
     
     def data(self, index, role):
         item = self.itemAt(index)
@@ -66,7 +59,7 @@ class QAtomTableModel(QAbstractTableModel):
         elif role == Qt.BackgroundRole and d.background:
             return get_cached_qcolor(d.background)
         #elif role == Qt.SizeHintRole and d.width:
-        #    return 
+        #    return 20 
         return None
     
     def flags(self, index):
@@ -83,66 +76,62 @@ class QAtomTableModel(QAbstractTableModel):
             flags |= Qt.ItemIsSelectable
         return flags
     
-    def setData(self, index,value,role=Qt.EditRole):
+    def setData(self, index, value, role=Qt.EditRole):
         item = self.itemAt(index)
         if not item:
             return False
+        d = item.declaration
         if role==Qt.CheckStateRole:
             checked = value==Qt.Checked
-            if checked!=item.declaration.checked:
-                item.declaration.checked = checked
-                item.declaration.toggled(checked)
-        else:
-            return super(QAtomTableModel, self).setData()
-        return True
+            if checked!=d.checked:
+                d.checked = checked
+                d.toggled(checked)
+            return True
+        elif role==Qt.EditRole:
+            if value != d.text:
+                d.text = value
+            return True
+        return super(QAtomTableModel, self).setData(index, value, role)
     
     def itemAt(self,index):
         if not index.isValid():
             return None
-        self.view.visible_index = index
-        self.view.current_index = self.view.widget.currentIndex()
-        d = self.view.declaration
-        #if index.row()+d.prefetch_size>len(self.items): # prefetch
-        #    self.fetchMore(index)
-        i = max(0,index.row()-d.iterable_index)
+        d = self.declaration
         try:
-            return self.items[i][index.column()]
+            d.current_row = index.row()
+            d.current_column = index.column()
+            r = d.current_row - d.visible_row #% len(d._items) 
+            c = d.current_column - d.visible_column 
+            return d._items[r]._items[c].proxy
         except IndexError:
             return None
         
-    def headerData(self, col, orientation, role):
+    def headerData(self, index, orientation, role):
+        d = self.declaration
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.headers[col] # For now...
+            try:
+                return d.horizontal_headers[index] if d.horizontal_headers else index
+            except IndexError:
+                return index
         elif orientation == Qt.Vertical and role == Qt.DisplayRole:
-            return col
+            try:
+                return d.vertical_headers[index] if d.vertical_headers else index
+            except IndexError:
+                return index
         return None
     
     def clear(self):
         self.beginResetModel()
-        self.view.items = []
+        try:
+            self.declaration.items = []
+        except:
+            pass
         self.endResetModel()
-
-#     def canFetchMore(self, index):
-#         return len(self.items)<len(self.view.declaration.iterable)
-#     
-#     def fetchMore(self, index):
-#         d = self.view.declaration
-#         r = index.row() if index.isValid() else len(self.items)
-#         print("Fetch more row=%s!"%r)
-#         d.iterable_index = r # Foreces window to load more
 
 
 class QtTableView(QtAbstractItemView, ProxyTableView):
+    #: Proxy widget
     widget = Typed(QTableView)
-    
-    # Contains the headers
-    headers = ContainerList(default=[])
-    
-    # Contains all the rows
-    items = ContainerList(default=[])
-    
-    current_index = Instance(QModelIndex)
-    visible_index = Instance(QModelIndex) # Last updated index
     
     # Refreshing the view on every update makes it really slow
     # So if we defer refreshing until everything is added it's fast :) 
@@ -150,14 +139,15 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     
     def create_widget(self):
         self.widget = QTableView(self.parent_widget())
-        self.model = QAtomTableModel(view=self,parent=self.widget)
-        #loading = TableViewItem(text='',tool_tip='loading',proxy=ProxyTableViewItem())
-        #self.items = [[] for i in range(len(self.declaration.iterable))]
         
     def init_widget(self):
         super(QtTableView, self).init_widget()
+        
+        #: Enable context menus
+        self.widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        
         d = self.declaration
-        self.set_model(self.model)
+        self.set_model(QAtomTableModel(parent=self.widget))
         self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
         self.set_show_vertical_header(d.show_vertical_header)
@@ -165,102 +155,90 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.set_horizontal_stretch(d.horizontal_stretch)
         self.set_vertical_stretch(d.vertical_stretch)
         self.set_resize_mode(d.resize_mode)
-        self.set_current_row(d.current_row)
-        self.set_current_column(d.current_column)
+        if d.cell_padding:
+            self.set_cell_padding(d.cell_padding)
         if d.vertical_minimum_section_size:
             self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
-        self.set_headers(d.headers)
+        self._refresh_visible_rows()
+        self._refresh_visible_columns()
     
-
-         
-    def init_layout(self):
-        for child in self.rows():
-            self.child_added(child)
-     
+    def init_signals(self):
+        super(QtTableView, self).init_signals()
+        self.widget.horizontalScrollBar().valueChanged.connect(self._on_horizontal_scrollbar_moved)
+        self.widget.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_moved)
+        
+        
+    
+    #def init_layout(self):
+    #    for i,child in enumerate(self.rows()):
+    #        self.child_added(child,i)
      
     #--------------------------------------------------------------------------
     # Observers
     #--------------------------------------------------------------------------
            
-    @observe('items','headers','declaration.iterable_index')
+    @observe('items')
     def _refresh_view(self,change):
         """ Defer until later so the view is only updated after all items
         are added. """
         self._pending_refreshes +=1
-        timed_call(200,self._refresh_layout)
+        timed_call(100,self._refresh_layout)
     
     def _refresh_layout(self):
         """ Refreshes the layout only when this is the last refresh queued. """
-        if self._pending_refreshes==1:
-            self.model.layoutChanged.emit()
+        self._pending_refreshes -=1
+        if self._pending_refreshes==0:
+            try:
+                self.model.layoutChanged.emit()
+            except RuntimeError:
+                # View can be destroyed before we get here
+                return
             self._refresh_sizes()
             
-        self._pending_refreshes -=1
-        
     def _refresh_sizes(self):
         """ Refresh column sizes when the data changes. """
-        if self.items:
-            header = self.widget.horizontalHeader()
-            
-            for i,item in enumerate(self.items[0]):
-                header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
-                if item.declaration.width:
-                    header.resizeSection(i,item.declaration.width)
+        pass
+#         header = self.widget.horizontalHeader()
+#         
+#         for i,item in enumerate(self.items[0]):
+#             header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
+#             if item.declaration.width:
+#                 header.resizeSection(i,item.declaration.width)
     
-                    
-    def _observe_current_index(self,change):
-        index = change['value']
-        self.declaration.current_row = index.row()
-        self.declaration.current_column = index.column()
-        
-    def _observe_visible_index(self,change):
-        """ Determine which rows and columns are visible,
-        this is hacked to work and probably wont in all cases.
-        """
-        index = change['value']
-        # Try the simple way
-        r = self.widget.rect()
-        tl_index = self.widget.indexAt(r.topLeft())
-        br_index = self.widget.indexAt(r.bottomRight())
-        
-        if not br_index.isValid():
-            br_index = self.widget.indexAt(r.bottomLeft())
-            if not br_index.isValid():
-                br_index = index
-        
-        self.declaration.visible_rect = [tl_index.row(),br_index.column(),br_index.row(),tl_index.column()]
-        
+    #--------------------------------------------------------------------------
+    # Widget Events
+    #--------------------------------------------------------------------------
+    def _on_horizontal_scrollbar_moved(self,value):
+        d = self.declaration
+        d.visible_column = max(0,min(value,self.model.columnCount()-d.visible_columns))
+    
+    def _on_vertical_scrollbar_moved(self,value):
+        d = self.declaration
+        d.visible_row = max(0,min(value,self.model.rowCount()-d.visible_rows))
+    
+    def _refresh_visible_rows(self):
+        top = self.widget.rowAt(self.widget.rect().top())
+        bottom = self.widget.rowAt(self.widget.rect().bottom())
+        self.declaration.visible_rows = max(1,(bottom-top))*2 # 2x for safety 
+    
+    def _refresh_visible_columns(self):
+        left = self.widget.rowAt(self.widget.rect().left())
+        right = self.widget.rowAt(self.widget.rect().right())
+        self.declaration.visible_columns = max(1,(right-left))*2  
+    
     #--------------------------------------------------------------------------
     # Widget Setters
     #--------------------------------------------------------------------------
     
     def set_model(self,model):
+        if isinstance(model,QAtomTableModel):
+            model.setDeclaration(self.declaration)
         self.widget.setModel(model)
         
-    def set_iterable_index(self,index):
-        pass
-        
-    def set_current_row(self,row):
-        d = self.declaration
-        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
-        if not index.isValid():
-            return
-        self.widget.scrollTo(index)
-    
-    def set_current_column(self,column):
-        d = self.declaration
-        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
-        if not index.isValid():
-            return
-        self.widget.scrollTo(index)
-    
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
-        
-    def set_headers(self,headers):
-        self.headers = headers
         
     def set_show_grid(self,show):
         self.widget.setShowGrid(show)
@@ -280,7 +258,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def set_vertical_stretch(self,stretch):
         self.widget.verticalHeader().setStretchLastSection(stretch)
     
-    def set_padding(self,padding):
+    def set_cell_padding(self,padding):
         self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding);
     
     def set_resize_mode(self,mode):
@@ -299,39 +277,34 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         if enabled:
             self.widget.resizeColumnsToContents()
             
-    def rows(self):
-        return [child for child in self.children() if isinstance(child, QtTableViewRow)]
-    
-    def columns(self):
-        return [child for child in self.children() if isinstance(child, QtTableViewColumn)]
-    
-    #--------------------------------------------------------------------------
-    # Child Events
-    #--------------------------------------------------------------------------
-    def child_added(self, child):
-        """ Handle the child added event for a QtTableView."""
-        if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-            # Update model index for each
-            swap = isinstance(child, QtTableViewColumn)
-            for i,item in enumerate(child.items()):
-                x,y = len(self.items),i
-                if swap:
-                    x,y = y,x
-                item.model_index = self.model.index(x,y) if self.model.hasIndex(x,y) else self.model.createIndex(x,y,item)#index(x,y)
-                if item.delegate:
-                    self.widget.setIndexWidget(item.model_index,item.delegate.widget)
-                
-            self.items.append(child)
+    def set_items(self, items):
+        self._refresh_view({})
             
+#     #--------------------------------------------------------------------------
+#     # Child Events
+#     #--------------------------------------------------------------------------
+#     def child_added(self, child, index=None):
+#         """ Handle the child added event for a QtTableView."""
+#         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
+#             index = index if index is not None else self.rows().index(child)
+#             # Update model index for each
+#             swap = isinstance(child, QtTableViewColumn)
+#             for i,item in enumerate(child.items()):
+#                 x,y = index,i
+#                 if swap:
+#                     x,y = y,x
+#                 item.model_index = self.model.index(x,y) if self.model.hasIndex(x,y) else self.model.createIndex(x,y,item)#index(x,y)
+#                 if item.delegate:
+#                     self.widget.setIndexWidget(item.model_index,item.delegate.widget)
+#                 
+#             self.items.insert(index,child)
+#             
+#             
+#     def child_removed(self, child):
+#         """  Handle the child removed event for a QtTableView."""
+#         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
+#             self.items.remove(child)
             
-    def child_removed(self, child):
-        """  Handle the child removed event for a QtTableView."""
-        if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-            #item = child.items()[0]
-            #self.model.beginRemoveRows(item.model_index,1,1)
-            self.items.remove(child)
-            #self.model.endRemoveRows()
-    
     def destroy(self):
         self.model.clear()
         super(QtTableView, self).destroy()
@@ -345,40 +318,43 @@ class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
     def widget(self):
         return self.parent_widget()
     
-    def set_selectable(self,selectable):
-        for child in self.items():
-            child.declaration.selectable = selectable
-            
-    def set_row(self,row):
-        self.declaration.row = row
-        for column,child in enumerate(self.items()):
-            child.declaration.row = row
-            child.declaration.column = column
-            
-    def set_column(self,column):
-        self.declaration.column = column
-        for row,child in enumerate(self.items()):
-            child.declaration.column = column
-            child.declaration.row = row
-                
-                
 class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
     widget = Instance(QTableView)
-    model_index = Instance(QModelIndex)
 
     def init_widget(self):
         return # do nothing as there is no widget!
-        
-    def refresh_model(self, change):
+    
+    def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
-        #if change['name']=='width':
-        #    return self.set_width(change['value'])
+        
         parent = self.parent().parent()
-        parent.model.dataChanged.emit(self.model_index,self.model_index)
+        d = self.declaration
+        model = parent.model
+        index = model.index(d.row,d.column)
+        model.dataChanged.emit(index,index)
                 
         
 class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):
-    pass
+    
+    def init_widget(self):
+        d = self.declaration
+        self.set_row(d.row)
+        
+    def set_row(self,row):
+        for column,child in enumerate(self._items):
+            d = child.declaration
+            d.row = row
+            d.column = column
+            
 
 class QtTableViewColumn(AbstractQtTableViewItemGroup, ProxyTableViewColumn):
-    pass
+    
+    def init_widget(self):
+        d = self.declaration
+        self.set_column(d.column)
+        
+    def set_column(self, column):
+        for row,child in enumerate(self._items):
+            d = child.declaration
+            d.row = row
+            d.column = column

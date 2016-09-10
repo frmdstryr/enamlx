@@ -58,8 +58,9 @@ class QAtomTreeModel(QAbstractItemModel):
         #    return None
         #print("data(index = (%s,%s),item=%s)"%(index.row(),index.column(),item.declaration.text))
         d = item.declaration
-        
-        if role == Qt.DisplayRole:
+        if not d:
+            return None
+        elif role == Qt.DisplayRole:
             return d.text
         elif role == Qt.ToolTipRole:
             return d.tool_tip
@@ -154,7 +155,10 @@ class QAtomTreeModel(QAbstractItemModel):
     
     def clear(self):
         self.beginResetModel()
-        self.view.items = []
+        try:
+            self.view.items = []
+        except:
+            pass
         self.endResetModel()
 
 class QtTreeView(QtAbstractItemView, ProxyTreeView):
@@ -216,10 +220,10 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         
     def _refresh_sizes(self):
         """ Refresh column sizes when the data changes. """
-        if self.items:
+        if self.items():
             header = self.widget.header()
             
-            for i,item in enumerate(self.items[0]):
+            for i,item in enumerate(self.items()[0]):
                 header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
                 if item.declaration.width:
                     header.resizeSection(i,item.declaration.width)
@@ -255,14 +259,20 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         
     def set_current_row(self,row):
         d = self.declaration
-        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        try:
+            index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        except IndexError:
+            return
         if not index.isValid():
             return
         self.widget.scrollTo(index)
     
     def set_current_column(self,column):
         d = self.declaration
-        index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        try:
+            index = self.model.index(max(0,d.current_row),max(0,d.current_column))
+        except:
+            return
         if not index.isValid():
             return
         self.widget.scrollTo(index)
@@ -450,7 +460,11 @@ class QtTreeViewColumn(QtTreeViewItem,ProxyTreeViewColumn):
     
     def set_model_index(self,index=None):
         # Set it as index of row
-        super(QtTreeViewColumn, self).set_model_index(index or self.parent().parent().model_index) 
+        try:
+            super(QtTreeViewColumn, self).set_model_index(index or self.parent().parent().model_index)
+        except AttributeError as e:
+            
+            raise AttributeError("You probably have an incorrect tree structure. A TreeViewItem must be the root of the tree.") 
     
     def row(self):
         return self.parent().row()

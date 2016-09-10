@@ -276,10 +276,16 @@ class AbstractQtPlotItem(QtControl):
 class QtPlotItem2D(AbstractQtPlotItem):
     
     def set_x(self,x):
-        self._refresh_plot()
+        # Only refresh when they are equal
+        # because one can be set at a time
+        if len(self.declaration.y)==len(x):
+            self._refresh_plot()
         
     def set_y(self,y):
-        self._refresh_plot()
+        # Only refresh when they are equal
+        # because one can be set at a time
+        if len(self.declaration.x)==len(y):
+            self._refresh_plot()
         
     def _format_data(self):
         data = [self.declaration.y]

@@ -8,6 +8,7 @@ from atom.api import Instance
 from enaml.qt.qt_control import QtControl
 from enaml.qt.QtCore import QAbstractItemModel
 from enaml.qt.QtGui import QAbstractItemView
+from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
 SELECTION_MODES = {
     'extended':QAbstractItemView.ExtendedSelection,
@@ -23,13 +24,13 @@ SELECTION_BEHAVIORS = {
     'columns':QAbstractItemView.SelectColumns,
 }
 
-class QtAbstractItemView(QtControl):
+class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     widget = Instance(QAbstractItemView)
     
-    # Model used by the table view 
-    # Simply takes data from the declaration
-    model = Instance(QAbstractItemModel)
-    
+    @property
+    def model(self):
+        return self.widget.model()
+        
     def init_widget(self):
         super(QtAbstractItemView, self).init_widget()
         
@@ -54,10 +55,11 @@ class QtAbstractItemView(QtControl):
     def item_at(self,index):
         if not index.isValid():
             return
-        return self.widget.model().itemAt(index)
+        return self.model.itemAt(index)
         
     def _refresh_layout(self):
-        self.set_scroll_to_bottom(self.declaration.scroll_to_bottom)
+        d = self.declaration
+        self.set_scroll_to_bottom(d.scroll_to_bottom)
         
     def set_selection_mode(self,mode):
         self.widget.setSelectionMode(SELECTION_MODES[mode])
@@ -65,14 +67,13 @@ class QtAbstractItemView(QtControl):
     def set_selection_behavior(self,behavior):
         self.widget.setSelectionBehavior(SELECTION_BEHAVIORS[behavior])
         
-    def set_scroll_to_bottom(self,scroll):
-        if scroll:
+    def set_scroll_to_bottom(self,enabled):
+        if enabled:
             self.widget.scrollToBottom()
             
     def set_alternating_row_colors(self,enabled):
         self.widget.setAlternatingRowColors(enabled)
         
-    
     def set_model(self,model):
         self.widget.setModel(model)
         
@@ -121,11 +122,17 @@ class QtAbstractItemView(QtControl):
         item.declaration.entered()
         
     def on_custom_context_menu_requested(self,pos):
-        item = self.item_at(pos)
-        if not item or not item.menu:
+        item = self.item_at(self.widget.indexAt(pos))
+        if not item:
             return
-        else:
+        if item.menu:
             item.menu.popup()
+            return
+        parent = item.parent()
+        if parent and parent.menu:
+            parent.menu.popup()
+        
+            
             
 
 

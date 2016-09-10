@@ -4,16 +4,17 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import Instance
+from atom.api import Instance, Property
 from enaml.core.pattern import Pattern
-from enaml.qt.q_resource_helpers import get_cached_qicon
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt.QtGui import QAbstractItemView,QIcon,QHeaderView
-from enaml.qt.QtCore import Qt,QSize
+from enaml.qt.QtGui import QAbstractItemView,QHeaderView
 
-from functools import wraps
 from enaml.qt.qt_menu import QtMenu
+from enamlx.widgets.abstract_item import (
+    ProxyAbstractWidgetItem,
+    ProxyAbstractWidgetItemGroup
+)
 
 TEXT_H_ALIGNMENTS = {
     'left':0x01,#Qt.AlignLeft,
@@ -36,17 +37,19 @@ RESIZE_MODES = {
     'custom':QHeaderView.Custom
 }
 
-def except_delegate(f):
-    """ Only calls the function if control is not
-    delegated to a child widget. """
-    @wraps(f)
-    def wrapped(self,*args,**kwargs):
-        if self.delegate is not None:
-            return 
-        return f(self,*args,**kwargs)
-    return wrapped
-
-class AbstractQtWidgetItemGroup(QtControl):
+class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
+    #: Context meu for this group
+    menu = Instance(QtMenu)
+    
+    def _get_items(self):
+        return [c for c in self.children() if isinstance(c,AbstractQtWidgetItem)]
+    
+    _items = Property(_get_items,cached=True)
+    
+    def create_widget(self):
+        for child in self.children():
+            if isinstance(child, QtMenu):
+                self.menu = child
     
     def refresh_style_sheet(self):
         pass # Takes a lot of time
@@ -95,172 +98,41 @@ class AbstractQtWidgetItemGroup(QtControl):
         return False
     
         
-    def items(self):
-        return [c for c in self.children() if isinstance(c,AbstractQtWidgetItem)]
-    
-    def __iter__(self):
-        for it in self.items():
-            yield it
+    def child_added(self, child):
+        self.get_member('_items').reset(self)
         
-    def __getitem__(self,key):
-        try:
-            return self.items()[key]
-        except IndexError:
-            return None
-        
+    def child_removed(self, child):
+        self.get_member('_items').reset(self)
     
-class AbstractQtWidgetItem(AbstractQtWidgetItemGroup):
+class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
+    #: Reference back to the table
     widget = Instance(QAbstractItemView)
-    menu = Instance(QtMenu)
+    
+    #: Delegate widget to display when editing the cell
+    #: if the widget is editable
     delegate = Instance(QtWidget)
     
     def create_widget(self):
+        super(AbstractQtWidgetItem, self).create_widget()
         for child in self.children():
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
-            elif isinstance(child, QtMenu):
-                self.menu = child
         
         if self.delegate:
             self.widget = self.parent_widget()
             
-    @property
-    def view_widget(self):
-        parent = self
-        widget = parent.parent_widget()
-        while not isinstance(widget,QAbstractItemView):
-            parent = parent.parent()
-            widget = parent.parent_widget()
-        return widget
     
-    
-    def _default_column(self):
-        return self.parent().items().index(self)
-        
-        
-    def init_widget(self):
-        #super(AbstractQtWidgetItem, self).init_widget()
-        self.declaration.column = self._default_column()
-        d = self.declaration
-        self.set_selectable(d.selectable)
-        self.set_editable(d.editable)
-        self.set_checkable(d.checkable)
-        if d.checkable:
-            self.set_checked(d.checked)
-        if d.selectable:
-            self.set_selected(d.selected)
-        if d.text:
-            self.set_text(d.text)
-        if d.icon:
-            self.set_icon(d.icon)
-        if -1 not in d.icon_size:
-            self.set_icon_size(d.icon_size)
-        if d.tool_tip:
-            self.set_tool_tip(d.tool_tip)
-        if d.width:
-            self.set_width(d.width)
-        if d.text_alignment:
-            self.set_text_alignment(d.text_alignment)
-    
-    def set_width(self,width):
-        #print('width=%s,col=%s'%(width,self.declaration.column))
-        self.view_widget.setColumnWidth(self.declaration.column,width)
-    
-    @except_delegate
-    def set_tool_tip(self, tool_tip):
-        self.widget.setData(Qt.ToolTipRole,tool_tip)
-    
-    @except_delegate
-    def set_checked(self, checked):
-        checked = checked and Qt.Checked or Qt.Unchecked
-        self.widget.setCheckState(checked)
-    
-    @except_delegate 
-    def set_icon(self,icon):
-        if icon:
-            qicon = get_cached_qicon(icon)
-        else:
-            qicon = QIcon()
-        self.widget.setIcon(qicon)
-    
-    @except_delegate
-    def set_icon_size(self, size):
-        self.widget.setIconSize(QSize(*size))
-    
-    @except_delegate
-    def set_selected(self, selected):
-        self.widget.setSelected(selected)
-    
-    @except_delegate
-    def set_text(self, text):
-        self.widget.setText(text)
-    
-    @except_delegate
-    def set_text_alignment(self, alignment):
-        h,v = alignment
-        self.widget.setTextAlignment(TEXT_H_ALIGNMENTS[h] | TEXT_V_ALIGNMENTS[v])
-    
-    @except_delegate
-    def set_checkable(self, checkable):
-        flags = self.widget.flags()
-        if checkable:
-            flags |= Qt.ItemIsUserCheckable
-        else:
-            flags &= ~Qt.ItemIsUserCheckable
-        self.widget.setFlags(flags)
-    
-    @except_delegate
-    def set_selectable(self, selectable):
-        flags = self.widget.flags()
-        if selectable:
-            flags |= Qt.ItemIsSelectable
-        else:
-            flags &= ~Qt.ItemIsSelectable
-        self.widget.setFlags(flags)
-    
-    @except_delegate
-    def set_editable(self, editable):
-        flags = self.widget.flags()
-        if editable:
-            flags |= Qt.ItemIsEditable
-        else:
-            flags &= ~Qt.ItemIsEditable
-        self.widget.setFlags(flags)
-    
-    @except_delegate
-    def set_flags(self, flags):
-        """
-        Qt.NoItemFlags          0   It does not have any properties set.
-        Qt.ItemIsSelectable     1   It can be selected.
-        Qt.ItemIsEditable       2   It can be edited.
-        Qt.ItemIsDragEnabled    4   It can be dragged.
-        Qt.ItemIsDropEnabled    8   It can be used as a drop target.
-        Qt.ItemIsUserCheckable  16  It can be checked or unchecked by the user.
-        Qt.ItemIsEnabled        32  The user can interact with the item.
-        Qt.ItemIsTristate       64  The item is checkable with three separate states.
-        
-        """
-        self.widget.setFlags(flags)
-    
-    def on_item_selection_changed(self):
-        selected = self.is_selected()
-        if selected is not None and (selected != self.declaration.selected):
-            self.declaration.selected = selected
-            self.declaration.selection_changed(selected)
-            
-    def on_item_checked(self):
-        checked = self.is_checked()
-        if checked!=self.declaration.checked:   
-            self.declaration.checked = checked 
-            self.declaration.toggled(checked)
-    
-    @except_delegate
-    def is_selected(self):
-        return self.widget.isSelected()
-    
-    @except_delegate
-    def is_checked(self):
-        return self.widget.checkState() == Qt.Checked
+#     def on_item_selection_changed(self):
+#         selected = self.is_selected()
+#         if selected is not None and (selected != self.declaration.selected):
+#             self.declaration.selected = selected
+#             self.declaration.selection_changed(selected)
+#             
+#     def on_item_checked(self):
+#         checked = self.is_checked()
+#         if checked!=self.declaration.checked:   
+#             self.declaration.checked = checked 
+#             self.declaration.toggled(checked)
     
     def destroy(self):
         """ WidgetItems are not QtWidgets and cannot be destroyed, 
