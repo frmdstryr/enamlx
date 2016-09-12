@@ -137,10 +137,11 @@ enamldef Main(Window):
                         text << person.last_name
                         double_clicked :: print("Double clicked %s"%person.last_name)
                     TableViewItem:
-                        text << '{}'.format(person.age)
+                        text = 'Loading...'
+                        editable = True
                         # TODO: Delegate widgets Not yet implemented
-                        #SpinBox:
-                        #    value := loop_item.age
+                        SpinBox:
+                            value := person.age
                     TableViewItem:
                         text << str(parent.row)
                         foreground << parent.row&1 and 'red' or 'blue'

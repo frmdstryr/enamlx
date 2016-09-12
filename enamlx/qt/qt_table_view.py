@@ -4,16 +4,18 @@ Created on Aug 28, 2015
 
 @author: jrm
 '''
+from atom.api import Typed, Instance, Int, Bool, observe
 from enaml.application import timed_call
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
-from atom.api import Typed,Instance,Int,observe
+from enaml.qt.QtGui import QTableView
+from enaml.qt.QtCore import Qt, QAbstractTableModel, QModelIndex
+
 from enamlx.qt.qt_abstract_item_view import QtAbstractItemView
 from enamlx.widgets.table_view import ProxyTableViewItem,ProxyTableView,ProxyTableViewColumn,ProxyTableViewRow
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem,AbstractQtWidgetItemGroup,\
     TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS,RESIZE_MODES
-from enaml.qt.QtGui import QTableView
-from enaml.qt.QtCore import Qt,QAbstractTableModel
 
+    
 
 class QAtomTableModel(QAbstractTableModel):
     """ Model that pulls it's data from the TableViewItems """
@@ -168,12 +170,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         super(QtTableView, self).init_signals()
         self.widget.horizontalScrollBar().valueChanged.connect(self._on_horizontal_scrollbar_moved)
         self.widget.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_moved)
-        
-        
-    
-    #def init_layout(self):
-    #    for i,child in enumerate(self.rows()):
-    #        self.child_added(child,i)
      
     #--------------------------------------------------------------------------
     # Observers
@@ -280,32 +276,8 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     def set_items(self, items):
         self._refresh_view({})
             
-#     #--------------------------------------------------------------------------
-#     # Child Events
-#     #--------------------------------------------------------------------------
-#     def child_added(self, child, index=None):
-#         """ Handle the child added event for a QtTableView."""
-#         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-#             index = index if index is not None else self.rows().index(child)
-#             # Update model index for each
-#             swap = isinstance(child, QtTableViewColumn)
-#             for i,item in enumerate(child.items()):
-#                 x,y = index,i
-#                 if swap:
-#                     x,y = y,x
-#                 item.model_index = self.model.index(x,y) if self.model.hasIndex(x,y) else self.model.createIndex(x,y,item)#index(x,y)
-#                 if item.delegate:
-#                     self.widget.setIndexWidget(item.model_index,item.delegate.widget)
-#                 
-#             self.items.insert(index,child)
-#             
-#             
-#     def child_removed(self, child):
-#         """  Handle the child removed event for a QtTableView."""
-#         if isinstance(child,(QtTableViewColumn,QtTableViewRow)):
-#             self.items.remove(child)
-            
     def destroy(self):
+        """ Make sure all the table widgets are destroyed first."""
         self.model.clear()
         super(QtTableView, self).destroy()
     
@@ -319,19 +291,65 @@ class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
         return self.parent_widget()
     
 class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
-    widget = Instance(QTableView)
+    #: Index within the table
+    index = Instance(QModelIndex)
+    
+    #: Pending refreshes when loading widgets
+    _refresh_count = Int(0)
+    
+    #: Time to wait before loading widget
+    _loading_interval = Int(100) 
 
     def init_widget(self):
+        self._update_index()
         return # do nothing as there is no widget!
+    
+    @property
+    def table(self):
+        return self.parent().parent()
+    
+    def set_row(self,row):
+        self._update_index()
+                
+    def set_column(self,column):
+        self._update_index()
+    
+    def _update_index(self):
+        """ Update the reference to the index within the table """ 
+        d = self.declaration
+        self.index = self.table.model.index(d.row,d.column)
+        if self.delegate:
+            self._refresh_count +=1
+            timed_call(self._loading_interval,self._update_delegate)
+    
+    def _update_delegate(self):
+        """ Update the delegate cell widget. This is deferred so it
+        does not get called until the user is done scrolling. 
+        """
+        self._refresh_count -=1
+        if self._refresh_count!=0:
+            return
+        d = self.declaration
+        
+        if not self._is_visible():
+            return
+        # The table destroys when it goes out of view
+        # so we always have to make a new one
+        self.delegate.create_widget()
+        self.delegate.init_widget()
+        
+        #  Set the index widget
+        self.table.widget.setIndexWidget(self.index,self.delegate.widget)
+        
+    def _is_visible(self):
+        """ Check if this index is currently visible """
+        return True
+        #d = self.table.declaration
+        #return self.declaration.row
     
     def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
-        
-        parent = self.parent().parent()
-        d = self.declaration
-        model = parent.model
-        index = model.index(d.row,d.column)
-        model.dataChanged.emit(index,index)
+        self.table.model.dataChanged.emit(self.index,self.index)
                 
         
 class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):
