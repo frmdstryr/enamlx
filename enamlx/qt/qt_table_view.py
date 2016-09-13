@@ -135,8 +135,8 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     #: Proxy widget
     widget = Typed(QTableView)
     
-    # Refreshing the view on every update makes it really slow
-    # So if we defer refreshing until everything is added it's fast :) 
+    #: Refreshing the view on every update makes it really slow
+    #: So if we defer refreshing until everything is added it's fast :) 
     _pending_refreshes = Int(0)
     
     def create_widget(self):
@@ -152,11 +152,13 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.set_model(QAtomTableModel(parent=self.widget))
         self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
+        self.set_resize_mode(d.resize_mode)
+        
         self.set_show_vertical_header(d.show_vertical_header)
         self.set_show_horizontal_header(d.show_horizontal_header)
         self.set_horizontal_stretch(d.horizontal_stretch)
         self.set_vertical_stretch(d.vertical_stretch)
-        self.set_resize_mode(d.resize_mode)
+        
         if d.cell_padding:
             self.set_cell_padding(d.cell_padding)
         if d.vertical_minimum_section_size:
@@ -343,6 +345,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
         
     def _is_visible(self):
         """ Check if this index is currently visible """
+        #: TODO
         return True
         #d = self.table.declaration
         #return self.declaration.row
@@ -353,26 +356,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
                 
         
 class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):
-    
-    def init_widget(self):
-        d = self.declaration
-        self.set_row(d.row)
-        
-    def set_row(self,row):
-        for column,child in enumerate(self._items):
-            d = child.declaration
-            d.row = row
-            d.column = column
+    pass
             
-
 class QtTableViewColumn(AbstractQtTableViewItemGroup, ProxyTableViewColumn):
-    
-    def init_widget(self):
-        d = self.declaration
-        self.set_column(d.column)
-        
-    def set_column(self, column):
-        for row,child in enumerate(self._items):
-            d = child.declaration
-            d.row = row
-            d.column = column
+    pass

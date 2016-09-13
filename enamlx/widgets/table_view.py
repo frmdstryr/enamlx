@@ -176,11 +176,11 @@ class TableViewRow(AbstractWidgetItemGroup):
     row = d_(Int())
     
     @observe('row')
-    def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
-        super(TableViewRow, self)._update_proxy(change)
-        
+    def _update_index(self,change):
+        for column,item in enumerate(self._items):
+            item.row = self.row
+            item.column = column
+
 class TableViewColumn(AbstractWidgetItemGroup):
     """ Use this to build a table by defining the columns. 
     """
@@ -188,8 +188,8 @@ class TableViewColumn(AbstractWidgetItemGroup):
     column = d_(Int())
 
     @observe('column')
-    def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
-        super(TableViewColumn, self)._update_proxy(change)
+    def _update_index(self,change):
+        for row,item in enumerate(self._item):
+            item.row = row
+            item.column = self.column
 

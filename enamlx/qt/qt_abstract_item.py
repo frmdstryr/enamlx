@@ -117,14 +117,14 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
         
-        if self.delegate:
-            self.widget = self.parent_widget()
-            
-    def destroy(self):
-        """ WidgetItems are not QtWidgets and cannot be destroyed, 
-            they must be cleaned up by the parent view.  """
-        self.widget = None # Destroyed by parent
-        super(AbstractQtWidgetItem, self).destroy()
-    
+#         if self.delegate:
+#             self.widget = self.parent_widget()
+#             
+#     def destroy(self):
+#         """ WidgetItems are not QtWidgets and cannot be destroyed, 
+#             they must be cleaned up by the parent view.  """
+#         self.widget = None # Destroyed by parent
+#         super(AbstractQtWidgetItem, self).destroy()
+#     
     
     

@@ -75,11 +75,12 @@ class AbstractWidgetItemGroup(Control):
 class AbstractWidgetItem(AbstractWidgetItemGroup):
     """ Item to be shared between table views and tree views """
     
-    
     #: Row within the table
+    #: Should not be edited by user code
     row = d_(Int(0))
     
     #: Column within the table
+    #: Should not be edited by user code
     column = d_(Int(0))
     
     #: Text to display within the cell
