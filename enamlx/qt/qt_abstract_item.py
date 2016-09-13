@@ -46,7 +46,7 @@ class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
     
     _items = Property(_get_items,cached=True)
     
-    def create_widget(self):
+    def init_layout(self):
         for child in self.children():
             if isinstance(child, QtMenu):
                 self.menu = child
@@ -113,7 +113,6 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
     delegate = Instance(QtWidget)
     
     def create_widget(self):
-        super(AbstractQtWidgetItem, self).create_widget()
         for child in self.children():
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
@@ -121,19 +120,6 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
         if self.delegate:
             self.widget = self.parent_widget()
             
-    
-#     def on_item_selection_changed(self):
-#         selected = self.is_selected()
-#         if selected is not None and (selected != self.declaration.selected):
-#             self.declaration.selected = selected
-#             self.declaration.selection_changed(selected)
-#             
-#     def on_item_checked(self):
-#         checked = self.is_checked()
-#         if checked!=self.declaration.checked:   
-#             self.declaration.checked = checked 
-#             self.declaration.toggled(checked)
-    
     def destroy(self):
         """ WidgetItems are not QtWidgets and cannot be destroyed, 
             they must be cleaned up by the parent view.  """

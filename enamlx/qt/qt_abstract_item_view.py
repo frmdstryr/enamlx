@@ -125,6 +125,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item = self.item_at(self.widget.indexAt(pos))
         if not item:
             return
+        
         if item.menu:
             item.menu.popup()
             return

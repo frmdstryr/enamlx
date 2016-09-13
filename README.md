@@ -7,18 +7,10 @@ _Note: This is in an alpha state but still usable_
 
 #### Featuring ####
 
-__Table widget__
-
-Good for small # of items.
-
-1. Text/Icons/Checkboxes
-2. Delegate widgets (any widget can be child of a cell)
-3. Right click menus per item
-
 
 __TableView__
 
-Good... (well better) for large numbers of items
+Now works with 1 million+ rows. 
 
 ![table view](https://lh6.googleusercontent.com/FUfzbzZpsMuGymnNdzBeXgONZXJGQreswK05lMP1zRlesxY70Xo14dxYBBOrqb23DCf6yOMeXYqHNxEaNtdc13GNmri6-pQ3-uoq4rcgRvHh3b8J58MVx_xZaifCHz2Hv0Q3CoQ)
 
@@ -26,9 +18,12 @@ Good... (well better) for large numbers of items
 2. Delegate widgets (any widget can be child of a cell)
 3. Right click menus per item
 
+
+
 __DoubleSpinBox__
 
-1. SpinBox that works with float values
+SpinBox that works with float values
+
 
 __PlotItem__
 
