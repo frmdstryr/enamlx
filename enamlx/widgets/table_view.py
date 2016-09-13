@@ -143,25 +143,22 @@ class TableView(AbstractItemView):
     visible_row = d_(Int(0))
     
     #: Number of rows visible
-    #: Should not be modified by user code
-    visible_rows = d_(Int(100))
+    visible_rows = d_(Int(100),writable=False)
     
     #: First visible column
     visible_column = d_(Int(0))
     
     #: Number of columns visible
-    #: Should not be modified by user code
-    visible_columns = d_(Int(1))
-    
-    #: The items to display in the table
-    items = d_(ContainerList(default=[]))
+    visible_columns = d_(Int(1),writable=False)
     
     @observe('cell_padding','auto_resize','resize_mode','show_grid','word_wrap',
              'show_horizontal_header','horizontal_headers','horizontal_stretch',
-             'show_vertical_header','vertical_header','vertical_stretch','items')
+             'show_vertical_header','vertical_header','vertical_stretch')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
+        if change['name']=='items':
+            self.visible_rows = min(100,len(self.items))
         # The superclass handler implementation is sufficient.
         super(TableView, self)._update_proxy(change)
         

@@ -4,7 +4,7 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import (Int, Enum, Bool, Unicode, Typed, Coerced, Event, Property, ForwardInstance, observe)
+from atom.api import (Value, Int, Enum, Bool, Unicode, Typed, Coerced, Event, Property, ForwardInstance, observe)
 from enaml.icon import Icon
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
@@ -62,13 +62,16 @@ class AbstractWidgetItemGroup(Control):
     
     def _get_items(self):
         return [c for c in self.children if isinstance(c,AbstractWidgetItem)]
+    
     #: Internal item reference
     _items = Property(_get_items,cached=True)
         
     def child_added(self, child):
+        super(AbstractWidgetItemGroup, self).child_added(child)
         self.get_member('_items').reset(self)
         
     def child_removed(self, child):
+        super(AbstractWidgetItemGroup, self).child_removed(child)
         self.get_member('_items').reset(self)
 
 
@@ -76,12 +79,10 @@ class AbstractWidgetItem(AbstractWidgetItemGroup):
     """ Item to be shared between table views and tree views """
     
     #: Row within the table
-    #: Should not be edited by user code
-    row = d_(Int(0))
+    row = d_(Int(0),writable=False)
     
     #: Column within the table
-    #: Should not be edited by user code
-    column = d_(Int(0))
+    column = d_(Int(0),writable=False)
     
     #: Text to display within the cell
     text = d_(Unicode())

@@ -165,8 +165,10 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
             self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
-        self._refresh_visible_rows()
-        self._refresh_visible_columns()
+        
+        self.set_items(d.items)   
+        #self._refresh_visible_rows()
+        #self._refresh_visible_columns()
     
     def init_signals(self):
         super(QtTableView, self).init_signals()
@@ -217,11 +219,13 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         d.visible_row = max(0,min(value,self.model.rowCount()-d.visible_rows))
     
     def _refresh_visible_rows(self):
+        return
         top = self.widget.rowAt(self.widget.rect().top())
         bottom = self.widget.rowAt(self.widget.rect().bottom())
         self.declaration.visible_rows = max(1,(bottom-top))*2 # 2x for safety 
     
     def _refresh_visible_columns(self):
+        return
         left = self.widget.rowAt(self.widget.rect().left())
         right = self.widget.rowAt(self.widget.rect().right())
         self.declaration.visible_columns = max(1,(right-left))*2  
@@ -229,6 +233,9 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     #--------------------------------------------------------------------------
     # Widget Setters
     #--------------------------------------------------------------------------
+    
+    def reset_model(self):
+        self._refresh_view({})
     
     def set_model(self,model):
         if isinstance(model,QAtomTableModel):
@@ -331,17 +338,19 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
         self._refresh_count -=1
         if self._refresh_count!=0:
             return
-        d = self.declaration
-        
-        if not self._is_visible():
-            return
-        # The table destroys when it goes out of view
-        # so we always have to make a new one
-        self.delegate.create_widget()
-        self.delegate.init_widget()
-        
-        #  Set the index widget
-        self.table.widget.setIndexWidget(self.index,self.delegate.widget)
+        try:
+            delegate = self.delegate
+            if not self._is_visible():
+                return
+            # The table destroys when it goes out of view
+            # so we always have to make a new one
+            delegate.create_widget()
+            delegate.init_widget()
+            
+            #  Set the index widget
+            self.table.widget.setIndexWidget(self.index,delegate.widget)
+        except RuntimeError:
+            pass # Since this is deferred, the table could be deleted already
         
     def _is_visible(self):
         """ Check if this index is currently visible """
