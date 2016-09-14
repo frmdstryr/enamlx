@@ -6,7 +6,6 @@ Created on Aug 20, 2015
 '''
 from atom.api import Instance
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtCore import QAbstractItemModel
 from enaml.qt.QtGui import QAbstractItemView
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
@@ -50,6 +49,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self.widget.entered.connect(self.on_item_entered)
         self.widget.pressed.connect(self.on_item_pressed)
         self.widget.customContextMenuRequested.connect(self.on_custom_context_menu_requested)
+        self.widget.selectionModel().selectionChanged.connect(self.on_selection_changed)
     
     
     def item_at(self,index):
@@ -92,7 +92,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item = self.item_at(index)
         if not item:
             return
-        self._check_item_toggled(item)
         item.parent().declaration.clicked()
         item.declaration.clicked()
         
@@ -102,10 +101,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             return
         item.parent().declaration.double_clicked()
         item.declaration.double_clicked()
-        
-    def _check_item_toggled(self, item):
-        """ Check if the item was toggled """
-        pass
         
     def on_item_pressed(self,index):
         item = self.item_at(index)
@@ -120,7 +115,26 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             return
         item.parent().declaration.entered()
         item.declaration.entered()
-        
+    
+    def on_selection_changed(self,selected,deselected):
+        for index in selected.indexes():
+            item = self.item_at(index)
+            if not item:
+                continue
+            d = item.declaration
+            if d.selected != True:
+                d.selected = True
+                d.selection_changed(d.selected)
+
+        for index in deselected.indexes():
+            item = self.item_at(index)
+            if not item:
+                continue
+            d = item.declaration
+            if d.selected != False:
+                d.selected = False
+                d.selection_changed(d.selected)                
+    
     def on_custom_context_menu_requested(self,pos):
         item = self.item_at(self.widget.indexAt(pos))
         if not item:

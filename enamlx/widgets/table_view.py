@@ -8,8 +8,10 @@ from atom.api import (
     Enum, ForwardTyped, observe, set_default
 )
 from enaml.core.declarative import d_
-from enaml.widgets.control import ProxyControl
-from enamlx.widgets.abstract_item_view import AbstractItemView, ProxyAbstractItemView
+from enamlx.widgets.abstract_item_view import (
+    AbstractItemView, ProxyAbstractItemView
+)
+
 from enamlx.widgets.abstract_item import (
     AbstractWidgetItem, AbstractWidgetItemGroup, 
     ProxyAbstractWidgetItemGroup, ProxyAbstractWidgetItem

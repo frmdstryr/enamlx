@@ -4,7 +4,10 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import (Value, Int, Enum, Bool, Unicode, Typed, Coerced, Event, Property, ForwardInstance, observe)
+from atom.api import (
+    Int, Enum, Bool, Unicode, Typed, 
+    Coerced, Event, Property, ForwardInstance, observe
+)
 from enaml.icon import Icon
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
@@ -67,10 +70,12 @@ class AbstractWidgetItemGroup(Control):
     _items = Property(_get_items,cached=True)
         
     def child_added(self, child):
+        """ Reset the item cache when a child is added """
         super(AbstractWidgetItemGroup, self).child_added(child)
         self.get_member('_items').reset(self)
         
     def child_removed(self, child):
+        """ Reset the item cache when a child is removed """
         super(AbstractWidgetItemGroup, self).child_removed(child)
         self.get_member('_items').reset(self)
 

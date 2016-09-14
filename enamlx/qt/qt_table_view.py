@@ -143,13 +143,14 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.widget = QTableView(self.parent_widget())
         
     def init_widget(self):
+        self.set_model(QAtomTableModel(parent=self.widget))
+        
         super(QtTableView, self).init_widget()
         
         #: Enable context menus
         self.widget.setContextMenuPolicy(Qt.CustomContextMenu)
         
         d = self.declaration
-        self.set_model(QAtomTableModel(parent=self.widget))
         self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
         self.set_resize_mode(d.resize_mode)
@@ -167,10 +168,9 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
         
         self.set_items(d.items)   
-        #self._refresh_visible_rows()
-        #self._refresh_visible_columns()
     
     def init_signals(self):
+        """ Bind to scroll bar changes so we can update the current view """
         super(QtTableView, self).init_signals()
         self.widget.horizontalScrollBar().valueChanged.connect(self._on_horizontal_scrollbar_moved)
         self.widget.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_moved)
@@ -233,10 +233,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     #--------------------------------------------------------------------------
     # Widget Setters
     #--------------------------------------------------------------------------
-    
-    def reset_model(self):
-        self._refresh_view({})
-    
     def set_model(self,model):
         if isinstance(model,QAtomTableModel):
             model.setDeclaration(self.declaration)

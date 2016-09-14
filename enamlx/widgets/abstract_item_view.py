@@ -4,7 +4,9 @@ Created on Aug 23, 2015
 
 @author: jrm
 '''
-from atom.api import (ContainerList, Enum, Bool, Property, ForwardInstance, observe)
+from atom.api import (
+    ContainerList, Enum, Bool, Property, ForwardInstance, observe
+)
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
 
@@ -60,11 +62,11 @@ class AbstractItemView(Control):
         super(AbstractItemView, self)._update_proxy(change)
         
     def child_added(self, child):
+        """ Reset the item cache when a child is added """
         super(AbstractItemView, self).child_added(child)
-        
         self.get_member('_items').reset(self)
         
     def child_removed(self, child):
+        """ Reset the item cache when a child is removed """
         super(AbstractItemView, self).child_removed(child)
-        
         self.get_member('_items').reset(self)

@@ -136,6 +136,7 @@ enamldef Main(Window):
                     TableViewItem:
                         text << person.last_name
                         double_clicked :: print("Double clicked %s"%person.last_name)
+                        selected :: print("Selection %s is now %s"%(person.last_name,change['value']))
                     TableViewItem:
                         text = 'Loading...'
                         editable = True
