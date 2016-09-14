@@ -18,6 +18,12 @@ from enamlx.widgets.abstract_item import (
 class ProxyTableView(ProxyAbstractItemView):
     declaration = ForwardTyped(lambda: TableView)
     
+    def get_row_count(self):
+        raise NotImplementedError
+    
+    def get_column_count(self):
+        raise NotImplemented
+    
     def set_cell_padding(self,padding):
         pass
     
@@ -163,10 +169,13 @@ class TableView(AbstractItemView):
         """ An observer which sends state change to the proxy.
         """
         if change['name']=='items':
-            #: TODO
-            self.visible_rows = min(100,len(self.items))
+            self._update_visible_area()
         
         super(TableView, self)._update_proxy(change)
+        
+    def _update_visible_area(self):
+        self.visible_rows = min(100,len(self.items))
+        self.visible_columns = min(100,len(self.items))
         
 
 class TableViewItem(AbstractWidgetItem):

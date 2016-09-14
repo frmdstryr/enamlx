@@ -289,7 +289,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     
     def set_items(self, items):
         self._refresh_view({})
-            
+        
     def destroy(self):
         """ Make sure all the table widgets are destroyed first."""
         self.model.clear()
