@@ -92,7 +92,7 @@ class TableView(AbstractItemView):
     hug_height = set_default('ignore')
     
     #: Cell padding
-    cell_padding = d_(Int(3))
+    cell_padding = d_(Int(0))
     
     #: Automatically resize columns to fit contents
     auto_resize = d_(Bool(True))
