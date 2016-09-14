@@ -9,16 +9,16 @@ from atom.api import (
 )
 from enaml.core.declarative import d_
 from enaml.widgets.control import ProxyControl
-from enamlx.widgets.abstract_item_view import AbstractItemView
+from enamlx.widgets.abstract_item_view import AbstractItemView, ProxyAbstractItemView
 from enamlx.widgets.abstract_item import (
     AbstractWidgetItem, AbstractWidgetItemGroup, 
     ProxyAbstractWidgetItemGroup, ProxyAbstractWidgetItem
 )
 
-class ProxyTableView(ProxyControl):
+class ProxyTableView(ProxyAbstractItemView):
     declaration = ForwardTyped(lambda: TableView)
     
-    def set_cell_padding(self,row):
+    def set_cell_padding(self,padding):
         pass
     
     def set_auto_resize(self,enabled):
@@ -60,8 +60,12 @@ class ProxyTableView(ProxyControl):
     def set_sortable(self,sortable):
         pass
     
-    def set_items(self,items):
+    def set_visible_row(self,row):
         pass
+    
+    def set_visible_column(self,column):
+        pass 
+    
     
 class ProxyTableViewRow(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TableViewRow)
@@ -153,13 +157,15 @@ class TableView(AbstractItemView):
     
     @observe('cell_padding','auto_resize','resize_mode','show_grid','word_wrap',
              'show_horizontal_header','horizontal_headers','horizontal_stretch',
-             'show_vertical_header','vertical_header','vertical_stretch')
+             'show_vertical_header','vertical_header','vertical_stretch',
+             'visible_row','visible_column')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
         if change['name']=='items':
+            #: TODO
             self.visible_rows = min(100,len(self.items))
-        # The superclass handler implementation is sufficient.
+        
         super(TableView, self)._update_proxy(change)
         
 

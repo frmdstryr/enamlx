@@ -278,10 +278,15 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         header.show() if show else header.hide()
             
     def set_auto_resize_columns(self,enabled):
-        return
         if enabled:
             self.widget.resizeColumnsToContents()
-            
+    
+    def set_visible_row(self, row):
+        self.widget.verticalScrollBar().setValue(row)
+    
+    def set_visible_column(self, column):
+        self.widget.horizontalScrollBar().setValue(column)
+    
     def set_items(self, items):
         self._refresh_view({})
             
