@@ -14,13 +14,24 @@ from enamlx.widgets.table_view import (
     ProxyTableViewItem, ProxyTableView, ProxyTableViewColumn, ProxyTableViewRow
 )
 from enamlx.qt.qt_abstract_item import (
-    AbstractQtWidgetItem, AbstractQtWidgetItemGroup,
+    AbstractQtWidgetItem, AbstractQtWidgetItemGroup, RESIZE_MODES
 )
-
     
 
 class QAtomTableModel(QAbstractAtomItemModel,QAbstractTableModel):
     """ Model that pulls it's data from the TableViewItems """
+    
+    def rowCount(self, parent=None):
+        d = self.declaration
+        if d.vertical_headers:
+            return len(d.vertical_headers)
+        return len(d.items)
+    
+    def columnCount(self, parent=None):
+        d = self.declaration
+        if d.horizontal_headers:
+            return len(d.horizontal_headers)
+        return len(d.items)
     
     def itemAt(self,index):
         if not index.isValid():
@@ -41,10 +52,47 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     
     def create_widget(self):
         self.widget = QTableView(self.parent_widget())
+        
+    def init_widget(self):
+        super(QtTableView, self).init_widget()
+        d = self.declaration
+        self.set_show_grid(d.show_grid)
     
     def init_model(self):
         self.set_model(QAtomTableModel(parent=self.widget))
     
+    #--------------------------------------------------------------------------
+    # Widget settters
+    #--------------------------------------------------------------------------
+    def set_show_grid(self,show):
+        self.widget.setShowGrid(show)
+        
+    def set_cell_padding(self, padding):
+        self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding);
+        
+    def set_vertical_minimum_section_size(self,size):
+        self.widget.verticalHeader().setMinimumSectionSize(size)
+        
+    def set_horizontal_minimum_section_size(self,size):
+        self.widget.horizontalHeader().setMinimumSectionSize(size)
+        
+    def set_horizontal_stretch(self,stretch):
+        self.widget.horizontalHeader().setStretchLastSection(stretch)
+        
+    def set_vertical_stretch(self,stretch):
+        self.widget.verticalHeader().setStretchLastSection(stretch)
+    
+    def set_resize_mode(self,mode):
+        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
+        
+    def set_show_horizontal_header(self,show):
+        header = self.widget.horizontalHeader()
+        header.show() if show else header.hide()
+        
+    def set_show_vertical_header(self,show):
+        header = self.widget.verticalHeader()
+        header.show() if show else header.hide()
+        
     #--------------------------------------------------------------------------
     # View refresh handlers
     #--------------------------------------------------------------------------
@@ -60,7 +108,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
             d = self.declaration
             d.visible_row = max(0,min(value,self.model.rowCount()-d.visible_rows))
             
-    
     def _refresh_visible_rows(self):
         return
         top = self.widget.rowAt(self.widget.rect().top())
@@ -73,7 +120,6 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         right = self.widget.rowAt(self.widget.rect().right())
         self.declaration.visible_columns = max(1,(right-left))*2  
     
-    
 class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
     
     def create_widget(self):
@@ -84,23 +130,15 @@ class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
         return self.parent_widget()
     
 class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
-    #: Index within the table
-    index = Instance(QModelIndex)
-    
     #: Pending refreshes when loading widgets
     _refresh_count = Int(0)
     
     #: Time to wait before loading widget
     _loading_interval = Int(100) 
-
-    def init_widget(self):
-        self._update_index()
-        return # do nothing as there is no widget!
     
-    @property
-    def table(self):
+    def _default_view(self):
         return self.parent().parent()
-    
+
     def set_row(self,row):
         self._update_index()
                 
@@ -110,7 +148,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
     def _update_index(self):
         """ Update the reference to the index within the table """ 
         d = self.declaration
-        self.index = self.table.model.index(d.row,d.column)
+        self.index = self.view.model.index(d.row,d.column)
         if self.delegate:
             self._refresh_count +=1
             timed_call(self._loading_interval,self._update_delegate)
@@ -132,7 +170,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
             delegate.init_widget()
             
             #  Set the index widget
-            self.table.widget.setIndexWidget(self.index,delegate.widget)
+            self.view.widget.setIndexWidget(self.index,delegate.widget)
         except RuntimeError:
             pass # Since this is deferred, the table could be deleted already
         
@@ -145,7 +183,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
     
     def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
-        self.table.model.dataChanged.emit(self.index,self.index)
+        self.view.model.dataChanged.emit(self.index,self.index)
                 
         
 class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):

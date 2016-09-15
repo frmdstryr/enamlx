@@ -4,7 +4,7 @@ Created on Aug 20, 2015
 
 @author: jrm
 '''
-from atom.api import Instance, Int, observe
+from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
 from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
@@ -12,7 +12,7 @@ from enaml.qt.QtCore import Qt, QAbstractItemModel
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 
 from enamlx.qt.qt_abstract_item import (
-    RESIZE_MODES, TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
+    TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
 )
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
@@ -35,18 +35,6 @@ class QAbstractAtomItemModel(object):
     
     def setDeclaration(self,declaration):
         self.declaration = declaration
-    
-    def rowCount(self, parent=None):
-        d = self.declaration
-        if d.vertical_headers:
-            return len(d.vertical_headers)
-        return len(d.items)
-    
-    def columnCount(self, parent=None):
-        d = self.declaration
-        if d.horizontal_headers:
-            return len(d.horizontal_headers)
-        return len(d.items)
     
     def data(self, index, role):
         item = self.itemAt(index)
@@ -108,19 +96,6 @@ class QAbstractAtomItemModel(object):
             return True
         return super(QAbstractAtomItemModel, self).setData(index, value, role)
     
-    def itemAt(self,index):
-        if not index.isValid():
-            return None
-        d = self.declaration
-        try:
-            d.current_row = index.row()
-            d.current_column = index.column()
-            r = d.current_row - d.visible_row #% len(d._items) 
-            c = d.current_column - d.visible_column 
-            return d._items[r]._items[c].proxy
-        except IndexError:
-            return None
-        
     def headerData(self, index, orientation, role):
         d = self.declaration
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -171,7 +146,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self.set_selection_mode(d.selection_mode)
         self.set_selection_behavior(d.selection_behavior)
         self.set_alternating_row_colors(d.alternating_row_colors)
-        self.set_show_grid(d.show_grid)
         self.set_word_wrap(d.word_wrap)
         self.set_resize_mode(d.resize_mode)
         self.set_show_vertical_header(d.show_vertical_header)
@@ -233,38 +207,9 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
         
-    def set_show_grid(self,show):
-        self.widget.setShowGrid(show)
-        
     def set_word_wrap(self,wrap):
         self.widget.setWordWrap(wrap)
         
-    def set_vertical_minimum_section_size(self,size):
-        self.widget.verticalHeader().setMinimumSectionSize(size)
-        
-    def set_horizontal_minimum_section_size(self,size):
-        self.widget.horizontalHeader().setMinimumSectionSize(size)
-        
-    def set_horizontal_stretch(self,stretch):
-        self.widget.horizontalHeader().setStretchLastSection(stretch)
-        
-    def set_vertical_stretch(self,stretch):
-        self.widget.verticalHeader().setStretchLastSection(stretch)
-    
-    def set_cell_padding(self,padding):
-        self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding);
-    
-    def set_resize_mode(self,mode):
-        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
-        
-    def set_show_horizontal_header(self,show):
-        header = self.widget.horizontalHeader()
-        header.show() if show else header.hide()
-        
-    def set_show_vertical_header(self,show):
-        header = self.widget.verticalHeader()
-        header.show() if show else header.hide()
-            
     def set_auto_resize_columns(self,enabled):
         if enabled:
             self.widget.resizeColumnsToContents()

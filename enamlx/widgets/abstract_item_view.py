@@ -39,9 +39,6 @@ class ProxyAbstractItemView(ProxyControl):
     def set_resize_mode(self,mode):
         pass
     
-    def set_show_grid(self,show):
-        pass
-    
     def set_word_wrap(self,enabled):
         pass
     
@@ -110,9 +107,6 @@ class AbstractItemView(Control):
     #: Resize mode of columns and rows
     resize_mode = d_(Enum('interactive','fixed','stretch','resize_to_contents','custom'))
     
-    #: Show grid of cells
-    show_grid = d_(Bool(True))
-    
     #: Word wrap
     word_wrap = d_(Bool(False))
     
@@ -169,7 +163,7 @@ class AbstractItemView(Control):
     
     @observe('items','scroll_to_bottom','alternating_row_colors',
              'selection_mode','selection_behavior','cell_padding',
-             'auto_resize','resize_mode','show_grid','word_wrap',
+             'auto_resize','resize_mode','word_wrap',
              'show_horizontal_header','horizontal_headers','horizontal_stretch',
              'show_vertical_header','vertical_header','vertical_stretch',
              'visible_row','visible_column')

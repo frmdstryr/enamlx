@@ -83,10 +83,10 @@ class AbstractWidgetItemGroup(Control):
 class AbstractWidgetItem(AbstractWidgetItemGroup):
     """ Item to be shared between table views and tree views """
     
-    #: Row within the table
+    #: Model index or row within the view
     row = d_(Int(0),writable=False)
     
-    #: Column within the table
+    #: Column within the view
     column = d_(Int(0),writable=False)
     
     #: Text to display within the cell

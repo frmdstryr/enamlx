@@ -5,13 +5,10 @@ from enamlx.widgets.api import (
 )
 
 from enaml.widgets.api import (
-    Window, Container, PushButton, CheckBox, RadioButton
+    Window, Container, PushButton, CheckBox, RadioButton, SpinBox
 )
 from enaml.core.looper import Looper
-from enaml.widgets.spin_box import SpinBox
-from atom.instance import ForwardInstance
-
-
+from enaml.stdlib.mapped_view import MappedView
 
 class Person(Atom):
     """ A simple class representing a person object.
@@ -48,7 +45,7 @@ enamldef Main(Window):
                         Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
                         Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
                         ]
-                    ) for i in range(1000)])
+                    ) for i in range(10)])
     Container:
         PushButton:
             text = 'Add person'
@@ -57,46 +54,48 @@ enamldef Main(Window):
             text = 'Remove person'
             clicked :: model.remove_person()
             
-        TreeView:
-            headers << ['#','Debug','First','Last','Age']
-            #TreeViewItem:
-            #   text = 'People'
-            Looper:
-                iterable << model.people
-                TreeViewItem: 
-                    text << str(loop_index)
-                    
-                    
-                    TreeViewColumn:
-                        checkable = True
-                        checked := loop_item.debug
-                    TreeViewColumn:
-                        text << loop_item.first_name
-                    TreeViewColumn:
-                        text << loop_item.last_name
-                
-                    TreeViewColumn:
-                        SpinBox:
-                            value << loop_item.age
-                    
-                    
-                    attr parent_index = loop_index
-                    attr parent_item = loop_item
-                    Looper:
-                        iterable << loop_item.children
-                        TreeViewItem: # Child item
-                            text << 'child %s.%s'%(parent_index,loop_index)
-                            TreeViewColumn:
-                                checkable = True
-                                checked := loop_item.debug
-                            TreeViewColumn:
-                                text << loop_item.first_name
-                            TreeViewColumn:
-                                text << loop_item.last_name
-                            TreeViewColumn:
-                                #text << str(loop_item.age)
-                                SpinBox:
-                                    value << loop_item.age
+        TreeView: tree:
+            horizontal_headers << ['#','Debug','First','Last','Age']
+            TreeViewItem: root:
+                text = 'Root'
+                items << model.people
+                Looper:
+                    iterable << range(tree.visible_rows)
+                    TreeViewItem:
+                        attr parent_index << tree.visible_row+loop_index
+                        attr person << tree.items[parent_index] 
+                        text << '{}'.format(person)
+                        items << person.children
+                        
+                        TreeViewColumn:
+                            checkable = True
+                            checked := person.debug
+                        TreeViewColumn:
+                            text << person.first_name
+                        TreeViewColumn:
+                            text << person.last_name
+                        TreeViewColumn:
+                            pass
+                        #MappedView:
+                        
+                            #SpinBox:
+                            #    value << person.age
+                        # TODO:
+#                         Looper:
+#                             iterable << person.children
+#                             TreeViewItem: # Child item
+#                                 text << 'child %s.%s'%(parent_index,loop_index)
+#                                 TreeViewColumn:
+#                                     checkable = True
+#                                     checked := loop_item.debug
+#                                 TreeViewColumn:
+#                                     text << loop_item.first_name
+#                                 TreeViewColumn:
+#                                     text << loop_item.last_name
+#                                 TreeViewColumn:
+#                                     #text << str(loop_item.age)
+#                                     SpinBox:
+#                                         value << loop_item.age
                 
                 # Going arbitrarily deep?
                 

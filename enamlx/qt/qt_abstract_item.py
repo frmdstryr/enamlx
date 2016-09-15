@@ -4,12 +4,13 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import Instance, Property
+from atom.api import Instance, Property, ForwardInstance
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_menu import QtMenu
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt.QtGui import QAbstractItemView,QHeaderView
+from enaml.qt.QtGui import QHeaderView
+from enaml.qt.QtCore import QModelIndex
 
 from enamlx.widgets.abstract_item import (
     ProxyAbstractWidgetItem,
@@ -45,7 +46,9 @@ class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
         return [c for c in self.children() if isinstance(c,AbstractQtWidgetItem)]
     
     #: Internal items
-    _items = Property(_get_items,cached=True)
+    #: TODO: Is a cached property the right thing to use here??
+    #: Why not a list??
+    _items = Property(lambda self:self._get_items(),cached=True)
     
     def init_layout(self):
         for child in self.children():
@@ -63,13 +66,30 @@ class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
         super(AbstractQtWidgetItemGroup, self).child_removed()
         self.get_member('_items').reset(self)
     
+def _abstract_item_view():
+    from .qt_abstract_item_view import QtAbstractItemView
+    return QtAbstractItemView
+    
 class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
+    #: Index within the view
+    index = Instance(QModelIndex)
     
     #: Delegate widget to display when editing the cell
     #: if the widget is editable
     delegate = Instance(QtWidget)
     
+    #: Reference to view
+    view = ForwardInstance(_abstract_item_view)
+    
     def create_widget(self):
+        # View items have no widget!
         for child in self.children():
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
+                
+    def init_widget(self):
+        self._update_index()
+    
+    def _update_index(self):
+        """ Update where this item is within the model"""
+        raise NotImplementedError

@@ -4,7 +4,7 @@ Created on Jun 3, 2015
 @author: jrm
 '''
 from atom.api import (
-    Int, Typed, ForwardTyped, observe
+    Int, Typed, Bool, ForwardTyped, observe
 )
 from enaml.core.declarative import d_
 from enamlx.widgets.abstract_item_view import (
@@ -24,6 +24,9 @@ class ProxyTableView(ProxyAbstractItemView):
     
     def get_column_count(self):
         raise NotImplemented
+    
+    def set_show_grid(self,show):
+        pass
     
 class ProxyTableViewRow(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TableViewRow)
@@ -47,6 +50,10 @@ class TableView(AbstractItemView):
     #: Proxy reference
     proxy = Typed(ProxyTableView)
     
+    #: Show grid of cells
+    show_grid = d_(Bool(True))
+    
+    @observe('show_grid')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
@@ -62,10 +69,15 @@ class TableView(AbstractItemView):
 
 class TableViewItem(AbstractWidgetItem):
     """ The base class implementation is sufficient. """
+    #: Proxy reference
+    proxy = Typed(ProxyTableViewItem)
         
 class TableViewRow(AbstractWidgetItemGroup):
     """ Use this to build a table by defining the rows. 
     """
+    #: Proxy reference
+    proxy = Typed(ProxyTableViewRow)
+    
     #: Row within the table
     row = d_(Int())
     
@@ -78,6 +90,9 @@ class TableViewRow(AbstractWidgetItemGroup):
 class TableViewColumn(AbstractWidgetItemGroup):
     """ Use this to build a table by defining the columns. 
     """
+    #: Proxy reference
+    proxy = Typed(ProxyTableViewColumn)
+    
     #: Column within the table
     column = d_(Int())
 
