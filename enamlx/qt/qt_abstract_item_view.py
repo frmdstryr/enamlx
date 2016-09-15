@@ -6,7 +6,7 @@ Created on Aug 20, 2015
 '''
 from atom.api import Instance
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtGui import QAbstractItemView
+from enaml.qt.QtGui import QAbstractItemView,QItemSelectionModel
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
 SELECTION_MODES = {
@@ -25,6 +25,9 @@ SELECTION_BEHAVIORS = {
 
 class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     widget = Instance(QAbstractItemView)
+    
+    #: Hold reference to selection model to PySide segfault
+    selection_model = Instance(QItemSelectionModel)
     
     @property
     def model(self):
@@ -49,7 +52,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self.widget.entered.connect(self.on_item_entered)
         self.widget.pressed.connect(self.on_item_pressed)
         self.widget.customContextMenuRequested.connect(self.on_custom_context_menu_requested)
-        self.widget.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.selection_model = self.widget.selectionModel()
+        self.selection_model.selectionChanged.connect(self.on_selection_changed)
     
     
     def item_at(self,index):
@@ -117,6 +121,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item.declaration.entered()
     
     def on_selection_changed(self,selected,deselected):
+        return
         for index in selected.indexes():
             item = self.item_at(index)
             if not item:
