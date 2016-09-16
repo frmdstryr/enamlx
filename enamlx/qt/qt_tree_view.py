@@ -17,76 +17,96 @@ from enaml.qt.QtGui import QTreeView
 from enaml.qt.QtCore import Qt,QAbstractItemModel,QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
-from atom.property import cached_property
-from enaml.qt.qt_menu import QtMenu
-
+from enaml.qt.qt_control import QtControl
+import traceback
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
     
-    def rowCount(self, parent):
-        if parent.column() > 0:
-            return 0
-        elif parent.isValid():
-            items = parent.internalPointer().items()
-        else:
-            items = self.items()
-        return len(items)
-    
-    def columnCount(self, parent):
-        if parent and parent.isValid():
-            return len(parent.internalPointer().columns())
-        else:
-            return len(self.headers)
-    
-    
-    def index(self, row, column, parent=None):
-        if parent.isValid():
-            item = self.itemAt(parent)
-            if item
-        else:
-            d = self.declaration
-            return self.createIndex(row,column,QModelIndex())
-            
-        parent = parent or QModelIndex()
+    def rowCount(self, index):
+        print "rowCount({})".format(index)
         d = self.declaration
-        if not parent.isValid():
-            childItem = self.items()[row]
-            return self.createIndex(row, column, childItem)
+        if d.vertical_headers:
+            return len(d.vertical_headers)
+        item = self.itemAt(index)
+        d = item.declaration if item else self.declaration
+        print len(d.items)
+        return len(d.items)
+    
+    def columnCount(self, index):
+        print "columnCount({})".format(index)
+        d = self.declaration
+        if d.horizontal_headers:
+            print "horizontal headers"
+            return len(d.horizontal_headers)
+        item = self.itemAt(index)
+        if not item:
+            return 0
+        d = item.declaration
+        return len(d.items)
+    
+    def data(self, index, role):
+        print "data({},{})".format(index,role)
+        return super(QAtomTreeModel, self).data(index,role)
+    
+#     def hasChildren(self, index):
+#         item = self.itemAt(index)
+#         if not item:
+#             return False
+#         d = item.declaration
+#         return bool(d.items)
+        
+    def index(self, row, column, parent):
+        """ The index should point to the corresponding QtControl in the 
+            enaml hierarchy 
+        """
+        print "index({},{},{})".format(row,column,parent)
+        if parent and parent.isValid():
+            item = self.itemAt(parent)
+            return self.createIndex(row,column,item.declaration._items[row].proxy)
         else:
-            parentItem = parent.internalPointer()
-        childItem = parentItem[row]
-        if childItem:
-            return self.createIndex(row, column, childItem)
-        else:
-            return QModelIndex()
+            return self.createIndex(row,column,self.declaration._items[row].proxy) 
 
     def parent(self, index):
         if not index.isValid():
             return QModelIndex()
-        #print("Parent of (%s,%s)"%(index.row(),index.column()))
-        childItem = index.internalPointer()
-        parentItem = childItem.parent()
-        if parentItem==self.view:
+        item = index.internalPointer()
+        parent = item.parent()
+        d = parent.declaration
+        if d==self.declaration:
             return QModelIndex()
-        return self.createIndex(parentItem.row(), 0, parentItem)
-    
+        return self.createIndex(d.row, 0, parent)
+     
     def itemAt(self,index):
+        #print 'itemAt({})'.format(index)
         if not index.isValid():
-            return None
-        d = self.declaration
+            return
+        item = index.internalPointer()
+        print "itemAt {} is {}".format(index,item)
+        d = item.declaration
         try:
-            d.current_row = index.row()
-            d.current_column = index.column()
+            #d.current_row = index.row()
+            #d.current_column = index.column()
             # item = index.internalPointer().columns()[index.column()]
-            #r = d.current_row - d.visible_row #% len(d._items) 
-            #c = d.current_column - d.visible_column 
-            return d._items[r]._items[c].proxy
+            
+            r,c = index.row(),index.column()#d.current_row,d.current_column
+            print r,c
+            #if r!=0:
+            #    d = d.children[r-1]
+                
+            if c == 0:
+                return d.proxy
+            return d._items[c-1].proxy
+                
+            
         except IndexError:
             return None
 
 class QtTreeView(QtAbstractItemView, ProxyTreeView):
     #: Tree widget
     widget = Typed(QTreeView)
+    
+    #: Root index
+    index = Instance(QModelIndex,())
     
     def create_widget(self):
         self.widget = QTreeView(self.parent_widget())
@@ -126,9 +146,6 @@ class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
     
     def create_widget(self):
         pass
-        #for child in self.children():
-        #    if isinstance(child,(Pattern,QtWidget)) and not isinstance(child, QtTreeViewItem):
-        #        self.delegate = child
         
     def _default_view(self):
         """ If this is the root item, return the parent
@@ -142,11 +159,11 @@ class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
         
     def _update_index(self):
         d = self.declaration
-        parent = self.parent()
-        parent_index = parent.index if parent!=self.view else QModelIndex()
-        self.index = self.view.model.index(d.row,d.column,parent_index)
+        #parent = self.parent()
+        #parent_index = parent.index if parent!=self.view else QModelIndex()
+        self.index = self.view.model.index(d.row,d.column,self.parent().index)#.parent())
     
-    def refresh_model(self, change):
+    def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
         self.view.model.dataChanged.emit(self.index,self.index)
         
@@ -157,6 +174,9 @@ class QtTreeViewColumn(AbstractQtWidgetItem,ProxyTreeViewColumn):
             if isinstance(child, (Pattern, QtWidget)):
                 self.delegate = child
                 
+    def set_column(self,column):
+        pass
+                
     def _default_view(self):
         """ Since the TreeViewColumn must be a child of a TreeViewItem,
             simply return the Item's view.
@@ -166,5 +186,10 @@ class QtTreeViewColumn(AbstractQtWidgetItem,ProxyTreeViewColumn):
     def _update_index(self):
         """ The parent """
         d = self.declaration
-        self.index = self.view.model.index(d.row,d.column,d.parent.index)
+        self.index = self.view.model.index(d.row,d.column,self.parent().index)
+    
+    def data_changed(self, change):
+        """ Notify the model that data has changed in this cell! """
+        self.view.model.dataChanged.emit(self.index,self.index)
+    
         

@@ -86,8 +86,11 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
         for child in self.children():
             if isinstance(child,(Pattern,QtWidget)):
                 self.delegate = child
-                
+    
     def init_widget(self):
+        pass
+    
+    def init_layout(self):
         self._update_index()
     
     def _update_index(self):

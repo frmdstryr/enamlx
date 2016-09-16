@@ -45,7 +45,7 @@ enamldef Main(Window):
                         Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
                         Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
                         ]
-                    ) for i in range(10)])
+                    ) for i in range(2)])
     Container:
         PushButton:
             text = 'Add person'
@@ -56,26 +56,47 @@ enamldef Main(Window):
             
         TreeView: tree:
             horizontal_headers << ['#','Debug','First','Last','Age']
-            TreeViewItem: root:
-                text = 'Root'
-                items << model.people
-                Looper:
-                    iterable << range(tree.visible_rows)
+            items << model.people
+            
+            Looper:
+                iterable << range(tree.visible_rows)
+                TreeViewItem:
+                    attr parent_index << tree.visible_row+loop_index
+                    attr person << tree.items[parent_index] 
+                    text << '{}'.format(person)
+                    items << person.children
+                     
+                    TreeViewColumn:
+                        checkable = True
+                        checked := person.debug
+                    TreeViewColumn:
+                        text << person.first_name
+                    TreeViewColumn:
+                        text << person.last_name
+                    TreeViewColumn:
+                        text = 'Hello wolrd?'
+                        pass
+                    
                     TreeViewItem:
-                        attr parent_index << tree.visible_row+loop_index
-                        attr person << tree.items[parent_index] 
-                        text << '{}'.format(person)
-                        items << person.children
-                        
-                        TreeViewColumn:
-                            checkable = True
-                            checked := person.debug
-                        TreeViewColumn:
-                            text << person.first_name
-                        TreeViewColumn:
-                            text << person.last_name
-                        TreeViewColumn:
-                            pass
+                        text << 'HELLO'
+                    
+#                     Looper:
+#                         iterable << parent.items if parent.items else []
+#                         TreeViewItem:
+#                             attr person << parent.items[loop_index] 
+#                             text << '{}'.format(person)
+#                             items << person.children
+#                              
+#                             TreeViewColumn:
+#                                 checkable = True
+#                                 checked := person.debug
+#                             TreeViewColumn:
+#                                 text << person.first_name
+#                             TreeViewColumn:
+#                                 text << person.last_name
+#                             TreeViewColumn:
+#                                 text = 'Child?'
+#                                 pass
                         #MappedView:
                         
                             #SpinBox:

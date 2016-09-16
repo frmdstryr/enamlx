@@ -131,7 +131,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     #: So if we defer refreshing until everything is added it's fast :) 
     _pending_view_refreshes = Int(0)
     _pending_row_refreshes = Int(0)
-    _pending_col_refreshes = Int(0)
+    _pending_column_refreshes = Int(0)
     
     def init_widget(self):
         super(QtAbstractItemView, self).init_widget()
