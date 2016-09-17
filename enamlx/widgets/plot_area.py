@@ -5,7 +5,7 @@ Created on Jun 11, 2015
 @author: jrm
 '''
 from atom.atom import set_default
-from atom.api import (Callable, Tuple, Instance, Enum, Float, ContainerList, Bool, FloatRange, Unicode, Dict, Typed, ForwardTyped, observe)
+from atom.api import (Callable, Int, Tuple, Instance, Enum, Float, ContainerList, Bool, FloatRange, Unicode, Dict, Typed, ForwardTyped, observe)
 from enaml.core.declarative import d_
 from enaml.widgets.api import Container
 from enaml.widgets.control import Control, ProxyControl
@@ -34,6 +34,12 @@ class PlotItem(Control):
     
     #: Name 
     name = d_(Unicode())
+    
+    #: Row in plot area
+    row = d_(Int(0))
+    
+    #: Column in plot area
+    column = d_(Int(0))
     
     #: Pen type to use for line
     line_pen = d_(Instance(PEN_ARGTYPES))
@@ -119,7 +125,7 @@ class PlotItem(Control):
              'label_left','label_right','label_top','label_bottom',
              'grid','grid_alpha','log_mode','antialias','auto_range',
              'auto_downsample','clip_to_view','step_mode','aspect_locked',
-             'axis_left_ticks','axis_bottom_ticks','show_legend')
+             'axis_left_ticks','axis_bottom_ticks','show_legend','row','column')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """

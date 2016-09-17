@@ -5,13 +5,14 @@ Created on Aug 31, 2015
 @author: jrm
 '''
 import types
-from atom.api import (Bool, ForwardInstance,Instance, Typed)
+from atom.api import (Bool, Int, ForwardInstance, Instance, Typed)
 
 from enamlx.widgets.plot_area import ProxyPlotArea
 from enaml.qt.qt_control import QtControl
 from enaml.qt.q_resource_helpers import get_cached_qcolor
 import pyqtgraph as pg
 from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
+from enaml.application import timed_call
 
 def gl_view_widget():
     from pyqtgraph.opengl import GLViewWidget
@@ -33,7 +34,9 @@ class QtPlotArea(QtControl, ProxyPlotArea):
     def child_added(self, child):
         # TODO support layouts
         if isinstance(child,AbstractQtPlotItem):
-            self.widget.addItem(child.widget)
+            d = child.declaration
+            kwargs = dict(row=d.row,col=d.column) if d.row or d.column else {}
+            self.widget.addItem(child.widget,**kwargs)
         
     def child_removed(self, child):
         if isinstance(child,AbstractQtPlotItem):
@@ -58,6 +61,8 @@ class AbstractQtPlotItem(QtControl):
     #: Axis item
     axis = Instance(pg.AxisItem)
     
+    _pending_refreshes = Int(0)
+    
     def create_widget(self):
         if isinstance(self.parent(),AbstractQtPlotItem):
             self.widget = self.parent_widget()
@@ -69,36 +74,36 @@ class AbstractQtPlotItem(QtControl):
     def init_widget(self):
         #super(AbstractQtPlotItem, self).init_widget()
         d = self.declaration
-        if d.grid:
-            self.set_grid(d.grid)
-        if d.title:
-            self.set_title(d.title)
-        if d.label_left:
-            self.set_label_left(d.label_left)
-        if d.label_right:
-            self.set_label_right(d.label_right)
-        if d.label_top:
-            self.set_label_top(d.label_top)
-        if d.label_bottom:
-            self.set_label_bottom(d.label_bottom)
-        if d.show_legend:
-            self.set_show_legend(d.show_legend)
-        if d.multi_axis:
-            self.set_multi_axis(d.multi_axis)
-        self.set_antialias(d.antialias)
-        self.set_aspect_locked(d.aspect_locked)
-        if d.background:
-            self.set_background(d.background)
+        if self.is_root:
+            if d.grid:
+                self.set_grid(d.grid)
+            if d.title:
+                self.set_title(d.title)
+            if d.label_left:
+                self.set_label_left(d.label_left)
+            if d.label_right:
+                self.set_label_right(d.label_right)
+            if d.label_top:
+                self.set_label_top(d.label_top)
+            if d.label_bottom:
+                self.set_label_bottom(d.label_bottom)
+            if d.show_legend:
+                self.set_show_legend(d.show_legend)
+            if d.multi_axis:
+                self.set_multi_axis(d.multi_axis)
+            self.set_antialias(d.antialias)
+            self.set_aspect_locked(d.aspect_locked)
+            if d.background:
+                self.set_background(d.background)
+                
+            if d.axis_left_ticks:
+                self.set_axis_left_ticks(d.axis_left_ticks)
             
-        if d.axis_left_ticks:
-            self.set_axis_left_ticks(d.axis_left_ticks)
-        
-        if d.axis_bottom_ticks:
-            self.set_axis_bottom_ticks(d.axis_bottom_ticks)
-            
+            if d.axis_bottom_ticks:
+                self.set_axis_bottom_ticks(d.axis_bottom_ticks)
+                
         self._refresh_plot()
         self.set_auto_range(d.auto_range)
-        
         self.init_signals()
         
     def init_signals(self):
@@ -138,15 +143,21 @@ class AbstractQtPlotItem(QtControl):
         return data
         
     def _refresh_plot(self):
+        """ Defer drawing until all changes are done so we don't draw
+            during initialization or when many values change at once.
+        """
+        self._pending_refreshes+=1
+        timed_call(100,self._redraw_plot)
+        
+    def _redraw_plot(self):
+        self._pending_refreshes-=1
+        if self._pending_refreshes!=0:
+            return # Another change occurred
+        
         if self.plot:
             self.plot.clear()
         if self.viewbox:
             self.viewbox.close()
-        #if self.axis:
-        #    self.axis.close()
-        #if not isinstance(self.parent(),AbstractQtPlotItem):
-        #    print(self.widget.items)
-        #self.widget.clear()
         
         d = self.declaration
         
@@ -191,7 +202,11 @@ class AbstractQtPlotItem(QtControl):
         #: Add Viewbox to parent scene
         self.parent().parent_widget().scene().addItem(self.viewbox)
         
+    def set_row(self, row):
+        self._refresh_plot()
     
+    def set_column(self, column):
+        self._refresh_plot()
     
     def set_aspect_locked(self,locked):
         return
@@ -337,8 +352,9 @@ class AbstractQtPlotItem(QtControl):
         """ Update linked views """
         d = self.declaration
         if not self.is_root and d.parent.multi_axis:
-            self.viewbox.setGeometry(self.widget.vb.sceneBoundingRect())
-            self.viewbox.linkedViewChanged(self.widget.vb,self.viewbox.XAxis)
+            if self.viewbox:
+                self.viewbox.setGeometry(self.widget.vb.sceneBoundingRect())
+                self.viewbox.linkedViewChanged(self.widget.vb,self.viewbox.XAxis)
             
     
 #     #
