@@ -29,12 +29,19 @@ PEN_ARGTYPES = (tuple,list,basestring,dict)
 BRUSH_ARGTYPES = (tuple,list,basestring,dict,int,float)
 
 class PlotItem(Control):
-    #setup = Callable()
-    name = d_(Unicode())
-    line_pen = d_(Instance(PEN_ARGTYPES))
-    shadow_pen = d_(Instance(PEN_ARGTYPES))
-    #line_connect = d(Instance())
+    #: Title of data series 
+    title = d_(Unicode())
     
+    #: Name 
+    name = d_(Unicode())
+    
+    #: Pen type to use for line
+    line_pen = d_(Instance(PEN_ARGTYPES))
+    
+    #: Pen type to use for shadow
+    shadow_pen = d_(Instance(PEN_ARGTYPES))
+    
+    #: Fill level
     fill_level = d_(Float(strict=False))
     
     # ‘c’     one of: r, g, b, c, m, y, k, w
@@ -46,16 +53,25 @@ class PlotItem(Control):
     # “RGB”     hexadecimal strings; may begin with ‘#’
     # “RGBA”      
     # “RRGGBB”      
-    # “RRGGBBAA”      
+    # “RRGGBBAA”    
+    #: Brush fill type  
     fill_brush = d_(Instance(BRUSH_ARGTYPES))   
     
+    #: Symbol to use for points
     symbol = d_(Enum(None,'o', 's', 't', 'd', '+'))
-    symbol_size = d_(Float(10,strict=False))
-    symbol_pen = d_(Instance(PEN_ARGTYPES))
-    symbol_brush = d_(Instance(BRUSH_ARGTYPES))
-    #symbol_brush = d_()
     
-    title = d_(Unicode())
+    #: Symbol sizes for points
+    symbol_size = d_(Float(10,strict=False))
+    
+    #: Symbol pen to use
+    symbol_pen = d_(Instance(PEN_ARGTYPES))
+    
+    #: Symbol brush
+    symbol_brush = d_(Instance(BRUSH_ARGTYPES))
+    
+    #: Show legend
+    show_legend = d_(Bool(False))
+    
     label_left = d_(Unicode())
     label_right = d_(Unicode())
     label_top = d_(Unicode())
@@ -65,25 +81,37 @@ class PlotItem(Control):
     grid = d_(Tuple(bool,default=(False,False))) 
     grid_alpha = d_(FloatRange(low=0.0,high=1.0,value=0.5))
     
+    #: Display a separate axis for each nested plot
     multi_axis = d_(Bool(True))
     
     axis_left_ticks = d_(Callable())
     axis_bottom_ticks = d_(Callable())
     
+    #: Display the axis on log scale
     log_mode = d_(Tuple(bool,default=(False,False))) # x,y
     
+    #: Enable antialiasing
     antialias = d_(Bool(False))
     
-    # Set auto range for each axis
+    #: Set auto range for each axis
     auto_range = d_(Enum(True,False,(True,True),(True,False),(False,True),(False,False)))
     
-    # These mean nothing if auto_range is true
+    # x-range to use if auto_range is disabled
     range_x = d_(ContainerList(default=[0,100]))
+    
+    #: y-range to use if auto_range is disabled 
     range_y = d_(ContainerList(default=[0,100]))
     
+    #: Automatically downsaple
     auto_downsample = d_(Bool(False))
+    
+    #: Clip data points to view
     clip_to_view = d_(Bool(False))
+    
+    #: Step mode to use
     step_mode = d_(Bool(False))
+    
+    #: Keep aspect ratio locked when resizing 
     aspect_locked = d_(Bool(False))
     
     @observe('line_pen','symbol','symbol_size','symbol_pen','symbol_brush',
@@ -91,7 +119,7 @@ class PlotItem(Control):
              'label_left','label_right','label_top','label_bottom',
              'grid','grid_alpha','log_mode','antialias','auto_range',
              'auto_downsample','clip_to_view','step_mode','aspect_locked',
-             'axis_left_ticks','axis_bottom_ticks')
+             'axis_left_ticks','axis_bottom_ticks','show_legend')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
@@ -104,7 +132,11 @@ class PlotItem(Control):
         getattr(self.proxy,'set_%s'%change['name'])(change['value'])
 
 class PlotItem2D(PlotItem):
+    
+    #: x-axis values, as a list
     x = d_(ContainerList())
+    
+    #: y-axis values, as a list
     y = d_(ContainerList())
     
     @observe('x','y')
@@ -115,6 +147,8 @@ class PlotItem2D(PlotItem):
         super(PlotItem2D, self)._update_proxy(change)
 
 class PlotItem3D(PlotItem2D):
+    
+    #: z-axis values, as a list
     z = d_(ContainerList())
     
     @observe('z')
@@ -127,14 +161,25 @@ class PlotItem3D(PlotItem2D):
 
 class PlotItemArray(PlotItem2D):
     """ Numpy array item """
+    
+    #: x-axis values, as a numpy array
     x = d_(ForwardInstance(numpy_ndarray))
+    
+    #: y-axis values, as a numpy array
     y = d_(ForwardInstance(numpy_ndarray))
     
 class PlotItemArray3D(PlotItem3D):
     """ Numpy array item """
+    #: Plot type
     type = Enum('line')
+    
+    #: x-axis values, as a numpy array
     x = d_(ForwardInstance(numpy_ndarray))
+    
+    #: y-axis values, as a numpy array
     y = d_(ForwardInstance(numpy_ndarray))
+    
+    #: z-axis values, as a numpy array
     z = d_(ForwardInstance(numpy_ndarray))
 
 

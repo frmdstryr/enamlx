@@ -41,13 +41,17 @@ enamldef Main(Window):
                 title = 'Multiple curves'
                 PlotArea:
                     PlotItemArray:
+                        #multi_axis = False
+                        label_left = 'A'
                         line_pen = 'g'
                         y << np.random.normal(size=100)
                         PlotItemArray:
                             line_pen = 'b'
+                            label_right = 'B'
                             y << np.random.normal(size=100)+10
                         PlotItemArray:
                             line_pen = 'r'
+                            label_right = 'C'
                             y << np.random.normal(size=100)+20 
             DockItem:
                 name = 'range'

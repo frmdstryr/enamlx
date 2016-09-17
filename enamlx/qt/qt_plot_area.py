@@ -5,14 +5,13 @@ Created on Aug 31, 2015
 @author: jrm
 '''
 import types
-from atom.api import (ForwardInstance,Instance, Typed)
+from atom.api import (Bool, ForwardInstance,Instance, Typed)
 
 from enamlx.widgets.plot_area import ProxyPlotArea
 from enaml.qt.qt_control import QtControl
-from pyqtgraph.graphicsItems.PlotItem.PlotItem import PlotItem
-from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
-from pyqtgraph.graphicsItems.GraphicsObject import GraphicsObject
 from enaml.qt.q_resource_helpers import get_cached_qcolor
+import pyqtgraph as pg
+from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
 
 def gl_view_widget():
     from pyqtgraph.opengl import GLViewWidget
@@ -41,15 +40,31 @@ class QtPlotArea(QtControl, ProxyPlotArea):
             self.widget.removeItem(child.widget)
 
 class AbstractQtPlotItem(QtControl):
+    #: So we can receive signals
     __weakref__ = None
-    widget = Instance(PlotItem)
-    plot = Instance(GraphicsObject)
+    
+    #: Plot item or parent plot item if nested
+    widget = Instance(pg.PlotItem)
+    
+    #: Actual plot
+    plot = Instance(pg.GraphicsObject)
+    
+    #: Root or nested graph
+    is_root = Bool()
+    
+    #: View box
+    viewbox = Instance(pg.ViewBox)
+    
+    #: Axis item
+    axis = Instance(pg.AxisItem)
     
     def create_widget(self):
         if isinstance(self.parent(),AbstractQtPlotItem):
             self.widget = self.parent_widget()
+            self.is_root = False
         else:
-            self.widget = PlotItem()
+            self.is_root = True
+            self.widget = pg.PlotItem()
 
     def init_widget(self):
         #super(AbstractQtPlotItem, self).init_widget()
@@ -66,6 +81,10 @@ class AbstractQtPlotItem(QtControl):
             self.set_label_top(d.label_top)
         if d.label_bottom:
             self.set_label_bottom(d.label_bottom)
+        if d.show_legend:
+            self.set_show_legend(d.show_legend)
+        if d.multi_axis:
+            self.set_multi_axis(d.multi_axis)
         self.set_antialias(d.antialias)
         self.set_aspect_locked(d.aspect_locked)
         if d.background:
@@ -84,7 +103,8 @@ class AbstractQtPlotItem(QtControl):
         
     def init_signals(self):
         self.widget.sigRangeChanged.connect(self.on_range_changed)
-        
+        self.widget.vb.sigResized.connect(self.on_resized)
+    
     def _format_data(self):
         raise NotImplementedError
             
@@ -120,14 +140,58 @@ class AbstractQtPlotItem(QtControl):
     def _refresh_plot(self):
         if self.plot:
             self.plot.clear()
+        if self.viewbox:
+            self.viewbox.close()
+        #if self.axis:
+        #    self.axis.close()
         #if not isinstance(self.parent(),AbstractQtPlotItem):
         #    print(self.widget.items)
         #self.widget.clear()
         
+        d = self.declaration
+        
         data = self._format_data()
         style = self._format_style()
+
+        if not self.is_root and d.parent.multi_axis:
+            self._refresh_multi_axis()
+            self.plot = self.viewbox.addItem(pg.PlotDataItem(*data,**style))
+        else:  
+            self.plot = self.widget.plot(*data,**style)
+            
+    def _refresh_multi_axis(self):
+        """ If linked axis' are used, setup and link them """
+        d = self.declaration
         
-        self.plot = self.widget.plot(*data,**style)
+        #: Create a separate viewbox
+        self.viewbox = pg.ViewBox()
+        
+        #: If this is the first nested plot, use the parent right axis
+        _plots = [c for c in self.parent().children() if isinstance(c,AbstractQtPlotItem)]
+        i = _plots.index(self)
+        if i==0:
+            self.axis = self.widget.getAxis('right') 
+            self.widget.showAxis('right')
+        else:
+            self.axis = pg.AxisItem('right')
+            self.axis.setZValue(-10000)
+            
+            #: Add new axis to scene
+            self.widget.layout.addItem(self.axis,2,i+2)
+        
+        #: Link x axis to the parent axis
+        self.viewbox.setXLink(self.widget.vb)
+        
+        #: Link y axis to the view
+        self.axis.linkToView(self.viewbox)
+        
+        #: Set axis label
+        self.axis.setLabel(d.label_right)
+        
+        #: Add Viewbox to parent scene
+        self.parent().parent_widget().scene().addItem(self.viewbox)
+        
+    
     
     def set_aspect_locked(self,locked):
         return
@@ -166,6 +230,13 @@ class AbstractQtPlotItem(QtControl):
     def set_grid_alpha(self,alpha):
         self.set_grid(self.declaration.grid)
         
+    def set_show_legend(self,show):
+        if show:
+            if not self.widget.legend:
+                self.widget.addLegend()
+        else:
+            self.widget.legend.hide()
+        
     def set_title(self,title):
         self.widget.setTitle(title)
         
@@ -176,6 +247,8 @@ class AbstractQtPlotItem(QtControl):
         self.widget.setLabel('left',text)
         
     def set_label_right(self,text):
+        if not self.is_root and self.declaration.parent.multi_axis:
+            return # don't override multi axis label
         self.widget.setLabel('right',text)
         
     def set_label_bottom(self,text):
@@ -260,18 +333,26 @@ class AbstractQtPlotItem(QtControl):
     def on_scale_changed(self,view_scale):
         pass
     
-    #
-    # Child events
-    #
-        
-    def child_added(self, child):
-        # TODO support layouts
-        if isinstance(child,AbstractQtPlotItem):
-            self.addItem(child.widget)
-        
-    def child_removed(self, child):
-        if isinstance(child,AbstractQtPlotItem):
-            self.removeItem(child.widget)
+    def on_resized(self):
+        """ Update linked views """
+        d = self.declaration
+        if not self.is_root and d.parent.multi_axis:
+            self.viewbox.setGeometry(self.widget.vb.sceneBoundingRect())
+            self.viewbox.linkedViewChanged(self.widget.vb,self.viewbox.XAxis)
+            
+    
+#     #
+#     # Child events
+#     #
+#         
+#     def child_added(self, child):
+#         # TODO support layouts
+#         if isinstance(child,AbstractQtPlotItem):
+#             self.addItem(child.widget)
+#         
+#     def child_removed(self, child):
+#         if isinstance(child,AbstractQtPlotItem):
+#             self.removeItem(child.widget)
 
 class QtPlotItem2D(AbstractQtPlotItem):
     
