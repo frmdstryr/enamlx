@@ -91,6 +91,7 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
         pass
     
     def init_layout(self):
+        super(AbstractQtWidgetItem, self).init_layout()
         self._update_index()
     
     def _update_index(self):
