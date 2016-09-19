@@ -59,11 +59,11 @@ class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
         pass # Takes a lot of time
     
     def child_added(self, child):
-        super(AbstractQtWidgetItemGroup, self).child_added()
+        super(AbstractQtWidgetItemGroup, self).child_added(child)
         self.get_member('_items').reset(self)
         
     def child_removed(self, child):
-        super(AbstractQtWidgetItemGroup, self).child_removed()
+        super(AbstractQtWidgetItemGroup, self).child_removed(child)
         self.get_member('_items').reset(self)
     
 def _abstract_item_view():

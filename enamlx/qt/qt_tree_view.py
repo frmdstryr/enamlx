@@ -5,7 +5,7 @@ Created on Aug 28, 2015
 @author: jrm
 '''
 from atom.api import (
-    Typed, Instance, Property
+    Typed, Instance, Property, Int
 )
 from enamlx.qt.qt_abstract_item_view import (
     QtAbstractItemView, QAbstractAtomItemModel
@@ -18,6 +18,7 @@ from enaml.qt.QtGui import QTreeView
 from enaml.qt.QtCore import Qt, QAbstractItemModel, QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
+from enaml.application import timed_call
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
     
@@ -142,10 +143,60 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
             d.visible_row = max(0,min(value,self.model.rowCount()-d.visible_rows))
             
 
-        
-                
-class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
+
+class AbstractQtTreeViewItem(AbstractQtWidgetItem):
+    """ Base TreeViewItem class """
+      
+    #: Pending refreshes when loading widgets
+    _refresh_count = Int(0)
     
+    #: Time to wait before loading widget
+    _loading_interval = Int(100) 
+    
+    def _get_index(self):
+        d = self.declaration
+        index = self.view.model.index(d.row,d.column,self.parent().index)
+        return index
+    
+    def _update_index(self):
+        self.index = self._get_index()
+        if self.delegate:
+            self._refresh_count +=1
+            timed_call(self._loading_interval,self._update_delegate)
+    
+    def _update_delegate(self):
+        """ Update the delegate cell widget. This is deferred so it
+        does not get called until the user is done scrolling. 
+        """
+        self._refresh_count -=1
+        if self._refresh_count!=0:
+            return
+        
+        return # DISABLED
+        
+        try:
+            delegate = self.delegate
+            if not self._is_visible():
+                return
+            # The table destroys when it goes out of view
+            # so we always have to make a new one
+            delegate.create_widget()
+            delegate.init_widget()
+            
+            #  Set the index widget
+            self.view.widget.setIndexWidget(self.index,delegate.widget)
+        except RuntimeError:
+            pass # Since this is deferred, the table could be deleted already
+        
+    def _is_visible(self):
+        return True
+    
+    def data_changed(self, change):
+        """ Notify the model that data has changed in this cell! """
+        self.view.model.dataChanged.emit(self.index,self.index)
+                
+class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
+  
     def _get_items(self):
         """ Get the child items of this node"""
         return [c for c in self.children() if isinstance(c,QtTreeViewItem)]
@@ -177,17 +228,6 @@ class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
             return parent
         return parent.view
         
-    def _update_index(self):
-        d = self.declaration
-        #parent = self.parent()
-        #parent_index = parent.index if parent!=self.view else QModelIndex()
-        self.index = self.view.model.index(d.row,d.column,self.parent().index)#.parent())
-    
-    def data_changed(self, change):
-        """ Notify the model that data has changed in this cell! """
-        #return # For now
-        self.view.model.dataChanged.emit(self.index,self.index)
-        
     def child_added(self, child):
         super(QtTreeViewItem, self).child_added(child)
         self.get_member('_columns').reset(self)
@@ -196,7 +236,7 @@ class QtTreeViewItem(AbstractQtWidgetItem, ProxyTreeViewItem):
         super(QtTreeViewItem, self).child_removed(child)
         self.get_member('_columns').reset(self)
         
-class QtTreeViewColumn(AbstractQtWidgetItem,ProxyTreeViewColumn):
+class QtTreeViewColumn(AbstractQtTreeViewItem,ProxyTreeViewColumn):
     
     def create_widget(self):
         for child in self.children():
@@ -212,15 +252,12 @@ class QtTreeViewColumn(AbstractQtWidgetItem,ProxyTreeViewColumn):
         """
         return self.parent().view
     
-    def _update_index(self):
-        """ The parent """
-        return
+    def _get_index(self):
         d = self.declaration
-        self.index = self.view.model.index(d.row,d.column,self.parent().index)
+        return self.parent().index#self.view.model.index(d.row,d.column,self.parent().index)
     
-    def data_changed(self, change):
-        """ Notify the model that data has changed in this cell! """
-        return # For now
-        self.view.model.dataChanged.emit(self.index,self.index)
+    #def _update_index(self):
+    #    """ The parent """
+    #    self.index = self.parent().index
     
         

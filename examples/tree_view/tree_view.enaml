@@ -67,10 +67,10 @@ enamldef Main(Window):
                            age=i,
                            debug=bool(i&1),
                            children=[
-                                Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
-                                Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
-                            ]
-                    ) for i in range(10000)])
+                                Person(last_name='Lill-%i-%i'%(i,j),first_name='Jill-%i-%i'%(i,j),age=i)
+                                #Person(last_name='Wack-%i-%i'%(i,j),first_name='Jack-%i-%i'%(i,j),age=i),
+                            for j in range(10)]
+                    ) for i in range(1000)])
     Container:
         PushButton:
             text = 'Add person'
@@ -80,7 +80,7 @@ enamldef Main(Window):
             clicked :: model.remove_person()
             
         TreeView: tree:
-            horizontal_headers << ['#','Debug','First','Last','Age']
+            horizontal_headers << ['#','Debug','First','Last','Age','Relationship']
             items << model.people
             
             Looper:
@@ -100,9 +100,13 @@ enamldef Main(Window):
                     TreeViewColumn:
                         text << person.last_name
                     TreeViewColumn:
+                        SpinBox:
+                            value << person.age
+                    TreeViewColumn:
                         text = 'parent'
                         foreground << '#CCCCCC' if parent_index &1 else '#333333'
                     
+                    # TODO: This should only be run when expanded
                     Looper:
                         iterable << range(min(tree.visible_rows,len(parent.items)))
                         TreeViewItem:
@@ -116,8 +120,13 @@ enamldef Main(Window):
                             TreeViewColumn:
                                 text << child.last_name
                             TreeViewColumn:
+                                SpinBox:
+                                    value << child.age
+                            TreeViewColumn:
                                 text = 'child'
-                    
+                            
+                            # TODO: How to go arbitrarily deep?
+                            
 #                     Looper:
 #                         iterable << parent.items if parent.items else []
 #                         TreeViewItem:
