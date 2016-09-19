@@ -4,7 +4,7 @@ Created on Jun 3, 2015
 @author: jrm
 '''
 from atom.api import (
-    ContainerList, Typed, Bool, ForwardTyped, observe
+    ContainerList, Typed, Int, Bool, ForwardTyped, observe
 )
 from enaml.core.declarative import d_
 from enamlx.widgets.abstract_item_view import (
@@ -51,6 +51,18 @@ class TreeViewItem(AbstractWidgetItem):
     
     #: The child items
     items = d_(ContainerList(default=[]))
+    
+    #: First visible row
+    visible_row = d_(Int(0))
+    
+    #: Number of rows visible
+    visible_rows = d_(Int(100), writable=False)
+    
+    #: First visible column
+    visible_column = d_(Int(0))
+    
+    #: Number of columns visible
+    visible_columns = d_(Int(1), writable=False)
 
     @observe('row')
     def _update_index(self,change):

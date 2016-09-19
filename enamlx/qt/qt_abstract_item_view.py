@@ -256,35 +256,45 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item = self.item_at(index)
         if not item:
             return
-        item.parent().declaration.activated()
+        parent = item.parent()
+        if parent != self:
+            parent.declaration.activated()
         item.declaration.activated()
         
     def on_item_clicked(self, index):
         item = self.item_at(index)
         if not item:
             return
-        item.parent().declaration.clicked()
+        parent = item.parent()
+        if parent != self:
+            parent.declaration.clicked()
         item.declaration.clicked()
         
     def on_item_double_clicked(self, index):
         item = self.item_at(index)
         if not item:
             return
-        item.parent().declaration.double_clicked()
+        parent = item.parent()
+        if parent != self:
+            parent.declaration.double_clicked()
         item.declaration.double_clicked()
         
     def on_item_pressed(self,index):
         item = self.item_at(index)
         if not item:
             return
-        item.parent().declaration.pressed()
+        parent = item.parent()
+        if parent != self:
+            parent.declaration.pressed()
         item.declaration.pressed()
     
     def on_item_entered(self,index):
         item = self.item_at(index)
         if not item:
             return
-        item.parent().declaration.entered()
+        parent = item.parent()
+        if parent != self:
+            parent.declaration.entered()
         item.declaration.entered()
     
     def on_selection_changed(self,selected,deselected):

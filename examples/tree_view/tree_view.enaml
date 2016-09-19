@@ -1,3 +1,4 @@
+import os
 from atom.api import (Atom, Unicode, Range, List, Bool, ForwardInstance)
 
 from enamlx.widgets.api import (
@@ -9,6 +10,23 @@ from enaml.widgets.api import (
 )
 from enaml.core.looper import Looper
 from enaml.stdlib.mapped_view import MappedView
+
+from enaml.image import Image
+from enaml.icon import Icon,IconImage
+
+def icon_path(name):
+    path = os.getcwd()
+    return os.path.join(path,'../','images','icons','%s.png'%name)
+
+def load_image(name):
+    with open(icon_path(name),'rb') as f:
+        data = f.read()
+    return Image(data=data)
+
+def load_icon(name):
+    img = load_image(name)
+    icg = IconImage(image=img) 
+    return Icon(images=[icg])
 
 class Person(Atom):
     """ A simple class representing a person object.
@@ -23,6 +41,9 @@ class Person(Atom):
     age = Range(low=0)
 
     debug = Bool(False)
+    
+    def __repr__(self):
+        return "Person(first_name={},last_name={})".format(self.first_name,self.last_name)
 
 class Model(Atom):
     people = List(Person)
@@ -41,11 +62,15 @@ class Model(Atom):
 
 enamldef Main(Window):
     attr model = Model(people=[
-                    Person(last_name='Jones-%i'%i,first_name='Bob-%i'%i,age=i,children=[
-                        Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
-                        Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
-                        ]
-                    ) for i in range(2)])
+                    Person(last_name='Jones-%i'%i,
+                           first_name='Bob-%i'%i,
+                           age=i,
+                           debug=bool(i&1),
+                           children=[
+                                Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
+                                Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
+                            ]
+                    ) for i in range(10000)])
     Container:
         PushButton:
             text = 'Add person'
@@ -59,7 +84,7 @@ enamldef Main(Window):
             items << model.people
             
             Looper:
-                iterable << range(tree.visible_rows)
+                iterable << range(min(tree.visible_rows,len(tree.items)))
                 TreeViewItem:
                     attr parent_index << tree.visible_row+loop_index
                     attr person << tree.items[parent_index] 
@@ -69,16 +94,29 @@ enamldef Main(Window):
                     TreeViewColumn:
                         checkable = True
                         checked := person.debug
+                        icon << person.debug and load_icon('bug') or None
                     TreeViewColumn:
                         text << person.first_name
                     TreeViewColumn:
                         text << person.last_name
                     TreeViewColumn:
-                        text = 'Hello wolrd?'
-                        pass
+                        text = 'parent'
+                        foreground << '#CCCCCC' if parent_index &1 else '#333333'
                     
-                    TreeViewItem:
-                        text << 'HELLO'
+                    Looper:
+                        iterable << range(min(tree.visible_rows,len(parent.items)))
+                        TreeViewItem:
+                            attr child << parent.items[loop_index]
+                            text << '{}'.format(child)
+                            TreeViewColumn:
+                                checkable = True
+                                checked := child.debug
+                            TreeViewColumn:
+                                text << child.first_name
+                            TreeViewColumn:
+                                text << child.last_name
+                            TreeViewColumn:
+                                text = 'child'
                     
 #                     Looper:
 #                         iterable << parent.items if parent.items else []
