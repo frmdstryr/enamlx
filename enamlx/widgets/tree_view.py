@@ -44,6 +44,17 @@ class TreeView(AbstractItemView):
         # The superclass handler implementation is sufficient.
         super(TreeView, self)._update_proxy(change)
         
+    def child_added(self, child):
+        super(TreeView, self).child_added(child)
+        self._update_rows()
+        
+    def child_removed(self, child):
+        super(TreeView, self).child_removed(child)
+        self._update_rows()
+        
+    def _update_rows(self):
+        for r,item in enumerate(self._items):
+            item.row = r
 
 class TreeViewItem(AbstractWidgetItem):
     #: Proxy reference
@@ -63,12 +74,23 @@ class TreeViewItem(AbstractWidgetItem):
     
     #: Number of columns visible
     visible_columns = d_(Int(1), writable=False)
-
-    @observe('row')
-    def _update_index(self,change):
-        for column,item in enumerate(self._items):
-            item.row = self.row # Row is the Parent item
-            item.column = column
+    
+    def _get_items(self):
+        return [c for c in self.children if isinstance(c,TreeViewItem)]
+    
+    def child_added(self, child):
+        super(TreeViewItem, self).child_added(child)
+        self._update_rows()
+        
+    def child_removed(self, child):
+        super(TreeViewItem, self).child_removed(child)
+        self._update_rows()
+    
+    def _update_rows(self):
+        """ Update the row numbers """
+        for row,item in enumerate(self._items):
+            item.row = row # Row is the Parent item
+            item.column = 0
         
 class TreeViewColumn(AbstractWidgetItem):
     """ Use this to build a table by defining the columns. 

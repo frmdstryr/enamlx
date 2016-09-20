@@ -22,44 +22,50 @@ from enaml.application import timed_call
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
     
-    def rowCount(self, index=None):
+    def rowCount(self, index):
+        #print 'rowCount',index.row(),index.column(),index.internalPointer()
         d = self.declaration
         if d.vertical_headers:
             return len(d.vertical_headers)
+        elif index.column()>0:
+            return 0
         item = self.itemAt(index)
-        d = item.declaration if item else self.declaration
+        if item:
+            d = item.declaration
         return len(d.items)
     
-    def columnCount(self, index=None):
+    def columnCount(self, index):
+        #print 'columnCount',index.row(),index.column()
         d = self.declaration
         if d.horizontal_headers:
             return len(d.horizontal_headers)
+        elif index.column()>0:
+            return 0
         item = self.itemAt(index)
         if not item:
             return 0
         d = item.declaration
-        return len(d.items)
+        return len(d.proxy._columns)
     
     def index(self, row, column, parent):
         """ The index should point to the corresponding 
             QtControl in the enaml hierarchy 
         """
-        if not parent or not parent.isValid():
-            d = self.declaration
-            return self.createIndex(row,column,d.proxy)
-        item = parent.internalPointer()
-        d = item.declaration
-        return self.createIndex(row,column,d._items[row].proxy)
-
+        d = self.declaration
+        if parent.isValid():
+            item = self.itemAt(parent)
+            if item:
+                d = item.declaration
+        return self.createIndex(row,column,d.proxy)
+        #print "index ({},{}) of {} is {}".format(row,column,d,item)
+        #return index
+ 
     def parent(self, index):
         if not index.isValid():
             return QModelIndex()
-        item = index.internalPointer()
-        if item.declaration == self.declaration:
-            return QModelIndex()
-        parent = item.parent()
-        return self.createIndex(0, 0, parent)
-     
+        parent = index.internalPointer()
+        return parent.index
+
     def itemAt(self,index=None):
         if not index or not index.isValid():
             return
@@ -69,8 +75,10 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
             r = index.row() - d.visible_row
             c = index.column() - d.visible_column
             #: First column is the item
+            #print parent,[it.declaration.text for it in parent._items],r,c
             return parent._items[r]._columns[c]
-        except IndexError:
+        except IndexError as e:
+            #print e
             return None
 
 class QtTreeView(QtAbstractItemView, ProxyTreeView):
@@ -87,7 +95,6 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
     #: TODO: Is a cached property the right thing to use here??
     #: Why not a list??
     _items = Property(lambda self:self._get_items(),cached=True)
-    
     
     def create_widget(self):
         self.widget = QTreeView(self.parent_widget())
@@ -124,7 +131,6 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         
     def set_model(self, model):
         super(QtTreeView, self).set_model(model)
-        self.index = self.model.index(0,0,None)
         
     #--------------------------------------------------------------------------
     # View refresh handlers
@@ -134,13 +140,13 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         if self._pending_column_refreshes==0:
             d = self.declaration
             # TODO: What about parents???
-            d.visible_column = max(0,min(value,self.model.columnCount()-d.visible_columns))
+            d.visible_column = max(0,min(value,self.model.columnCount(self.index)-d.visible_columns))
         
     def _refresh_visible_row(self, value):
         self._pending_row_refreshes -=1
         if self._pending_row_refreshes==0:
             d = self.declaration
-            d.visible_row = max(0,min(value,self.model.rowCount()-d.visible_rows))
+            d.visible_row = max(0,min(value,self.model.rowCount(self.index)-d.visible_rows))
             
 
 
@@ -151,15 +157,17 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
     _refresh_count = Int(0)
     
     #: Time to wait before loading widget
-    _loading_interval = Int(100) 
+    _loading_interval = Int(100)
     
-    def _get_index(self):
+    def set_row(self, row):
+        self._update_index()
+        
+    def _default_index(self):
         d = self.declaration
-        index = self.view.model.index(d.row,d.column,self.parent().index)
-        return index
+        return self.view.model.index(d.row,d.column,self.parent().index)
     
     def _update_index(self):
-        self.index = self._get_index()
+        self.index = self._default_index()
         if self.delegate:
             self._refresh_count +=1
             timed_call(self._loading_interval,self._update_delegate)
@@ -210,14 +218,6 @@ class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
     def create_widget(self):
         pass
     
-    def init_layout(self):
-        self._update_layout()
-        super(QtTreeViewItem, self).init_layout()
-        
-    def _update_layout(self):
-        for r,child in enumerate(self._items):
-            child.declaration.row = r
-        
     def _default_view(self):
         """ If this is the root item, return the parent
             which must be a TreeView, otherwise return the
@@ -244,7 +244,7 @@ class QtTreeViewColumn(AbstractQtTreeViewItem,ProxyTreeViewColumn):
                 self.delegate = child
                 
     def set_column(self,column):
-        pass
+        self._update_index()
                 
     def _default_view(self):
         """ Since the TreeViewColumn must be a child of a TreeViewItem,
@@ -252,12 +252,7 @@ class QtTreeViewColumn(AbstractQtTreeViewItem,ProxyTreeViewColumn):
         """
         return self.parent().view
     
-    def _get_index(self):
+    def _default_index(self):
         d = self.declaration
-        return self.parent().index#self.view.model.index(d.row,d.column,self.parent().index)
-    
-    #def _update_index(self):
-    #    """ The parent """
-    #    self.index = self.parent().index
-    
+        return self.view.model.index(d.row,d.column,self.parent().index)
         

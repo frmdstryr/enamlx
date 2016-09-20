@@ -67,7 +67,7 @@ class AbstractWidgetItemGroup(Control):
         return [c for c in self.children if isinstance(c,AbstractWidgetItem)]
     
     #: Internal item reference
-    _items = Property(_get_items,cached=True)
+    _items = Property(lambda self:self._get_items(),cached=True)
         
     def child_added(self, child):
         """ Reset the item cache when a child is added """
