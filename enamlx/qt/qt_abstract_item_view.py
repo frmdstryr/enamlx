@@ -8,7 +8,7 @@ from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
 from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
-from enaml.qt.QtCore import Qt, QAbstractItemModel
+from enaml.qt.QtCore import Qt, QAbstractItemModel, QSize
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 
 from enamlx.qt.qt_abstract_item import (
@@ -37,6 +37,8 @@ class QAbstractAtomItemModel(object):
         self.declaration = declaration
     
     def data(self, index, role):
+        """ @see http://doc.qt.io/qt-4.8/qt.html#ItemDataRole-enum
+        """
         item = self.itemAt(index)
         if not item:
             return None
@@ -61,8 +63,8 @@ class QAbstractAtomItemModel(object):
             return get_cached_qcolor(d.foreground)
         elif role == Qt.BackgroundRole and d.background:
             return get_cached_qcolor(d.background)
-        #elif role == Qt.SizeHintRole and d.width:
-        #    return 20 
+        #elif role == Qt.SizeHintRole and (d.minimum_size):
+        #    return d.minimum_size
         return None
     
     def flags(self, index):
@@ -97,6 +99,14 @@ class QAbstractAtomItemModel(object):
         return super(QAbstractAtomItemModel, self).setData(index, value, role)
     
     def headerData(self, index, orientation, role):
+        """ QHeaderView respects the following item data roles: 
+                TextAlignmentRole, 
+                DisplayRole, 
+                FontRole, 
+                DecorationRole, 
+                ForegroundRole, 
+                BackgroundRole.
+        """
         d = self.declaration
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             try:

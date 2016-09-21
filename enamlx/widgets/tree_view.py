@@ -4,7 +4,7 @@ Created on Jun 3, 2015
 @author: jrm
 '''
 from atom.api import (
-    ContainerList, Typed, Int, Bool, ForwardTyped, observe
+    ContainerList, Typed, Int, Bool, Property, ForwardTyped, observe
 )
 from enaml.core.declarative import d_
 from enamlx.widgets.abstract_item_view import (
@@ -36,6 +36,12 @@ class TreeView(AbstractItemView):
     
     #: Show root node
     show_root = d_(Bool(True))
+    
+    #: Root item row
+    row = d_(Int(0),writable=False)
+    
+    #: Root item column
+    column = d_(Int(0),writable=False)
     
     @observe('show_root')
     def _update_proxy(self, change):
@@ -76,21 +82,39 @@ class TreeViewItem(AbstractWidgetItem):
     visible_columns = d_(Int(1), writable=False)
     
     def _get_items(self):
+        """ Items should be a list of child TreeViewItems excluding
+            columns.
+        """
         return [c for c in self.children if isinstance(c,TreeViewItem)]
+    
+    def _get_columns(self):
+        """ List of child TreeViewColumns including 
+            this item as the first column
+        """
+        return [self] +[c for c in self.children if isinstance(c,TreeViewColumn)]
+    
+    #: Columns
+    _columns = Property(lambda self:self._get_columns(),cached=True)
     
     def child_added(self, child):
         super(TreeViewItem, self).child_added(child)
+        self.get_member('_columns').reset(self)
         self._update_rows()
         
     def child_removed(self, child):
         super(TreeViewItem, self).child_removed(child)
+        self.get_member('_columns').reset(self)
         self._update_rows()
-    
+
     def _update_rows(self):
-        """ Update the row numbers """
+        """ Update the row and column numbers of child items. """
         for row,item in enumerate(self._items):
             item.row = row # Row is the Parent item
             item.column = 0
+        
+        for column,item in enumerate(self._columns):
+            item.row = self.row # Row is the Parent item
+            item.column = column
         
 class TreeViewColumn(AbstractWidgetItem):
     """ Use this to build a table by defining the columns. 
