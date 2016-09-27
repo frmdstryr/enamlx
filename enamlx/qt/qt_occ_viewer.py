@@ -40,7 +40,7 @@ class QtBaseViewer(QtOpenGL.QGLWidget):
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setAutoFillBackground(False)
 
-    def GetHandle(self):
+    def getHandle(self):
         ''' returns an the identifier of the GUI widget.
         It must be an integer
         '''
@@ -82,8 +82,8 @@ class QtViewer3d(QtBaseViewer):
         self._selection = None
         self._drawtext = True
 
-    def InitDriver(self):
-        self._display = OCCViewer.Viewer3d(self.GetHandle())
+    def initDriver(self):
+        self._display = OCCViewer.Viewer3d(self.getHandle())
         self._display.Create()
         # background gradient
         self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
@@ -190,6 +190,7 @@ class QtViewer3d(QtBaseViewer):
                     # single select otherwise
                     self._display.Select(pt.x, pt.y)
         elif event.button() == Qt.RightButton:
+            
             if self._zoom_area:
                 [Xmin, Ymin, dx, dy] = self._drawbox
                 self._display.ZoomArea(Xmin, Ymin, Xmin + dx, Ymin + dy)
@@ -257,8 +258,12 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         self.init_display()
     
     def init_display(self):
-        self.widget.InitDriver()
+        self.widget.initDriver()
         
-        from OCC.BRepPrimAPI import BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeBox
+    def init_layout(self):
+        for c in self.children():
+            self.display_shape(c.shape)
+        
+    def display_shape(self, shape):
         display = self.widget._display
-        display.DisplayShape(BRepPrimAPI_MakeSphere(100).Shape(), update=True)
+        display.DisplayShape(shape.Shape(), update=True)

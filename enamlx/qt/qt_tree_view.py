@@ -24,22 +24,22 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
     
     def rowCount(self, index):
         #print 'rowCount',index.row(),index.column(),index.internalPointer()
-        d = self.declaration
-        if d.vertical_headers:
-            return len(d.vertical_headers)
-        item = index.internalPointer()
-        if not item:
+        if not index.isValid():
             return len(self.declaration.items)
-        d = item.declaration
-        #print 'rowcount ',len(d.items)
+        parent = index.internalPointer()
+        d = parent.declaration._items[index.row()]
+        print 'rowcount ',len(d.items),d
         return len(d.items)
     
     def columnCount(self, index):
         d = self.declaration
         if d.horizontal_headers:
             return len(d.horizontal_headers)
-        item = index.internalPointer()
-        return len(item.declaration._columns)
+        elif not index.isValid():
+            return 0
+        parent = index.internalPointer()
+        d = parent.declaration._items[index.row()]
+        return len(d._columns)
     
     def index(self, row, column, parent):
         """ The index should point to the corresponding 
@@ -48,17 +48,22 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         item = parent.internalPointer()
         d = item.declaration if item else self.declaration
         r = row#%self.declaration.visible_rows
-        #print row,r,item,len(item._items)
-        if r<len(d._items):
-            return self.createIndex(row,column,d._items[r].proxy)
-        return QModelIndex()
-  
+        print 'createIndex',d.proxy,row,column
+        return self.createIndex(row,column,d.proxy)
+        #return self.createIndex(row,column,d._items[r].proxy)
+
     def parent(self, index):
-        item = index.internalPointer()
-        if not item or item.declaration==self.declaration:
+        parent = index.internalPointer()
+        d = parent.declaration
+        if d==self.declaration:
             return QModelIndex()
-        parent = item.parent()
-        return self.createIndex(parent.declaration.row,0,parent)
+        #d = d.parent
+        return self.createIndex(d.row,0,d.parent.proxy)
+#         print 'parent',index.row(),index.column(),item
+#         if not item or item.declaration==self.declaration:
+#             return QModelIndex()
+#         return item.index
+        #return self.createIndex(parent.declaration.row,0,parent)
 
     def itemAt(self,index=None):
         if not index or not index.isValid():
@@ -66,9 +71,11 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         item = index.internalPointer()
         d = item.declaration
         try:
+            print d,d.row,d.column,index.row(),index.column()
+            r = index.row()
             c = index.column()# - d.visible_column
             #: First column is the item
-            return d._columns[c].proxy
+            return d._items[r]._columns[c].proxy
         except IndexError:
             return
 
@@ -153,7 +160,8 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
     
     def create_widget(self):
         for child in self.children():
-            if isinstance(child, (Pattern, QtWidget)):
+            if (not isinstance(child,AbstractQtTreeViewItem) 
+                and isinstance(child, (Pattern, QtWidget))):
                 self.delegate = child
     
     def set_row(self, row):
@@ -164,11 +172,18 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
         
     def _default_index(self):
         d = self.declaration
-        return self.view.model.index(d.row,d.column,self.parent().index)
+        parent_index = self.parent().index
+        #print d,d.row,d.column,parent_index.row(),parent_index.column(),parent_index.internalPointer()
+        return self.view.model.index(d.row,d.column,parent_index)
     
     def _update_index(self):
         self.index = self._default_index()
-        if self.delegate:
+        print 'UPDATE',self.declaration.text,self,self.index.internalPointer(),self.index.row(),self.index.column(),self.index.parent()
+
+        assert self == self.view.model.itemAt(self.index)
+        
+        if self.delegate and self.index.isValid():
+            #print self.parent(),self,self.index.row(),self.index.column()
             self._refresh_count +=1
             timed_call(self._loading_interval,self._update_delegate)
     
@@ -187,7 +202,7 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
             if not self._is_visible():
                 return
             
-            print self.index.row(),self.index.column(),self.index.internalPointer()
+            print self,self.index.row(),self.index.column(),self.index.internalPointer()
             # The table destroys when it goes out of view
             # so we always have to make a new one
             delegate.create_widget()
@@ -220,13 +235,17 @@ class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
         
 class QtTreeViewColumn(AbstractQtTreeViewItem,ProxyTreeViewColumn):
     
+#     def _default_index(self):
+#         d = self.declaration
+#         # Return index that will retreive this column
+#         index = self.view.model.index(d.row,d.column,self.parent().index)#.parent().index)
+#         #index = super(QtTreeViewColumn, self)._default_index()
+#         print "column index ({},{}) is {}".format(d.row,d.column,index)
+#         return index
+    
     def _default_view(self):
         """ Since the TreeViewColumn must be a child of a TreeViewItem,
             simply return the Item's view.
         """
         return self.parent().view
-    
-    def _default_index(self):
-        d = self.declaration
-        return self.view.model.index(d.row,d.column,self.parent().index)
         

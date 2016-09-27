@@ -1,0 +1,17 @@
+from enaml.widgets.api import Window, Container, Label
+
+from enamlx.widgets.occ_viewer import OccViewer
+from occ.brep import BRepBox
+
+enamldef Main(Window):
+    attr message = "Hello, world!"
+    minimum_size = (720,560)
+    Container:
+        
+        Label:
+            text = "hello"
+        OccViewer:
+            BRepBox:
+                dx = 10
+                dy = 2
+                dz = 5
