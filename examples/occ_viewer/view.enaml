@@ -1,17 +1,58 @@
-from enaml.widgets.api import Window, Container, Label
+from enaml.widgets.api import Window, Form, SpinBox, Container, Label
 
 from enamlx.widgets.occ_viewer import OccViewer
-from occ.brep import BRepBox
+from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
+import math
 
 enamldef Main(Window):
     attr message = "Hello, world!"
     minimum_size = (720,560)
     Container:
-        
-        Label:
-            text = "hello"
+        Form:
+            Label:
+                text = "x"
+            SpinBox:
+                value<< int(box.dx)
+                value :: box.dx = change['value']
+            Label:
+                text = "y"
+            SpinBox:
+                value<< int(box.dy)
+                value :: box.dy = change['value']
+            Label:
+                text = "z"
+            SpinBox:
+                value<< int(box.dz)
+                value :: box.dz = change['value']
+                
         OccViewer:
-            BRepBox:
+            Box: box:
+                position = (10,0,0)
                 dx = 10
                 dy = 2
                 dz = 5
+                
+            Cone: cone:
+                position = (0,10,0)
+                radius = 1
+                height = 5
+            
+            Cylinder: cylinder:
+                position = (10,10,0)
+                radius = 2
+                #angle = math.pi/2.0
+                
+            Sphere: sphere:
+                position = (0,0,0)
+                radius = 3
+                #angle = 1.5*math.pi
+                
+            Wedge: wedge:
+                position = (-10,0,0)
+                dy = 2
+            
+            Torus:
+                position = (-10,-10,0)
+                radius = 2
+                radius2 = 0.4
+                angle = math.pi

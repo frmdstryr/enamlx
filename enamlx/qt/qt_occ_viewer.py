@@ -40,7 +40,7 @@ class QtBaseViewer(QtOpenGL.QGLWidget):
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setAutoFillBackground(False)
 
-    def getHandle(self):
+    def GetHandle(self):
         ''' returns an the identifier of the GUI widget.
         It must be an integer
         '''
@@ -83,7 +83,7 @@ class QtViewer3d(QtBaseViewer):
         self._drawtext = True
 
     def initDriver(self):
-        self._display = OCCViewer.Viewer3d(self.getHandle())
+        self._display = OCCViewer.Viewer3d(self.GetHandle())
         self._display.Create()
         # background gradient
         self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
@@ -255,15 +255,30 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         self.widget = QtViewer3d(parent=self.parent_widget())
         
     def init_widget(self):
-        self.init_display()
-    
-    def init_display(self):
         self.widget.initDriver()
         
     def init_layout(self):
-        for c in self.children():
-            self.display_shape(c.shape)
+        for child in self.children():
+            self.child_added(child)
         
-    def display_shape(self, shape):
+            
+    def child_added(self, child):
+        super(QtOccViewer, self).child_added(child)
+        child.observe('shape',self.update_display)
+        self.update_display({'value':child.shape,
+                             'type':'update',
+                             'name':'shape',
+                             'owner':child})
+        
+    def child_removed(self, child):
+        super(QtOccViewer, self).child_removed(child)
+        child.unobserve('shape',self.update_display)
+        
+    def update_display(self, change):
+        #: TO
         display = self.widget._display
-        display.DisplayShape(shape.Shape(), update=True)
+        display.EraseAll()
+        shapes = [c.shape.Shape() for c in self.children()]
+        for i,s in enumerate(shapes):
+            update = i+1==len(shapes)
+            display.DisplayShape(s, update=update)
