@@ -11,6 +11,7 @@ from enaml.core.declarative import d_
 from enaml.widgets.control import ProxyControl
 from OCC.gp import gp_Pnt,gp_Ax2, gp_Dir
 from OCC.TopoDS import TopoDS_Face, TopoDS_Shell, TopoDS_Shape
+from OCC.Quantity import Quantity_Color
 
 class ProxyShape(ProxyControl):
     #: A reference to the Shape declaration.
@@ -24,6 +25,9 @@ class ProxyShape(ProxyControl):
     
     def set_axis(self, axis):
         raise NotImplementedError
+    
+    def set_color(self,color):
+        pass
 
 class ProxyBox(ProxyShape):
     #: A reference to the shape declaration.
@@ -147,6 +151,9 @@ class Shape(ToolkitObject):
     #: Reference to the implementation control
     proxy = Typed(ProxyShape)
     
+    #: Color
+    color = d_(Instance((basestring,Quantity_Color)))
+    
     #: Position
     position = d_(Coerced(gp_Pnt,(0,0,0),coercer=lambda args:gp_Pnt(*args)))
     
@@ -163,7 +170,7 @@ class Shape(ToolkitObject):
     def _default_axis(self):
         return gp_Ax2(self.position,self.direction)
     
-    @observe('axis')
+    @observe('axis','color')
     def _update_proxy(self, change):
         super(Shape, self)._update_proxy(change)
 

@@ -18,7 +18,7 @@ from occ.brep import ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,\
 class OccShape(ProxyShape):
     #: A reference to the toolkit shape created by the proxy.
     shape = Typed(BRepBuilderAPI_MakeShape)
-
+    
     #--------------------------------------------------------------------------
     # Initialization API
     #--------------------------------------------------------------------------

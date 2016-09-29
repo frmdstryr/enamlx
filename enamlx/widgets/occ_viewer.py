@@ -4,7 +4,7 @@ Created on Sep 26, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-    Tuple, Bool, Int, Enum, Typed, ForwardTyped, observe, set_default
+    List, Tuple, Bool, Int, Enum, Typed, ForwardTyped, observe, set_default
 )
 
 from enaml.core.declarative import d_
@@ -22,6 +22,9 @@ class ProxyOccViewer(ProxyControl):
         raise NotImplementedError
     
     def set_pan(self, position):
+        raise NotImplementedError
+    
+    def set_background_gradient(self, gradient):
         raise NotImplementedError
     
     def set_zoom(self, zoom):
@@ -43,6 +46,9 @@ class ProxyOccViewer(ProxyControl):
         raise NotImplementedError
     
     def set_display_mode(self, mode):
+        raise NotImplementedError
+    
+    def set_trihedron_mode(self, mode):
         raise NotImplementedError
     
     def set_view_mode(self,mode):
@@ -67,10 +73,25 @@ class OccViewer(Control):
     position = d_(Tuple(Int(strict=False),default=(0,0)))
     
     #: Display mode
-    display_mode = Enum('shaded','hlr','wire_frame')
+    display_mode = d_(Enum('shaded','hlr','wireframe'))
+    
+    #: Selection mode
+    selection_mode = d_(Enum('shape','neutral','face','edge','vertex'))
+    
+    #: Selected items
+    selection = d_(List(),writable=False)
     
     #: View direction
-    view_mode = Enum('iso','top','bottom','left','right','front','rear')
+    view_mode = d_(Enum('iso','top','bottom','left','right','front','rear'))
+    
+    #: Selection event
+    #reset_view = d_(Event(),writable=False)
+    
+    #: Show tahedron
+    trihedron_mode = d_(Enum('right-lower','disabled'))
+    
+    #: Background gradient
+    background_gradient = d_(Tuple(Int(),default=(206, 215, 222, 128, 128, 128)))
     
     #: Use double buffering
     double_buffer = d_(Bool(True))
@@ -96,8 +117,10 @@ class OccViewer(Control):
     #--------------------------------------------------------------------------
     # Observers
     #--------------------------------------------------------------------------
-    @observe('position', 'display_mode', 'view_mode', 
-        'double_buffer','shadows', 'reflections', 'antialiasing')
+    @observe('position', 'display_mode', 'view_mode', 'trihedron_mode',
+             'selection_mode',
+             'background_gradient', 'double_buffer','shadows', 
+             'reflections', 'antialiasing')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """

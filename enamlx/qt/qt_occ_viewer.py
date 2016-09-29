@@ -9,7 +9,7 @@ Created on Sep 26, 2016
 
 import sys
 import logging
-from atom.api import Typed
+from atom.api import Typed, Int, Property
 
 from OCC.Display import OCCViewer
 
@@ -18,6 +18,7 @@ from ..widgets.occ_viewer import ProxyOccViewer
 from enaml.qt import QtCore, QtGui, QtOpenGL
 from enaml.qt.QtCore import Qt
 from enaml.qt.qt_control import QtControl
+from enaml.application import timed_call
 
 log = logging.getLogger(__name__)
 
@@ -81,21 +82,21 @@ class QtViewer3d(QtBaseViewer):
         self._rightisdown = False
         self._selection = None
         self._drawtext = True
-
-    def initDriver(self):
-        self._display = OCCViewer.Viewer3d(self.GetHandle())
-        self._display.Create()
-        # background gradient
-        self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
-        # background gradient
-        self._display.display_trihedron()
-        self._display.SetModeShaded()
-        self._display.EnableAntiAliasing()
-        self._inited = True
-        # dict mapping keys to functions
-        self._SetupKeyMap()
-        #
-        self._display.thisown = False
+# 
+#     def initDriver(self):
+#         self._display = OCCViewer.Viewer3d(self.GetHandle())
+#         self._display.Create()
+#         # background gradient
+#         self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
+#         # background gradient
+#         self._display.display_trihedron()
+#         self._display.SetModeShaded()
+#         self._display.EnableAntiAliasing()
+#         self._inited = True
+#         # dict mapping keys to functions
+#         self._SetupKeyMap()
+#         #
+#         self._display.thisown = False
 
     def _SetupKeyMap(self):
         def set_shade_mode():
@@ -249,36 +250,161 @@ class QtViewer3d(QtBaseViewer):
             self._display.MoveTo(pt.x(), pt.y())
             
 class QtOccViewer(QtControl,ProxyOccViewer):
+    #: Viewer widget
     widget = Typed(QtViewer3d)
+    
+    #: Update count
+    _update_count = Int(0)
+    
+    #: Shapes
+    shapes = Property(lambda self:self.get_shapes(),cached=True)
+    
+    @property
+    def display(self):
+        return self.widget._display
+    
+    def get_shapes(self):
+        return [c for c in self.children()]
     
     def create_widget(self):
         self.widget = QtViewer3d(parent=self.parent_widget())
         
     def init_widget(self):
-        self.widget.initDriver()
+        d = self.declaration
+        widget = self.widget
+        
+        #: Create viewer
+        widget._display = OCCViewer.Viewer3d(widget.GetHandle())
+        display = widget._display
+        display.Create()        
+        
+        # background gradient
+        self.set_background_gradient(d.background_gradient)
+        self.set_trihedron_mode(d.trihedron_mode)
+        self.set_display_mode(d.display_mode)
+        self.set_selection_mode(d.selection_mode)
+        self.set_view_mode(d.view_mode)
+        self.set_antialiasing(d.antialiasing)
+        self.set_double_buffer(d.double_buffer)
+        self._update_raytracing_mode()
+        
+        #: Setup callbacks
+        display.register_select_callback(self.update_selection)
+        self.update_selection()
+        
+        widget._inited = True # dict mapping keys to functions
+        widget._SetupKeyMap() #
+        display.thisown = False
+        
         
     def init_layout(self):
         for child in self.children():
             self.child_added(child)
-        
+        self.display.OnResize()
             
     def child_added(self, child):
         super(QtOccViewer, self).child_added(child)
+        self.get_member('shapes').reset(self)
         child.observe('shape',self.update_display)
         self.update_display({'value':child.shape,
                              'type':'update',
                              'name':'shape',
                              'owner':child})
         
+        
     def child_removed(self, child):
         super(QtOccViewer, self).child_removed(child)
+        self.get_member('shapes').reset(self)
         child.unobserve('shape',self.update_display)
         
+    def set_antialiasing(self, enabled):
+        if enabled:
+            self.display.EnableAntiAliasing()
+        else:
+            self.display.DisableAntiAliasing()
+            
+    def set_shadows(self, enabled):
+        self._update_raytracing_mode()
+        
+    def set_reflections(self, enabled):
+        self._update_raytracing_mode()
+        
+    def _update_raytracing_mode(self):
+        d = self.declaration    
+        display = self.display
+        if d.shadows or d.reflections:
+            display.View.SetRaytracingMode()
+            if d.shadows:
+                display.View.EnableRaytracedShadows()
+            if d.reflections:
+                display.View.EnableRaytracedReflections()
+            if d.antialiasing:
+                display.View.EnableRaytracedAntialiasing()
+        else:
+            display.View.DisableRaytracingMode()
+            
+    def set_double_buffer(self, enabled):
+        pass
+        #self.display.SetDoubleBuffer(enabled)
+        #self.widget.a
+            
+    def set_background_gradient(self, gradient):
+        self.display.set_bg_gradient_color(*gradient)
+        
+    def set_trihedron_mode(self, mode):
+        self.display.display_trihedron()
+        
+    def set_selection_mode(self, mode):
+        if mode=='shape':
+            self.display.SetSelectionModeShape()
+        elif mode=='neutral':
+            self.display.SetSelectionModeNeutral()
+        elif mode=='face':
+            self.display.SetSelectionModeFace()
+        elif mode=='edge':
+            self.display.SetSelectionModeEdge()
+        elif mode=='vertex':
+            self.display.SetSelectionModeVertex()
+        
+    def set_display_mode(self, mode):
+        if mode=='shaded':
+            self.display.SetModeShaded()
+        elif mode=='hlr':
+            self.display.SetModeHLR()
+        elif mode=='wireframe':
+            self.display.SetModeWireFrame()
+    
+    def set_view_mode(self, mode):
+        if mode=='iso':
+            self.display.View_Iso()
+        elif mode=='top':
+            self.display.View_Top()
+        elif mode=='bottom':
+            self.display.View_Bottom()
+        elif mode=='left':
+            self.display.View_Left()
+        elif mode=='right':
+            self.display.View_Right()
+            
+    def update_selection(self,*args,**kwargs):
+        d = self.declaration
+        d.selection = self.display.selected_shapes[:]
+            
     def update_display(self, change):
+        self._update_count +=1
+        timed_call(0,self._do_update)
+        
+    def _do_update(self):
+        # Only update when all changes are done
+        self._update_count -=1
+        if self._update_count !=0:
+            return
         #: TO
-        display = self.widget._display
+        display = self.display
         display.EraseAll()
-        shapes = [c.shape.Shape() for c in self.children()]
-        for i,s in enumerate(shapes):
-            update = i+1==len(shapes)
-            display.DisplayShape(s, update=update)
+        for shape in self.shapes:
+            update = shape==self.shapes[-1]
+            color = shape.declaration.color if hasattr(shape.declaration,'color') else None
+            display.DisplayShape(shape.shape.Shape(),color=color,update=update)
+    
+    

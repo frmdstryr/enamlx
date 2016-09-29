@@ -1,72 +1,185 @@
-from enaml.widgets.api import Window, Form, SpinBox, Container, Label
+import math
+from enaml.layout.api import (
+    HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
+    hbox, vbox, spacer
+)
+from enaml.widgets.api import (
+    Window, DockArea, DockItem, Form, 
+    SpinBox, Container, Label, Menu, Action
+)
+from enaml.core.api import Include, Looper
 
 from enamlx.widgets.occ_viewer import OccViewer
+
 from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.algo import Common, Cut, Fuse
-import math
 
-enamldef Main(Window):
-    attr message = "Hello, world!"
-    minimum_size = (720,560)
+
+enamldef Model(Common):
+    Box:
+        dx = 1
+        dy = 2
+        dz = 1
+    Cut:
+        Cylinder:
+            radius = 2
+        Cone:
+            radius = 1
+            height = 5
+
+# enamldef Model2():
+#     Box: box:
+#         position = (10,0,0)
+#         dx = 10
+#         dy = 2
+#         dz = 5
+#          
+#     Cone: cone:
+#         position = (0,10,0)
+#         radius = 1
+#         height = 5
+#      
+#     Cylinder: cylinder:
+#         position = (10,10,0)
+#         radius = 2
+#         #angle = math.pi/2.0
+#          
+#     Sphere: sphere:
+#         position = (0,0,0)
+#         radius = 3
+#         #angle = 1.5*math.pi
+#          
+#     Wedge: wedge:
+#         position = (-10,0,0)
+#         dy = 2
+#      
+#     Torus:
+#         position = (-10,-10,0)
+#         radius = 2
+#         radius2 = 0.4
+#         angle = math.pi
+
+enamldef Main(Window): window:
+    minimum_size = (960,540)
+    #attr active_model = [Model()]
     Container:
-        Form:
-            Label:
-                text = "x"
-            SpinBox:
-                value<< int(box.dx)
-                value :: box.dx = change['value']
-            Label:
-                text = "y"
-            SpinBox:
-                value<< int(box.dy)
-                value :: box.dy = change['value']
-            Label:
-                text = "z"
-            SpinBox:
-                value<< int(box.dz)
-                value :: box.dz = change['value']
-                
-        OccViewer:
-            #Cut:
-            Common:
-                Box: box:
-                    dx = 1
-                    dy = 2
-                    dz = 1
-                Cut:
-                    Cylinder: cylinder:
-                        radius = 2
-                    Cone: cone:
-                        radius = 1
-                        height = 5
-                
-#             Box: box:
-#                 position = (10,0,0)
-#                 dx = 10
-#                 dy = 2
-#                 dz = 5
-#                 
-#             Cone: cone:
-#                 position = (0,10,0)
-#                 radius = 1
-#                 height = 5
-#             
-#             Cylinder: cylinder:
-#                 position = (10,10,0)
-#                 radius = 2
-#                 #angle = math.pi/2.0
-#                 
-#             Sphere: sphere:
-#                 position = (0,0,0)
-#                 radius = 3
-#                 #angle = 1.5*math.pi
-#                 
-#             Wedge: wedge:
-#                 position = (-10,0,0)
-#                 dy = 2
-#             
-#             Torus:
-#                 position = (-10,-10,0)
-#                 radius = 2
-#                 radius2 = 0.4
-#                 angle = math.pi
+        padding = 0   
+        DockArea:
+            layout = HSplitLayout(
+                'properties',
+                VSplitLayout(
+                    TabLayout(
+                        'model1',
+                        'model2',
+                    ),
+                    HSplitLayout(
+                        'view_top',
+                        'view_left',
+                        #'view_front',
+                    ),
+                    sizes=[50,50]
+                ),
+                sizes=[10,90]
+            )
+            DockItem:
+                title = 'Properties'
+                name = 'properties'
+                stretch = 0
+                Form:
+                    Label:
+                        text = "x"
+#                     SpinBox:
+#                         value<< int(box.dx)
+#                         value :: box.dx = change['value']
+#                     Label:
+#                         text = "y"
+#                     SpinBox:
+#                         value<< int(box.dy)
+#                         value :: box.dy = change['value']
+#                     Label:
+#                         text = "z"
+#                     SpinBox:
+#                         value<< int(box.dz)
+#                         value :: box.dz = change['value']
+            
+            DockItem:
+                title = "Operations"
+                name = 'model1'
+                Container:
+                    padding = 0
+                    OccViewer:
+                        #Model:
+                        #    pass
+                        Include:
+                            objects <<  [Model()]
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Test"
+            DockItem:
+                title = "Top View"
+                name = 'view_top'
+                Container:
+                    padding = 0
+                    OccViewer: top_view:
+                        view_mode = 'top'
+                        Include:
+                            objects <<  [Model()]#active_model
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Reset"
+                            triggered :: top_view.proxy.display.View_Top()
+            DockItem:
+                title = "Left View"
+                name = 'view_left'
+                Container:
+                    padding = 0
+                    OccViewer:
+                        view_mode = 'left'
+                        Include:
+                            objects <<  [Model()]#active_model
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Test"
+                        
+            DockItem:
+                title = "Shapes"
+                name = 'model2'
+                Container:   
+                    padding = 0      
+                    OccViewer:
+                        selection:: print change['value']
+                        Looper:
+                            iterable << range(100)
+                            Box: box:
+                                position = (10,0,loop_item*10)
+                                dx = 10
+                                dy = 2
+                                dz = 5
+                                  
+                            Cone: cone:
+                                position = (0,10,loop_item*10)
+                                radius = 1
+                                height = 5
+                              
+                            Cylinder: cylinder:
+                                position = (10,10,loop_item*10)
+                                radius = 2
+                                #angle = math.pi/2.0
+                                  
+                            Sphere: sphere:
+                                position = (0,0,loop_item*10)
+                                radius = 3
+                                #angle = 1.5*math.pi
+                                  
+                            Wedge: wedge:
+                                position = (-10,0,loop_item*10)
+                                dy = 2
+                              
+                            Torus:
+                                position = (-10,-10,loop_item*10)
+                                radius = 2
+                                radius2 = 0.4
+                                angle = math.pi
