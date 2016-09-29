@@ -2,6 +2,7 @@ from enaml.widgets.api import Window, Form, SpinBox, Container, Label
 
 from enamlx.widgets.occ_viewer import OccViewer
 from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
+from occ.algo import Common, Cut, Fuse
 import math
 
 enamldef Main(Window):
@@ -26,33 +27,46 @@ enamldef Main(Window):
                 value :: box.dz = change['value']
                 
         OccViewer:
-            Box: box:
-                position = (10,0,0)
-                dx = 10
-                dy = 2
-                dz = 5
+            #Cut:
+            Common:
+                Box: box:
+                    dx = 1
+                    dy = 2
+                    dz = 1
+                Cut:
+                    Cylinder: cylinder:
+                        radius = 2
+                    Cone: cone:
+                        radius = 1
+                        height = 5
                 
-            Cone: cone:
-                position = (0,10,0)
-                radius = 1
-                height = 5
-            
-            Cylinder: cylinder:
-                position = (10,10,0)
-                radius = 2
-                #angle = math.pi/2.0
-                
-            Sphere: sphere:
-                position = (0,0,0)
-                radius = 3
-                #angle = 1.5*math.pi
-                
-            Wedge: wedge:
-                position = (-10,0,0)
-                dy = 2
-            
-            Torus:
-                position = (-10,-10,0)
-                radius = 2
-                radius2 = 0.4
-                angle = math.pi
+#             Box: box:
+#                 position = (10,0,0)
+#                 dx = 10
+#                 dy = 2
+#                 dz = 5
+#                 
+#             Cone: cone:
+#                 position = (0,10,0)
+#                 radius = 1
+#                 height = 5
+#             
+#             Cylinder: cylinder:
+#                 position = (10,10,0)
+#                 radius = 2
+#                 #angle = math.pi/2.0
+#                 
+#             Sphere: sphere:
+#                 position = (0,0,0)
+#                 radius = 3
+#                 #angle = 1.5*math.pi
+#                 
+#             Wedge: wedge:
+#                 position = (-10,0,0)
+#                 dy = 2
+#             
+#             Torus:
+#                 position = (-10,-10,0)
+#                 radius = 2
+#                 radius2 = 0.4
+#                 angle = math.pi

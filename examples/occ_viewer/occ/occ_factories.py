@@ -53,6 +53,18 @@ def occ_wedge_factory():
     from occ.occ_brep import OccWedge
     return OccWedge
 
+def occ_common_factory():
+    from occ.occ_algo import OccCommon
+    return OccCommon
+
+def occ_cut_factory():
+    from occ.occ_algo import OccCut
+    return OccCut
+
+def occ_fuse_factory():
+    from occ.occ_algo import OccFuse
+    return OccFuse
+
 QT_FACTORIES['Box'] = occ_box_factory
 QT_FACTORIES['Cone'] = occ_cone_factory
 QT_FACTORIES['Cylinder'] = occ_cylinder_factory
@@ -65,3 +77,8 @@ QT_FACTORIES['Sphere'] = occ_sphere_factory
 QT_FACTORIES['Sweep'] = occ_sweep_factory
 QT_FACTORIES['Torus'] = occ_torus_factory
 QT_FACTORIES['Wedge'] = occ_wedge_factory
+
+
+QT_FACTORIES['Common'] = occ_common_factory
+QT_FACTORIES['Cut'] = occ_cut_factory
+QT_FACTORIES['Fuse'] = occ_fuse_factory
