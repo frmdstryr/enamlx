@@ -7,15 +7,15 @@ Created on Sep 28, 2016
 #from OCC.BOPAlgo import BOPAlgo_PaveFiller
 
 from atom.api import (
-    Instance, Bool, Float, Coerced, Typed, ForwardTyped, observe
+    Instance, Typed, ForwardTyped, observe
 )
-from enaml.widgets.toolkit_object import ToolkitObject
 from enaml.core.declarative import d_
-from enaml.widgets.control import ProxyControl
-from OCC.gp import gp_Pnt,gp_Ax2, gp_Dir
-from OCC.TopoDS import TopoDS_Face, TopoDS_Shell, TopoDS_Shape
 
-class ProxyBooleanOperation(ProxyControl):
+from .shape import ProxyShape, Shape
+
+from OCC.TopoDS import TopoDS_Shape
+
+class ProxyBooleanOperation(ProxyShape):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: BooleanOperation)
     
@@ -42,7 +42,7 @@ class ProxyFuse(ProxyBooleanOperation):
     
     
 
-class BooleanOperation(ToolkitObject):
+class BooleanOperation(Shape):
     #: Reference to the implementation control
     proxy = Typed(ProxyBooleanOperation)
     
@@ -52,10 +52,19 @@ class BooleanOperation(ToolkitObject):
     
     #: Optional pave filler
     pave_filler = d_(Instance(object))#BOPAlgo_PaveFiller))
+    
+#     @property
+#     def color(self):
+#         #print self.get_member('color').value
+#         for c in self.children:
+#             if c.color:
+#                 return c.color
+#         return None
 
     @observe('shape1','shape2','pave_filler')
     def _update_proxy(self, change):
         super(BooleanOperation, self)._update_proxy(change)
+        self.proxy.update_display(change)
         
 class Common(BooleanOperation):
     #: Reference to the implementation control

@@ -3,72 +3,20 @@ Created on Sep 27, 2016
 
 @author: jrmarti3
 '''
-from atom.api import (
-   Typed
+
+from OCC.BRepPrimAPI import (
+    BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,
+    BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakeHalfSpace, BRepPrimAPI_MakePrism,
+    BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeWedge, BRepPrimAPI_MakeTorus,
 )
 
-from .brep import ProxyShape, ProxyBox, ProxyCone, ProxyCylinder
-from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape
-from OCC.BRepPrimAPI import BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,\
-    BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakeHalfSpace, BRepPrimAPI_MakePrism,\
-    BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeWedge, BRepPrimAPI_MakeTorus
-from occ.brep import ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,\
+from .brep import (
+    ProxyBox, ProxyCone, ProxyCylinder,
+    ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,
     ProxyTorus
+)
 
-class OccShape(ProxyShape):
-    #: A reference to the toolkit shape created by the proxy.
-    shape = Typed(BRepBuilderAPI_MakeShape)
-    
-    #--------------------------------------------------------------------------
-    # Initialization API
-    #--------------------------------------------------------------------------
-    def create_shape(self):
-        """ Create the toolkit shape for the proxy object.
-
-        This method is called during the top-down pass, just before the
-        'init_shape()' method is called. This method should create the
-        toolkit widget and assign it to the 'widget' attribute.
-
-        """
-        raise NotImplementedError
-
-    def init_shape(self):
-        """ Initialize the state of the toolkit widget.
-
-        This method is called during the top-down pass, just after the
-        'create_widget()' method is called. This method should init the
-        state of the widget. The child widgets will not yet be created.
-
-        """
-        pass
-
-    def init_layout(self):
-        """ Initialize the layout of the toolkit shape.
-
-        This method is called during the bottom-up pass. This method
-        should initialize the layout of the widget. The child widgets
-        will be fully initialized and layed out when this is called.
-
-        """
-        pass
-    
-    def activate_top_down(self):
-        """ Activate the proxy for the top-down pass.
-
-        """
-        self.create_shape()
-        self.init_shape()
-        
-    def activate_bottom_up(self):
-        """ Activate the proxy tree for the bottom-up pass.
-
-        """
-        self.init_layout()
-        
-        
-    def set_axis(self, axis):
-        self.create_shape()
-    
+from .occ_shape import OccShape
 
 class OccBox(OccShape,ProxyBox):
     
@@ -101,6 +49,9 @@ class OccCone(OccShape,ProxyCone):
         self.create_shape()
     
     def set_height(self, height):
+        self.create_shape()
+        
+    def set_angle(self, a):
         self.create_shape()
         
 class OccCylinder(OccShape,ProxyCylinder):

@@ -1,31 +1,22 @@
 import math
+from atom.api import Atom
 from enaml.layout.api import (
     HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
     hbox, vbox, spacer
 )
 from enaml.widgets.api import (
-    Window, DockArea, DockItem, Form, 
+    Window, DockArea, DockItem, Form, GroupBox, ScrollArea,
+    Notebook, Page,
     SpinBox, Container, Label, Menu, Action
 )
-from enaml.core.api import Include, Looper
+from enaml.core.api import Conditional, Include, Looper
 
-from enamlx.widgets.occ_viewer import OccViewer
+from enamlx.widgets.api import OccViewer, DoubleSpinBox
 
 from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.algo import Common, Cut, Fuse
+from advanced import AutoForm
 
-
-enamldef Model(Common):
-    Box:
-        dx = 1
-        dy = 2
-        dz = 1
-    Cut:
-        Cylinder:
-            radius = 2
-        Cone:
-            radius = 1
-            height = 5
 
 # enamldef Model2():
 #     Box: box:
@@ -59,6 +50,7 @@ enamldef Model(Common):
 #         radius2 = 0.4
 #         angle = math.pi
 
+
 enamldef Main(Window): window:
     minimum_size = (960,540)
     #attr active_model = [Model()]
@@ -85,33 +77,84 @@ enamldef Main(Window): window:
                 title = 'Properties'
                 name = 'properties'
                 stretch = 0
-                Form:
-                    Label:
-                        text = "x"
-#                     SpinBox:
-#                         value<< int(box.dx)
-#                         value :: box.dx = change['value']
+                Container:
+                    padding = 0
+
+                    Notebook: notebook:
+                        #tab_style = 'preferences'
+                        Conditional:
+                            condition << bool(viewer.selection and isinstance(viewer.selection[0],Atom))
+#                             Page:
+#                                 closable = False
+#                                 title << '{}'.format(viewer.selection[0].__class__.__name__)
+#                                 Container:
+#                                     padding = 0
+#                                     
+#                                     AutoForm:
+#                                         model << viewer.selection[0]
+                            Looper:
+                                iterable << viewer.selection[0].children
+                                Page:
+                                    closable = False
+                                    title = '{}'.format(loop_item.__class__.__name__)
+                                    Container:
+                                        padding = 0
+                                        
+                                        AutoForm:
+                                            model = loop_item
+#                 Form:
+#                     Label:
+#                         text = "width"
+#                     DoubleSpinBox:
+#                         value := box.dx
+#                     Label:
+#                         text = "depth"
+#                     DoubleSpinBox:
+#                         value := box.dy
+#                     Label:
+#                         text = "height"
+#                     DoubleSpinBox:
+#                         value := box.dz
+#                     Label:
+#                         text = "x"
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.x
 #                     Label:
 #                         text = "y"
-#                     SpinBox:
-#                         value<< int(box.dy)
-#                         value :: box.dy = change['value']
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.y
 #                     Label:
 #                         text = "z"
-#                     SpinBox:
-#                         value<< int(box.dz)
-#                         value :: box.dz = change['value']
-            
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.z
+                                
             DockItem:
                 title = "Operations"
                 name = 'model1'
                 Container:
                     padding = 0
-                    OccViewer:
-                        #Model:
-                        #    pass
-                        Include:
-                            objects <<  [Model()]
+                    OccViewer: viewer:
+                        #Common:
+                       
+                            Cut:
+                                Box: box:
+                                    dx = 4
+                                    dy = 2
+                                    dz = 1
+                                Cone:
+                                     radius = 1
+                                     height = 5
+                                #Cylinder:
+                                #    radius = 1
+
+                        #Include:
+                        #    objects <<  [Model()]
                     Menu:
                         context_menu = True
                         Action:
@@ -124,7 +167,7 @@ enamldef Main(Window): window:
                     OccViewer: top_view:
                         view_mode = 'top'
                         Include:
-                            objects <<  [Model()]#active_model
+                            objects <<  []#Model()]#active_model
                     Menu:
                         context_menu = True
                         Action:
@@ -138,7 +181,7 @@ enamldef Main(Window): window:
                     OccViewer:
                         view_mode = 'left'
                         Include:
-                            objects <<  [Model()]#active_model
+                            objects <<  []#Model()]#active_model
                     Menu:
                         context_menu = True
                         Action:
@@ -152,8 +195,8 @@ enamldef Main(Window): window:
                     OccViewer:
                         selection:: print change['value']
                         Looper:
-                            iterable << range(100)
-                            Box: box:
+                            iterable << range(1)
+                            Box: box2:
                                 position = (10,0,loop_item*10)
                                 dx = 10
                                 dy = 2

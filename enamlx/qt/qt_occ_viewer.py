@@ -9,7 +9,7 @@ Created on Sep 26, 2016
 
 import sys
 import logging
-from atom.api import Typed, Int, Property
+from atom.api import Dict, Typed, Int, Property
 
 from OCC.Display import OCCViewer
 
@@ -256,6 +256,9 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     #: Update count
     _update_count = Int(0)
     
+    #: Displayed Shapes
+    _displayed_shapes = Dict()
+    
     #: Shapes
     shapes = Property(lambda self:self.get_shapes(),cached=True)
     
@@ -344,7 +347,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             display.View.DisableRaytracingMode()
             
     def set_double_buffer(self, enabled):
-        pass
+        return # Enabled by default
         #self.display.SetDoubleBuffer(enabled)
         #self.widget.a
             
@@ -388,7 +391,24 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             
     def update_selection(self,*args,**kwargs):
         d = self.declaration
-        d.selection = self.display.selected_shapes[:]
+        selection = []
+        for shape in self.display.selected_shapes:
+            if shape in self._displayed_shapes:
+                selection.append(self._displayed_shapes[shape].declaration)
+            else:
+                print "shape {} not in {}".format(shape,self._displayed_shapes)
+        d.selection = selection
+        
+#     def _queue_update(self,change):
+#         self._update_count +=1
+#         timed_call(0,self._check_update,change)
+#     
+#     def _dequeue_update(self,change):
+#         # Only update when all changes are done
+#         self._update_count -=1
+#         if self._update_count !=0:
+#             return
+#         self.update_shape(change)
             
     def update_display(self, change):
         self._update_count +=1
@@ -402,9 +422,16 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         #: TO
         display = self.display
         display.EraseAll()
+        displayed_shapes = {}
         for shape in self.shapes:
             update = shape==self.shapes[-1]
-            color = shape.declaration.color if hasattr(shape.declaration,'color') else None
-            display.DisplayShape(shape.shape.Shape(),color=color,update=update)
+            d = shape.declaration
+            s = shape.shape.Shape()
+            displayed_shapes[s] = shape
+            display.DisplayShape(s,
+                                 color=d.color,
+                                 transparency=d.transparency,
+                                 update=update)
+        self._displayed_shapes = displayed_shapes
     
     

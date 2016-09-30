@@ -4,30 +4,15 @@ Created on Sep 27, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-    Instance, Bool, Float, Coerced, Typed, ForwardTyped, observe
+    Instance, Bool, Float, ForwardTyped, observe
 )
-from enaml.widgets.toolkit_object import ToolkitObject
 from enaml.core.declarative import d_
-from enaml.widgets.control import ProxyControl
-from OCC.gp import gp_Pnt,gp_Ax2, gp_Dir
-from OCC.TopoDS import TopoDS_Face, TopoDS_Shell, TopoDS_Shape
-from OCC.Quantity import Quantity_Color
 
-class ProxyShape(ProxyControl):
-    #: A reference to the Shape declaration.
-    declaration = ForwardTyped(lambda: Shape)
-    
-    def set_position(self, position):
-        pass
-    
-    def set_direction(self, direction):
-        pass
-    
-    def set_axis(self, axis):
-        raise NotImplementedError
-    
-    def set_color(self,color):
-        pass
+from .shape import ProxyShape, Shape
+
+from OCC.TopoDS import TopoDS_Face, TopoDS_Shell, TopoDS_Shape
+
+
 
 class ProxyBox(ProxyShape):
     #: A reference to the shape declaration.
@@ -142,47 +127,15 @@ class ProxyWedge(ProxyShape):
     def set_itx(self, itx):
         raise NotImplementedError
 
-def coerce_axis(value):
-    pos = gp_Pnt(*value[0])
-    v = gp_Dir(*value[1])
-    return gp_Ax2(pos,v) 
-
-class Shape(ToolkitObject):
-    #: Reference to the implementation control
-    proxy = Typed(ProxyShape)
-    
-    #: Color
-    color = d_(Instance((basestring,Quantity_Color)))
-    
-    #: Position
-    position = d_(Coerced(gp_Pnt,(0,0,0),coercer=lambda args:gp_Pnt(*args)))
-    
-    #: Direction
-    direction = d_(Coerced(gp_Dir,(0,0,1),coercer=lambda args:gp_Dir(*args)))
-    
-    #: Axis
-    axis = d_(Coerced(gp_Ax2,((0,0,0),(0,0,1)),coercer=coerce_axis))
-    
-    @observe('position','direction')
-    def _update_axis(self, change):
-        self.axis = self._default_axis()
-        
-    def _default_axis(self):
-        return gp_Ax2(self.position,self.direction)
-    
-    @observe('axis','color')
-    def _update_proxy(self, change):
-        super(Shape, self)._update_proxy(change)
-
 class Box(Shape):
     #: x size
-    dx = d_(Float(1,strict=False))
+    dx = d_(Float(1,strict=False)).tag(view=True)
     
     #: y size
-    dy = d_(Float(1,strict=False))
+    dy = d_(Float(1,strict=False)).tag(view=True)
     
     #: z size
-    dz = d_(Float(1,strict=False))
+    dz = d_(Float(1,strict=False)).tag(view=True)
     
     # TODO: Handle other constructors
     
@@ -194,16 +147,16 @@ class Cone(Shape):
     """ Make a cone of height H radius R1 in the plane z = 0, 
         R2 in the plane Z = H. R1 and R2 may be null."""
     #: Radius
-    radius = d_(Float(1,strict=False))
+    radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: Radius 2 size
-    radius2 = d_(Float(0,strict=False))
+    radius2 = d_(Float(0,strict=False)).tag(view=True)
     
     #: Height
-    height = d_(Float(1,strict=False))
+    height = d_(Float(1,strict=False)).tag(view=True)
     
     #: Angle
-    angle = d_(Float(0,strict=False))
+    angle = d_(Float(0,strict=False)).tag(view=True)
     
     @observe('radius','r2','height','angle')
     def _update_proxy(self, change):
@@ -214,13 +167,13 @@ class Cylinder(Shape):
     
     """
     #: Radius
-    radius = d_(Float(1,strict=False))
+    radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: Height
-    height = d_(Float(1,strict=False))
+    height = d_(Float(1,strict=False)).tag(view=True)
     
     #: Angle
-    angle = d_(Float(0,strict=False))
+    angle = d_(Float(0,strict=False)).tag(view=True)
     
     @observe('radius','height','angle')
     def _update_proxy(self, change):
@@ -236,16 +189,16 @@ class HalfSpace(Shape):
         
 class Prism(Shape):
     #: Shape to build prism from
-    shape = d_(Instance(TopoDS_Shape))
+    shape = d_(Instance(TopoDS_Shape)).tag(view=True)
     
     #: Infinite
-    infinite = d_(Bool(False))
+    infinite = d_(Bool(False)).tag(view=True)
     
     #: Copy the surface
-    copy = d_(Bool(False))
+    copy = d_(Bool(False)).tag(view=True)
     
     #: Attempt to canonize
-    canonize = d_(Bool(True))
+    canonize = d_(Bool(True)).tag(view=True)
     
     @observe('shape','infinite','copy','canonize')
     def _update_proxy(self, change):
@@ -253,16 +206,16 @@ class Prism(Shape):
         
 class Sphere(Shape):
     #: Radius of sphere
-    radius = d_(Float(1,strict=False))
+    radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: angle 1
-    angle = d_(Float(0,strict=False))
+    angle = d_(Float(0,strict=False)).tag(view=True)
     
     #: angle 2
-    angle2 = d_(Float(0,strict=False))
+    angle2 = d_(Float(0,strict=False)).tag(view=True)
     
     #: angle 3
-    angle3 = d_(Float(0,strict=False))
+    angle3 = d_(Float(0,strict=False)).tag(view=True)
     
     @observe('radius','angle','angle2','angle3')
     def _update_proxy(self, change):
@@ -270,16 +223,16 @@ class Sphere(Shape):
         
 class Torus(Shape):
     #: Radius of sphere
-    radius = d_(Float(1,strict=False))
+    radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: Radius 2
-    radius2 = d_(Float(0,strict=False))
+    radius2 = d_(Float(0,strict=False)).tag(view=True)
     
     #: angle 1
-    angle = d_(Float(0,strict=False))
+    angle = d_(Float(0,strict=False)).tag(view=True)
     
     #: angle 2
-    angle2 = d_(Float(0,strict=False))
+    angle2 = d_(Float(0,strict=False)).tag(view=True)
     
     @observe('radius','radius2','angle1','angle2')
     def _update_proxy(self, change):
@@ -287,16 +240,16 @@ class Torus(Shape):
         
 class Wedge(Shape):
     #: x size
-    dx = d_(Float(1,strict=False))
+    dx = d_(Float(1,strict=False)).tag(view=True)
     
     #: y size
-    dy = d_(Float(1,strict=False))
+    dy = d_(Float(1,strict=False)).tag(view=True)
     
     #: z size
-    dz = d_(Float(1,strict=False))
+    dz = d_(Float(1,strict=False)).tag(view=True)
     
     #: z size
-    itx = d_(Float(0,strict=False))
+    itx = d_(Float(0,strict=False)).tag(view=True)
     
     # TODO: Handle other constructors
     
