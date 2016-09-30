@@ -414,6 +414,12 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         self._update_count +=1
         timed_call(0,self._do_update)
         
+    def clear_display(self):
+        display = self.display
+        # Erase all just HiDES them
+        display.Context.PurgeDisplay()
+        display.Context.RemoveAll()
+        
     def _do_update(self):
         # Only update when all changes are done
         self._update_count -=1
@@ -421,7 +427,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             return
         #: TO
         display = self.display
-        display.EraseAll()
+        self.clear_display()
         displayed_shapes = {}
         for shape in self.shapes:
             update = shape==self.shapes[-1]
