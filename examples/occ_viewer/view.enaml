@@ -1,0 +1,228 @@
+import math
+from atom.api import Atom
+from enaml.layout.api import (
+    HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
+    hbox, vbox, spacer
+)
+from enaml.widgets.api import (
+    Window, DockArea, DockItem, Form, GroupBox, ScrollArea,
+    Notebook, Page,
+    SpinBox, Container, Label, Menu, Action
+)
+from enaml.core.api import Conditional, Include, Looper
+
+from enamlx.widgets.api import OccViewer, DoubleSpinBox
+
+from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
+from occ.algo import Common, Cut, Fuse
+from advanced import AutoForm
+
+
+# enamldef Model2():
+#     Box: box:
+#         position = (10,0,0)
+#         dx = 10
+#         dy = 2
+#         dz = 5
+#          
+#     Cone: cone:
+#         position = (0,10,0)
+#         radius = 1
+#         height = 5
+#      
+#     Cylinder: cylinder:
+#         position = (10,10,0)
+#         radius = 2
+#         #angle = math.pi/2.0
+#          
+#     Sphere: sphere:
+#         position = (0,0,0)
+#         radius = 3
+#         #angle = 1.5*math.pi
+#          
+#     Wedge: wedge:
+#         position = (-10,0,0)
+#         dy = 2
+#      
+#     Torus:
+#         position = (-10,-10,0)
+#         radius = 2
+#         radius2 = 0.4
+#         angle = math.pi
+
+
+enamldef Main(Window): window:
+    minimum_size = (960,540)
+    #attr active_model = [Model()]
+    Container:
+        padding = 0   
+        DockArea:
+            layout = HSplitLayout(
+                'properties',
+                VSplitLayout(
+                    TabLayout(
+                        'model1',
+                        'model2',
+                    ),
+                    HSplitLayout(
+                        'view_top',
+                        'view_left',
+                        #'view_front',
+                    ),
+                    sizes=[50,50]
+                ),
+                sizes=[10,90]
+            )
+            DockItem:
+                title = 'Properties'
+                name = 'properties'
+                stretch = 0
+                Container:
+                    padding = 0
+
+                    Notebook: notebook:
+                        #tab_style = 'preferences'
+                        Conditional:
+                            condition << bool(viewer.selection and isinstance(viewer.selection[0],Atom))
+#                             Page:
+#                                 closable = False
+#                                 title << '{}'.format(viewer.selection[0].__class__.__name__)
+#                                 Container:
+#                                     padding = 0
+#                                     
+#                                     AutoForm:
+#                                         model << viewer.selection[0]
+                            Looper:
+                                iterable << viewer.selection[0].children
+                                Page:
+                                    closable = False
+                                    title = '{}'.format(loop_item.__class__.__name__)
+                                    Container:
+                                        padding = 0
+                                        
+                                        AutoForm:
+                                            model = loop_item
+#                 Form:
+#                     Label:
+#                         text = "width"
+#                     DoubleSpinBox:
+#                         value := box.dx
+#                     Label:
+#                         text = "depth"
+#                     DoubleSpinBox:
+#                         value := box.dy
+#                     Label:
+#                         text = "height"
+#                     DoubleSpinBox:
+#                         value := box.dz
+#                     Label:
+#                         text = "x"
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.x
+#                     Label:
+#                         text = "y"
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.y
+#                     Label:
+#                         text = "z"
+#                     DoubleSpinBox:
+#                         minimum = -99999999
+#                         maximum = 99999999
+#                         value := box.z
+                                
+            DockItem:
+                title = "Operations"
+                name = 'model1'
+                Container:
+                    padding = 0
+                    OccViewer: viewer:
+                        #Common:
+                       
+                            Cut:
+                                Box: box:
+                                    dx = 4
+                                    dy = 2
+                                    dz = 1
+                                Cone:
+                                     radius = 1
+                                     height = 5
+                                #Cylinder:
+                                #    radius = 1
+
+                        #Include:
+                        #    objects <<  [Model()]
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Test"
+            DockItem:
+                title = "Top View"
+                name = 'view_top'
+                Container:
+                    padding = 0
+                    OccViewer: top_view:
+                        view_mode = 'top'
+                        Include:
+                            objects <<  []#Model()]#active_model
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Reset"
+                            triggered :: top_view.proxy.display.View_Top()
+            DockItem:
+                title = "Left View"
+                name = 'view_left'
+                Container:
+                    padding = 0
+                    OccViewer:
+                        view_mode = 'left'
+                        Include:
+                            objects <<  []#Model()]#active_model
+                    Menu:
+                        context_menu = True
+                        Action:
+                            text = "Test"
+                        
+            DockItem:
+                title = "Shapes"
+                name = 'model2'
+                Container:   
+                    padding = 0      
+                    OccViewer:
+                        selection:: print change['value']
+                        Looper:
+                            iterable << range(1)
+                            Box: box2:
+                                position = (10,0,loop_item*10)
+                                dx = 10
+                                dy = 2
+                                dz = 5
+                                  
+                            Cone: cone:
+                                position = (0,10,loop_item*10)
+                                radius = 1
+                                height = 5
+                              
+                            Cylinder: cylinder:
+                                position = (10,10,loop_item*10)
+                                radius = 2
+                                #angle = math.pi/2.0
+                                  
+                            Sphere: sphere:
+                                position = (0,0,loop_item*10)
+                                radius = 3
+                                #angle = 1.5*math.pi
+                                  
+                            Wedge: wedge:
+                                position = (-10,0,loop_item*10)
+                                dy = 2
+                              
+                            Torus:
+                                position = (-10,-10,loop_item*10)
+                                radius = 2
+                                radius2 = 0.4
+                                angle = math.pi

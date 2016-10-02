@@ -12,7 +12,7 @@ from enaml.widgets.spin_box import SpinBox
 
 import numpy as np
 from enamlx.widgets.api import PlotArea,PlotItemArray,PlotItemArray3D
-from enaml.layout.dock_layout import VSplitLayout
+from enaml.layout.dock_layout import VSplitLayout, HSplitLayout
 from enamlx.widgets.double_spin_box import DoubleSpinBox
 from enaml.widgets.dual_slider import DualSlider
 
@@ -22,10 +22,16 @@ enamldef Main(Window):
     Container:
         padding = 0
         DockArea:
-            layout = VSplitLayout(
-                'basic',
-                'multi',
-                'range',
+            layout = HSplitLayout(
+                VSplitLayout(
+                    'basic',
+                    'multi',
+                    'range',
+                ), VSplitLayout(
+                    'multi2',
+                    'multi3',
+                    'multi4'
+                )
                 #'scatter',
             )
             DockItem:
@@ -41,14 +47,61 @@ enamldef Main(Window):
                 title = 'Multiple curves'
                 PlotArea:
                     PlotItemArray:
+                        multi_axis = False
+                        label_left = 'A'
                         line_pen = 'g'
                         y << np.random.normal(size=100)
                         PlotItemArray:
                             line_pen = 'b'
+                            label_right = 'B'
                             y << np.random.normal(size=100)+10
                         PlotItemArray:
                             line_pen = 'r'
+                            label_right = 'C'
                             y << np.random.normal(size=100)+20 
+            DockItem:
+                name = 'multi2'
+                title = 'Multiple curves with axis'
+                PlotArea:
+                    PlotItemArray:
+                        multi_axis = False
+                        label_left = 'A'
+                        line_pen = 'g'
+                        y << np.random.normal(size=100)
+                        PlotItemArray:
+                            line_pen = 'b'
+                            label_right = 'B'
+                            y << np.random.normal(size=100)+10
+                        PlotItemArray:
+                            line_pen = 'r'
+                            label_right = 'C'
+                            y << np.random.normal(size=100)+20 
+            DockItem:
+                name = 'multi3'
+                title = 'Multiple plot'
+                PlotArea:
+                    PlotItemArray:
+                        row = 1
+                        label_left = 'A'
+                        line_pen = 'g'
+                        y << np.random.normal(size=100)
+                    PlotItemArray:
+                        row = 2 # leave row out to stack however it likes
+                        line_pen = 'b'
+                        label_left = 'B'
+                        y << np.random.normal(size=100)+10
+            DockItem:
+                name = 'multi4'
+                title = 'Multiple plot'
+                PlotArea:
+                    PlotItemArray:
+                        label_left = 'A'
+                        line_pen = 'g'
+                        y << np.random.normal(size=100)
+                    PlotItemArray:
+                        line_pen = 'b'
+                        label_left = 'B'
+                        y << np.random.normal(size=100)+10
             DockItem:
                 name = 'range'
                 title = 'View range'

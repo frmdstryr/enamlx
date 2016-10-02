@@ -4,6 +4,7 @@ Created on Aug 23, 2015
 
 @author: jrm
 '''
+import faulthandler
 import cProfile,pstats,cStringIO
 import sys
 sys.path.append('../../')
@@ -15,6 +16,7 @@ import enaml
 from enaml.qt.qt_application import QtApplication
 
 if __name__ == '__main__':
+    faulthandler.enable()
     with enaml.imports():
         from table_view import Main
 

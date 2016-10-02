@@ -6,9 +6,17 @@ Created on Aug 23, 2015
 '''
 from enaml.qt.qt_factories import QT_FACTORIES
 
+def console_factory():
+    from .qt_console import QtConsole
+    return QtConsole
+
 def double_spin_box_factory():
     from .qt_double_spin_box import QtDoubleSpinBox
     return QtDoubleSpinBox
+
+def occ_viewer_factory():
+    from .qt_occ_viewer import QtOccViewer
+    return QtOccViewer
 
 def plot_area_factory():
     from .qt_plot_area import QtPlotArea
@@ -98,7 +106,9 @@ def tree_widget_col_factory():
 
 
 # Inject the factory 
+QT_FACTORIES['Console'] = console_factory
 QT_FACTORIES['DoubleSpinBox'] = double_spin_box_factory
+QT_FACTORIES['OccViewer'] = occ_viewer_factory
 QT_FACTORIES['PlotArea'] = plot_area_factory
 QT_FACTORIES['PlotItem2D'] = plot_item_2d_factory
 QT_FACTORIES['PlotItem3D'] = plot_item_3d_factory

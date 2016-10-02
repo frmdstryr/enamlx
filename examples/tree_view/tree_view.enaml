@@ -1,3 +1,4 @@
+import os
 from atom.api import (Atom, Unicode, Range, List, Bool, ForwardInstance)
 
 from enamlx.widgets.api import (
@@ -5,13 +6,27 @@ from enamlx.widgets.api import (
 )
 
 from enaml.widgets.api import (
-    Window, Container, PushButton, CheckBox, RadioButton
+    Window, Container, PushButton, CheckBox, RadioButton, SpinBox
 )
 from enaml.core.looper import Looper
-from enaml.widgets.spin_box import SpinBox
-from atom.instance import ForwardInstance
+from enaml.stdlib.mapped_view import MappedView
 
+from enaml.image import Image
+from enaml.icon import Icon,IconImage
 
+def icon_path(name):
+    path = os.getcwd()
+    return os.path.join(path,'../','images','icons','%s.png'%name)
+
+def load_image(name):
+    with open(icon_path(name),'rb') as f:
+        data = f.read()
+    return Image(data=data)
+
+def load_icon(name):
+    img = load_image(name)
+    icg = IconImage(image=img) 
+    return Icon(images=[icg])
 
 class Person(Atom):
     """ A simple class representing a person object.
@@ -26,6 +41,9 @@ class Person(Atom):
     age = Range(low=0)
 
     debug = Bool(False)
+    
+    def __repr__(self):
+        return "Person(first_name={},last_name={})".format(self.first_name,self.last_name)
 
 class Model(Atom):
     people = List(Person)
@@ -44,10 +62,14 @@ class Model(Atom):
 
 enamldef Main(Window):
     attr model = Model(people=[
-                    Person(last_name='Jones-%i'%i,first_name='Bob-%i'%i,age=i,children=[
-                        Person(last_name='Lill-%i'%i,first_name='Jill-%i'%i,age=i+1),
-                        Person(last_name='Wack-%i'%i,first_name='Jack-%i'%i,age=i+2),
-                        ]
+                    Person(last_name='Jones-%i'%i,
+                           first_name='Bob-%i'%i,
+                           age=i,
+                           debug=bool(i&1),
+                           children=[
+                                Person(last_name='Lill-%i-%i'%(i,j),first_name='Jill-%i-%i'%(i,j),age=i)
+                                #Person(last_name='Wack-%i-%i'%(i,j),first_name='Jack-%i-%i'%(i,j),age=i),
+                            for j in range(2)]
                     ) for i in range(1000)])
     Container:
         PushButton:
@@ -57,46 +79,91 @@ enamldef Main(Window):
             text = 'Remove person'
             clicked :: model.remove_person()
             
-        TreeView:
-            headers << ['#','Debug','First','Last','Age']
-            #TreeViewItem:
-            #   text = 'People'
+        TreeView: tree:
+            horizontal_headers << ['#','Debug','First','Last','Age','Relationship']
+            items << model.people
+            
             Looper:
-                iterable << model.people
-                TreeViewItem: 
-                    text << str(loop_index)
-                    
-                    
+                iterable << range(tree.visible_rows)#min(tree.visible_rows,len(tree.items)))
+                TreeViewItem:
+                    attr parent_index << tree.visible_row+loop_index
+                    attr person << tree.items[parent_index] 
+                    text << '{}'.format(person)
+                    items << person.children
+                     
                     TreeViewColumn:
                         checkable = True
-                        checked := loop_item.debug
+                        checked := person.debug
+                        icon << person.debug and load_icon('bug') or None
                     TreeViewColumn:
-                        text << loop_item.first_name
+                        text << person.first_name
                     TreeViewColumn:
-                        text << loop_item.last_name
-                
+                        text << person.last_name
                     TreeViewColumn:
                         SpinBox:
-                            value << loop_item.age
+                            value << person.age
+                    TreeViewColumn:
+                        text << 'parent {}'.format(person.children)
+                        foreground << '#CCCCCC' if parent_index &1 else '#333333'
                     
-                    
-                    attr parent_index = loop_index
-                    attr parent_item = loop_item
+                    # TODO: This should only be run when expanded
                     Looper:
-                        iterable << loop_item.children
-                        TreeViewItem: # Child item
-                            text << 'child %s.%s'%(parent_index,loop_index)
+                        iterable << range(min(tree.visible_rows,len(parent.items)))
+                        TreeViewItem:
+                            attr child << parent.items[loop_index]
+                            text << '{}'.format(child)
                             TreeViewColumn:
                                 checkable = True
-                                checked := loop_item.debug
+                                checked := child.debug
                             TreeViewColumn:
-                                text << loop_item.first_name
+                                text << child.first_name
                             TreeViewColumn:
-                                text << loop_item.last_name
+                                text << child.last_name
                             TreeViewColumn:
-                                #text << str(loop_item.age)
                                 SpinBox:
-                                    value << loop_item.age
+                                    value << child.age
+                            TreeViewColumn:
+                                text = 'child'
+                            
+                            # TODO: How to go arbitrarily deep?
+                            
+#                     Looper:
+#                         iterable << parent.items if parent.items else []
+#                         TreeViewItem:
+#                             attr person << parent.items[loop_index] 
+#                             text << '{}'.format(person)
+#                             items << person.children
+#                              
+#                             TreeViewColumn:
+#                                 checkable = True
+#                                 checked := person.debug
+#                             TreeViewColumn:
+#                                 text << person.first_name
+#                             TreeViewColumn:
+#                                 text << person.last_name
+#                             TreeViewColumn:
+#                                 text = 'Child?'
+#                                 pass
+                        #MappedView:
+                        
+                            #SpinBox:
+                            #    value << person.age
+                        # TODO:
+#                         Looper:
+#                             iterable << person.children
+#                             TreeViewItem: # Child item
+#                                 text << 'child %s.%s'%(parent_index,loop_index)
+#                                 TreeViewColumn:
+#                                     checkable = True
+#                                     checked := loop_item.debug
+#                                 TreeViewColumn:
+#                                     text << loop_item.first_name
+#                                 TreeViewColumn:
+#                                     text << loop_item.last_name
+#                                 TreeViewColumn:
+#                                     #text << str(loop_item.age)
+#                                     SpinBox:
+#                                         value << loop_item.age
                 
                 # Going arbitrarily deep?
                 

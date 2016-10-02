@@ -2,7 +2,7 @@ import os
 import time
 import random
 from threading import Thread
-from atom.api import (Atom, Unicode, Range, List, Bool)
+from atom.api import (Atom, Unicode, Range, ContainerList, Bool)
 
 from enamlx.widgets.table_view import (
     TableView, TableViewRow, TableViewItem
@@ -18,6 +18,7 @@ from enaml.icon import Icon,IconImage
 from enaml.application import deferred_call
 from enaml.widgets.menu import Menu
 from enaml.widgets.action import Action
+from enamlx.core.looper import ListLooper
 
 def icon_path(name):
     path = os.getcwd()
@@ -49,18 +50,20 @@ class Person(Atom):
         return "Person(first_name={p.first_name},last_name={p.last_name})".format(p=self)
 
 class TableModel(Atom):
-    people = List(Person)
+    people = ContainerList(Person)
     
     def add_person(self):
-        people = self.people[:]
-        person = Person(last_name='Doe',first_name='John',age=len(self.people))
-        people.append(person)
-        self.people = people
+        #people = self.people[:]
+        for i in range(100):
+            age = len(self.people)
+            person = Person(last_name='Doe-{}'.format(age),first_name='John-{}'.format(age),age=age)
+            #people.append(person)
+            self.people.insert(0,person)
     
     def remove_person(self):
-        people = self.people[:]
-        people.pop()
-        self.people = people
+        #people = self.people[:]
+        #people.pop()
+        self.people.pop()
         
 
 data_model = TableModel(people=[
@@ -68,17 +71,20 @@ data_model = TableModel(people=[
            first_name='Bob%i'%i,
            age=i,
            debug=bool(i&1))
-    for i in range(1000) # 10000
+    for i in range(1000000) # 10000
 ])
 
 def update_data():
     """ Test what happens when we update text!"""
     while True:
         time.sleep(1)
-        person = data_model.people[random.randint(0,10)]
-        print("Updating %s"%person)
-        # Always update in the ui thread!
-        deferred_call(setattr,person,'debug',not person.debug)
+        
+        def update():
+            person = data_model.people[random.randint(0,10)]
+            print("Updating %s"%person)
+            # Always update in the ui thread!
+            person.debug = not person.debug
+        deferred_call(update)
         # It flipping works!
 
 t = Thread(target=update_data)
@@ -95,35 +101,51 @@ enamldef Main(Window):
             text = 'Remove person'
             clicked :: model.remove_person()
             
-        TableView:
+        TableView: table:
             minimum_size = (640,360)
-            headers << ['#','First','Last','Age','Color']
+            horizontal_headers << ['#','First','Last','Age','Color']#,str(table.visible_rows)]
+            horizontal_stretch = True
+            items << model.people
+            
             Looper:
-                iterable << model.people
+                #: Max number of visible rows
+                #: If this number is too small, stuff will get jacked
+                iterable << range(table.visible_rows)
                 TableViewRow:
-                    clicked :: print("Row %s clicked!"%loop_index)
+                    row << table.visible_row+loop_index
+                    attr person << table.items[self.row]
+                    clicked :: print("Row %s clicked!"%self.row)
+                    
+                    Menu:
+                        Action:
+                            text << 'Row {} menu'.format(table.visible_row+loop_index)
+                            triggered :: 'Clicked row'
+                    
                     TableViewItem:
                         checkable = True
-                        checked := loop_item.debug
-                        toggled :: print("toggled %s"%loop_index)
-                        icon << loop_item.debug and load_icon('bug') or None
+                        checked := person.debug
+                        toggled :: print("toggled %s"%self.row)
+                        icon << person.debug and load_icon('bug') or None
                     TableViewItem:
-                        text := loop_item.first_name
-                        clicked :: print("Clicked %s"%loop_item.first_name)
+                        text := person.first_name
+                        clicked :: print("Clicked %s"%person.first_name)
                         Menu:
-                            context_menu = True 
                             Action:
-                                text = 'Test'
-                                triggered :: 'Clicked test'
+                                text << 'Edit {} menu'.format(person.first_name)
+                                triggered :: 'Clicked edit'
                     TableViewItem:
-                        text << loop_item.last_name
-                        double_clicked :: print("Double clicked %s"%loop_item.last_name)
+                        text << person.last_name
+                        double_clicked :: print("Double clicked %s"%person.last_name)
+                        selected :: print("Selection %s is now %s"%(person.last_name,change['value']))
                     TableViewItem:
+                        text = 'Loading...'
+                        editable = True
+                        # TODO: Delegate widgets Not yet implemented
                         SpinBox:
-                            value := loop_item.age
+                            value := person.age
                     TableViewItem:
-                        text << str(loop_index)
-                        foreground << loop_index&1 and 'red' or 'blue'
+                        text << str(parent.row)
+                        foreground << parent.row&1 and 'red' or 'blue'
                         background = 'green'
                         text_alignment = ('center','top')
             
