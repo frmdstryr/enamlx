@@ -4,7 +4,7 @@ Created on Aug 29, 2015
 
 @author: jrm
 '''
-from atom.api import (Float, ForwardTyped)
+from atom.api import (Float, Typed, ForwardTyped)
 from enaml.core.declarative import d_
 from enaml.widgets.spin_box import SpinBox, ProxySpinBox
 
@@ -15,6 +15,8 @@ class DoubleSpinBox(SpinBox):
     """ A spin box widget which manipulates float values.
 
     """
+    proxy = Typed(ProxyDoubleSpinBox)
+
     #: The minimum value for the spin box. Defaults to 0.
     minimum = d_(Float(0,strict=False))
 

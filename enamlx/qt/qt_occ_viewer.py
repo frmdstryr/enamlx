@@ -303,7 +303,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     def init_layout(self):
         for child in self.children():
             self.child_added(child)
-        self.display.OnResize()
+        timed_call(100,self.display.OnResize)
             
     def child_added(self, child):
         super(QtOccViewer, self).child_added(child)
@@ -335,7 +335,10 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     def _update_raytracing_mode(self):
         d = self.declaration    
         display = self.display
+        if not hasattr(display.View, 'SetRaytracingMode'):
+            return
         if d.shadows or d.reflections:
+         
             display.View.SetRaytracingMode()
             if d.shadows:
                 display.View.EnableRaytracedShadows()

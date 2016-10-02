@@ -13,7 +13,7 @@ from enaml.core.api import Conditional, Include, Looper
 
 from enamlx.widgets.api import OccViewer, DoubleSpinBox
 
-from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
+from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.algo import Common, Cut, Fuse
 from advanced import AutoForm
 
@@ -102,37 +102,6 @@ enamldef Main(Window): window:
                                         
                                         AutoForm:
                                             model = loop_item
-#                 Form:
-#                     Label:
-#                         text = "width"
-#                     DoubleSpinBox:
-#                         value := box.dx
-#                     Label:
-#                         text = "depth"
-#                     DoubleSpinBox:
-#                         value := box.dy
-#                     Label:
-#                         text = "height"
-#                     DoubleSpinBox:
-#                         value := box.dz
-#                     Label:
-#                         text = "x"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.x
-#                     Label:
-#                         text = "y"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.y
-#                     Label:
-#                         text = "z"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.z
                                 
             DockItem:
                 title = "Operations"
