@@ -33,6 +33,10 @@ Plot widgets using PyQtGraph
 
 ![plot item](https://lh5.googleusercontent.com/pqa4WZnMzaU72pYnqc75AghnJGC8Z6kCELcsHkR3n_VTQzEmCB9di7reqqQbCIpnfAVXSCEXK6y07_DMyQ51XUCUAOe-xczfKsYKCRROPbUlDHcGMNSFaBmZRGxXP9Clya_q34I) 
 
+__ConsoleWidget__
+
+IPython console widget.
+
 
 __VispyCanvas__
 
@@ -40,6 +44,9 @@ VisPy widget
 
 Coming soon...
 
+__OCCViewer__
+
+Widget for viewing models from opencascade 
 
 # Usage
 
