@@ -83,7 +83,6 @@ class OccBooleanOperation(OccShape, ProxyBooleanOperation):
     
     def update_display(self,change):
         self.parent().update_display(change)
-        
 
 class OccCommon(OccBooleanOperation,ProxyCommon):
     """ Fuse two shapes along with all child shapes """
@@ -114,3 +113,4 @@ class OccFuse(OccBooleanOperation,ProxyFuse):
         if d.pave_filler:
             args.append(d.pave_filler)
         return BRepAlgoAPI_Fuse(*args)
+    

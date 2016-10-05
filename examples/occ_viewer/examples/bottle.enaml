@@ -1,0 +1,61 @@
+from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
+from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
+from occ.algo import Common, Cut, Fuse
+from occ.shape import Shape
+from occ.axis import XAxis
+
+
+enamldef Bottle(Shape):
+    
+    #: "Parametric" properties of this shape
+    attr height = 7
+    attr width = 5
+    attr thickness = 3
+    
+    #: Actual shape
+    ThickSolid:
+        """ Hollows out the bottle """
+        faces << [neck.faces[-1]]
+        offset << thickness/50.0
+        Fuse:
+            """ Fuse the bottle to the neck"""
+            Cylinder: neck:
+                """ Bottle neck"""
+                y << height
+                direction = (0,0,1)
+                radius << thickness/4.0
+                height << height/10.0
+            Fillet: bottle:
+                """ Bottle, with filleted edges """
+                radius << thickness/12.0
+                Prism:
+                    """ Create a solid from the bottle face"""
+                    direction << (0,0,height)
+                    Face:
+                        """ Create a face from the base profile"""
+                        Wire:
+                            """ Create a wire from the profile and mirrored profile"""
+                            Wire: profile:
+                                Line:
+                                    Point: p1:
+                                        x = -width/2.0
+                                    Point: p2:
+                                        x = -width/2.0
+                                        y = -thickness/4.0
+                                Arc:
+                                    Point:
+                                        position := p1.position
+                                    Point:
+                                        y = -thickness/2.0 
+                                    Point:
+                                        position := p4.position
+                                        
+                                Line:
+                                    Point: p4:
+                                        x = width/2.0
+                                    Point: p5:
+                                        x = width/2.0
+                                        y = -thickness/4.0
+                            Transform:
+                                mirror = XAxis
+                                object << profile

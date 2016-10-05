@@ -12,10 +12,16 @@ from enaml.widgets.api import (
 from enaml.core.api import Conditional, Include, Looper
 
 from enamlx.widgets.api import OccViewer, DoubleSpinBox
-
-from occ.brep import Box, Cone, Cylinder, Sphere, Wedge, Torus
-from occ.algo import Common, Cut, Fuse
 from advanced import AutoForm
+
+from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
+from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
+from occ.algo import Common, Cut, Fuse
+from occ.shape import Shape
+from occ.axis import XAxis
+
+
+                
 
 
 # enamldef Model2():
@@ -59,17 +65,10 @@ enamldef Main(Window): window:
         DockArea:
             layout = HSplitLayout(
                 'properties',
-                VSplitLayout(
-                    TabLayout(
-                        'model1',
-                        'model2',
-                    ),
-                    HSplitLayout(
-                        'view_top',
-                        'view_left',
-                        #'view_front',
-                    ),
-                    sizes=[50,50]
+                TabLayout(
+                    'model1',
+                    'model2',
+                    'model3'
                 ),
                 sizes=[10,90]
             )
@@ -160,32 +159,42 @@ enamldef Main(Window): window:
                         Action:
                             text = "Test"
             DockItem:
-                title = "Top View"
-                name = 'view_top'
+                title = "Draw"
+                name = 'model3'
                 Container:
                     padding = 0
                     OccViewer: top_view:
                         view_mode = 'top'
-                        Include:
-                            objects <<  []#Model()]#active_model
+                        Wire:
+                            Circle:
+                                radius = 10
+                        Wire:
+                            Ellipse:
+                                x = - 10
+                                major_radius = 10
+                                minor_radius = 4
+                        Wire:
+                            #Circle:
+                            #    radius = 4
+                            Line:
+                                Point:
+                                    x = 4
+                                    y = 0
+                                Point:
+                                    x = 10
+                                    y = 10
+#                             Line:
+#                                 Point:
+#                                     x = 10
+#                                     y = 10
+#                                 Point:
+#                                     x = 0
+#                                     y = 10
                     Menu:
                         context_menu = True
                         Action:
                             text = "Reset"
                             triggered :: top_view.proxy.display.View_Top()
-            DockItem:
-                title = "Left View"
-                name = 'view_left'
-                Container:
-                    padding = 0
-                    OccViewer:
-                        view_mode = 'left'
-                        Include:
-                            objects <<  []#Model()]#active_model
-                    Menu:
-                        context_menu = True
-                        Action:
-                            text = "Test"
                         
             DockItem:
                 title = "Shapes"

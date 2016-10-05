@@ -78,3 +78,4 @@ class Fuse(BooleanOperation):
     #: Reference to the implementation control
     proxy = Typed(ProxyFuse)
 
+class Fillet():

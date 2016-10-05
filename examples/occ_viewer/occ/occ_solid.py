@@ -10,7 +10,7 @@ from OCC.BRepPrimAPI import (
     BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeWedge, BRepPrimAPI_MakeTorus,
 )
 
-from .brep import (
+from .solid import (
     ProxyBox, ProxyCone, ProxyCylinder,
     ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,
     ProxyTorus
