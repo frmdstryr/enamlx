@@ -97,6 +97,13 @@ def occ_wire_factory():
     from occ.occ_draw import OccWire
     return OccWire
 
+def occ_fillet_factory():
+    from occ.occ_algo import OccFillet
+    return OccFillet
+
+def occ_chamfer_factory():
+    from occ.occ_algo import OccChamfer
+    return OccChamfer
 
 #: Solids
 QT_FACTORIES['Box'] = occ_box_factory
@@ -118,6 +125,8 @@ QT_FACTORIES['Revolution'] = occ_revolution_factory
 QT_FACTORIES['Common'] = occ_common_factory
 QT_FACTORIES['Cut'] = occ_cut_factory
 QT_FACTORIES['Fuse'] = occ_fuse_factory
+QT_FACTORIES['Fillet'] = occ_fillet_factory
+QT_FACTORIES['Chamfer'] = occ_chamfer_factory
 
 #: Draw
 QT_FACTORIES['Point'] = occ_point_factory

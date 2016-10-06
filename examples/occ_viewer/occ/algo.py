@@ -10,10 +10,11 @@ from atom.api import (
 from enaml.core.declarative import d_
 
 from .shape import ProxyShape, Shape
+from enaml.widgets.control import Control
 
-class ProxyBooleanOperation(ProxyShape):
+class ProxyOperation(ProxyShape):
     #: A reference to the Shape declaration.
-    declaration = ForwardTyped(lambda: BooleanOperation)
+    declaration = ForwardTyped(lambda: Operation)
     
     def set_shape1(self,shape):
         raise NotImplementedError
@@ -27,13 +28,13 @@ class ProxyBooleanOperation(ProxyShape):
     def _do_operation(self,shape1,shape2):
         raise NotImplementedError
     
-class ProxyCommon(ProxyBooleanOperation):
+class ProxyCommon(ProxyOperation):
     declaration = ForwardTyped(lambda: Common)
 
-class ProxyCut(ProxyBooleanOperation):
+class ProxyCut(ProxyOperation):
     declaration = ForwardTyped(lambda: Cut)
 
-class ProxyFuse(ProxyBooleanOperation):
+class ProxyFuse(ProxyOperation):
     declaration = ForwardTyped(lambda: Fuse)
 
 class ProxyFillet(ProxyShape):
@@ -61,11 +62,12 @@ class ProxyChamfer(ProxyShape):
     
     def set_edges(self, edges):
         raise NotImplementedError
-    
-class BooleanOperation(Shape):
+
+class Operation(Shape):
     #: Reference to the implementation control
-    proxy = Typed(ProxyBooleanOperation)
-    
+    proxy = Typed(ProxyOperation)
+
+class BooleanOperation(Operation):
     shape1 = d_(Instance(object))
     
     shape2 = d_(Instance(object))
@@ -73,14 +75,6 @@ class BooleanOperation(Shape):
     #: Optional pave filler
     pave_filler = d_(Instance(object))#BOPAlgo_PaveFiller))
     
-#     @property
-#     def color(self):
-#         #print self.get_member('color').value
-#         for c in self.children:
-#             if c.color:
-#                 return c.color
-#         return None
-
     @observe('shape1','shape2','pave_filler')
     def _update_proxy(self, change):
         if change['name']=='axis':
@@ -108,8 +102,11 @@ class Cut(BooleanOperation):
 class Fuse(BooleanOperation):
     #: Reference to the implementation control
     proxy = Typed(ProxyFuse)
+    
+class LocalOperation(Operation):
+    pass
 
-class Fillet(Shape):
+class Fillet(LocalOperation):
     """ Applies fillet to the first child shape"""
     #: Reference to the implementation control
     proxy = Typed(ProxyFillet)
@@ -129,9 +126,10 @@ class Fillet(Shape):
         super(Fillet, self)._update_proxy(change)
         self.proxy.update_display(change)
         
-class Chamfer(Shape):
+        
+class Chamfer(LocalOperation):
     #: Reference to the implementation control
-    proxy = Typed(ProxyFillet)
+    proxy = Typed(ProxyChamfer)
     
     #: Distance of chamfer
     distance = d_(Float(1, strict=False))

@@ -17,7 +17,7 @@ from advanced import AutoForm
 
 from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
-from occ.algo import Common, Cut, Fuse
+from occ.algo import Common, Cut, Fuse, Fillet, Chamfer
 from occ.shape import Shape
 
 # enamldef Model2():
@@ -107,18 +107,20 @@ enamldef Main(Window): window:
                     OccViewer: viewer:
                         view_mode = 'top'
                         attr p0 = None
-                        on_mouse_press::
-                            display, event = change['value']
-                            #print 'mouse_press',event
-                            pt = event.pos()
-                            if event.button() == Qt.LeftButton:
-                                display.Select(pt.x(), pt.y())
-                            #viewer.p0 = display.View.Convert(pt.x(),pt.y())
-                                #raise StopIteration
+#                         on_mouse_press::
+#                             display, event = change['value']
+#                             #print 'mouse_press',event
+#                             pt = event.pos()
+#                             if event.button() == Qt.LeftButton:
+#                                 display.Select(pt.x(), pt.y())
+#                             #viewer.p0 = display.View.Convert(pt.x(),pt.y())
+#                                 #raise StopIteration
                         on_mouse_move::
                             display, event = change['value']
                             pt = event.pos()
                             display.MoveTo(pt.x(),pt.y())
+                            
+                            #: Drag selected object
                             if event.buttons() == Qt.LeftButton:
                                 p0 = viewer.p0
                                 p1 =  display.View.Convert(pt.x(),pt.y())
@@ -154,6 +156,17 @@ enamldef Main(Window): window:
                             Sphere:
                                 position = (4,4,0)
                                 radius = 2
+                                
+                        Fillet:
+                            radius = 0.1
+                            Box:
+                                position = (-4,-4,0)
+                                dx = 2
+                                dy = 2
+                                dz = 2
+                            
+                            
+                            
                             #Cylinder:
                             #    radius = 1
 
