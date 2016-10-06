@@ -492,6 +492,8 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     def _update_raytracing_mode(self):
         d = self.declaration    
         display = self.display
+        if not hasattr(display.View,'SetRaytracingMode'):
+            return
         if d.shadows or d.reflections:
             display.View.SetRaytracingMode()
             if d.shadows:
