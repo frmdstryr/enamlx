@@ -10,7 +10,8 @@ from enaml.widgets.api import (
     SpinBox, Container, Label, Menu, Action
 )
 from enaml.core.api import Conditional, Include, Looper
-
+#: TODO: Breaks proxy pattern...
+from enaml.qt.QtCore import Qt
 from enamlx.widgets.api import OccViewer, DoubleSpinBox
 from advanced import AutoForm
 
@@ -18,11 +19,6 @@ from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
 from occ.algo import Common, Cut, Fuse
 from occ.shape import Shape
-from occ.axis import XAxis
-
-
-                
-
 
 # enamldef Model2():
 #     Box: box:
@@ -101,37 +97,7 @@ enamldef Main(Window): window:
                                         
                                         AutoForm:
                                             model = loop_item
-#                 Form:
-#                     Label:
-#                         text = "width"
-#                     DoubleSpinBox:
-#                         value := box.dx
-#                     Label:
-#                         text = "depth"
-#                     DoubleSpinBox:
-#                         value := box.dy
-#                     Label:
-#                         text = "height"
-#                     DoubleSpinBox:
-#                         value := box.dz
-#                     Label:
-#                         text = "x"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.x
-#                     Label:
-#                         text = "y"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.y
-#                     Label:
-#                         text = "z"
-#                     DoubleSpinBox:
-#                         minimum = -99999999
-#                         maximum = 99999999
-#                         value := box.z
+
                                 
             DockItem:
                 title = "Operations"
@@ -139,25 +105,72 @@ enamldef Main(Window): window:
                 Container:
                     padding = 0
                     OccViewer: viewer:
+                        view_mode = 'top'
+                        attr p0 = None
+                        on_mouse_press::
+                            display, event = change['value']
+                            #print 'mouse_press',event
+                            pt = event.pos()
+                            if event.button() == Qt.LeftButton:
+                                display.Select(pt.x(), pt.y())
+                            #viewer.p0 = display.View.Convert(pt.x(),pt.y())
+                                #raise StopIteration
+                        on_mouse_move::
+                            display, event = change['value']
+                            pt = event.pos()
+                            display.MoveTo(pt.x(),pt.y())
+                            if event.buttons() == Qt.LeftButton:
+                                p0 = viewer.p0
+                                p1 =  display.View.Convert(pt.x(),pt.y())
+                                viewer.p0 = p1
+                                if viewer.selection and p0:
+                                    dx,dy,dz = p1[0]-p0[0],p1[1]-p0[1],0 
+                                    for item in viewer.selection:
+                                        item.position = (item.x+dx,item.y+dy,item.z)
+                                
+                                    raise StopIteration
+                            else:
+                                viewer.p0 = None
+                        #on_mouse_release::
+                        #    display, event = change['value']
+                        #    print 'mouse_release',event
+                        #    raise StopIteration
                         #Common:
                        
-                            Cut:
-                                Box: box:
-                                    dx = 4
-                                    dy = 2
-                                    dz = 1
-                                Cone:
-                                     radius = 1
-                                     height = 5
-                                #Cylinder:
-                                #    radius = 1
+                        Cut:
+                            Box:
+                                position = (-1, -1, 0)
+                                dx = 2
+                                dy = 2
+                                dz = 1
+                            Cone:
+                                radius = 1
+                                height = 5
+                                 
+                        Common:
+                            Cylinder:
+                                position = (4,4,0)
+                                height = 4
+                            Sphere:
+                                position = (4,4,0)
+                                radius = 2
+                            #Cylinder:
+                            #    radius = 1
 
                         #Include:
                         #    objects <<  [Model()]
                     Menu:
                         context_menu = True
                         Action:
-                            text = "Test"
+                            text = 'Fit all'
+                            triggered :: viewer.proxy.display.FitAll()
+                        Menu:
+                            title = 'View'
+                            Looper:
+                                iterable << viewer.get_member('view_mode').items
+                                Action:
+                                    text << loop_item
+                                    triggered :: viewer.view_mode = loop_item
             DockItem:
                 title = "Draw"
                 name = 'model3'

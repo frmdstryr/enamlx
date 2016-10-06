@@ -43,6 +43,9 @@ class Shape(ToolkitObject):
     #: Reference to the implementation control
     proxy = Typed(ProxyShape)
     
+    #: Tolerance
+    tolerance = d_(Float(10**-6,strict=False))
+    
     #: Color
     color = d_(Str()).tag(view=True,group='Display')#Instance((basestring,Quantity_Color)))
     
@@ -69,12 +72,27 @@ class Shape(ToolkitObject):
     
     @observe('x','y','z')
     def _update_position(self, change):
+        """ Keep position in sync with x,y,z """
         self.position = gp_Pnt(self.x,self.y,self.z)
+        
+    @observe('position')
+    def _update_xyz(self, change):
+        """ Keep x,y,z in sync with position """
+        self.x,self.y,self.z = self.position.X(),self.position.Y(),self.position.Z()
     
     @observe('position','direction')
     def _update_axis(self, change):
-        self.x,self.y,self.z = self.position.X(),self.position.Y(),self.position.Z()
-        self.axis = self._default_axis()
+        """ Keep axis in sync with position and direction """
+        axis = self._default_axis()
+        if (not self.axis.Location().IsEqual(axis.Location(),self.tolerance) or 
+            not self.axis.Direction().IsEqual(self.axis.Direction(),self.tolerance)):
+            self.axis = axis
+    
+    @observe('axis')
+    def _update_state(self, change):
+        """ Keep position and direction in sync with axis """
+        self.position = self.axis.Location()
+        self.direction = self.axis.Direction()
     
     def _default_axis(self):
         return gp_Ax2(self.position,self.direction)

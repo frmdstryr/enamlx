@@ -4,7 +4,7 @@ Created on Sep 26, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-    List, Tuple, Bool, Int, Enum, Typed, ForwardTyped, observe, set_default
+   Event, List, Tuple, Bool, Int, Enum, Typed, ForwardTyped, observe, set_default
 )
 
 from enaml.core.declarative import d_
@@ -69,6 +69,9 @@ class ProxyOccViewer(ProxyControl):
 class OccViewer(Control):
     """ A spin box widget which manipulates integer values.
     """
+    #: A reference to the ProxySpinBox object.
+    proxy = Typed(ProxyOccViewer)
+    
     #: The minimum value for the spin box. Defaults to 0.
     position = d_(Tuple(Int(strict=False),default=(0,0)))
     
@@ -110,9 +113,14 @@ class OccViewer(Control):
     
     #: View expands freely in height by default.
     hug_height = set_default('ignore')
-
-    #: A reference to the ProxySpinBox object.
-    proxy = Typed(ProxyOccViewer)
+    
+    #: Events
+    #: Raise StopIteration to indicate handling should stop
+    on_key_press = d_(Event(),writable=False)
+    on_mouse_press = d_(Event(),writable=False)
+    on_mouse_release = d_(Event(),writable=False)
+    on_mouse_wheel = d_(Event(),writable=False)
+    on_mouse_move = d_(Event(),writable=False)
 
     #--------------------------------------------------------------------------
     # Observers

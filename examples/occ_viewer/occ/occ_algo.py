@@ -83,6 +83,9 @@ class OccBooleanOperation(OccShape, ProxyBooleanOperation):
     
     def update_display(self,change):
         self.parent().update_display(change)
+        
+    def set_axis(self, axis):
+        self._queue_update({})
 
 class OccCommon(OccBooleanOperation,ProxyCommon):
     """ Fuse two shapes along with all child shapes """
