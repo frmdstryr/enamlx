@@ -5,10 +5,11 @@ from enaml.layout.api import (
     hbox, vbox, spacer
 )
 from enaml.widgets.api import (
-    Window, DockArea, DockItem, Form, GroupBox, ScrollArea,
+    Window, DockArea, DockItem,  Form, GroupBox, ScrollArea,
     Notebook, Page,
     SpinBox, Container, Label, Menu, Action
 )
+from enaml.widgets.dock_events import DockItemEvent
 from enaml.core.api import Conditional, Include, Looper
 #: TODO: Breaks proxy pattern...
 from enaml.qt.QtCore import Qt
@@ -68,6 +69,16 @@ enamldef Main(Window): window:
                 ),
                 sizes=[10,90]
             )
+            dock_events_enabled = True
+            dock_event::
+                event = change['value']
+                if event.type==DockItemEvent.TabSelected:
+                    item = self.find(event.name)
+                    if event.name.startswith('model'):
+                        viewer = item.children[0].children[0]
+                        viewer.proxy.display.OnResize()
+                print event.name,event.type
+                
             DockItem:
                 title = 'Properties'
                 name = 'properties'
@@ -230,29 +241,29 @@ enamldef Main(Window): window:
                     OccViewer:
                         selection:: print change['value']
                         Looper:
-                            iterable << range(1)
-                            Box: box2:
+                            iterable << range(50)
+                            Box: 
                                 position = (10,0,loop_item*10)
                                 dx = 10
                                 dy = 2
                                 dz = 5
                                   
-                            Cone: cone:
+                            Cone: 
                                 position = (0,10,loop_item*10)
                                 radius = 1
                                 height = 5
                               
-                            Cylinder: cylinder:
+                            Cylinder: 
                                 position = (10,10,loop_item*10)
                                 radius = 2
                                 #angle = math.pi/2.0
                                   
-                            Sphere: sphere:
+                            Sphere: 
                                 position = (0,0,loop_item*10)
                                 radius = 3
                                 #angle = 1.5*math.pi
                                   
-                            Wedge: wedge:
+                            Wedge: 
                                 position = (-10,0,loop_item*10)
                                 dy = 2
                               

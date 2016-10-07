@@ -9,9 +9,13 @@ import enaml
 from enaml.qt.qt_application import QtApplication
 
 import cProfile
+import sys
+import logging
 
 
 def main():
+    logging.basicConfig(level='DEBUG',stream=sys.stdout,format='%(asctime)s %(levelname)-8s %(name)-15s %(message)s')
+
     with enaml.imports():
         from view import Main
 

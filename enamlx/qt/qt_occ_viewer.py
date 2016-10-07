@@ -6,7 +6,6 @@ Created on Sep 26, 2016
 @from https://github.com/tpaviot/pythonocc-core/blob/master/src/addons/Display/qtDisplay.py
 
 '''
-
 import sys
 import logging
 from atom.api import Dict, Typed, Int, Property
@@ -572,6 +571,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             
     def update_display(self, change):
         self._update_count +=1
+        #log.debug('update_display')
         timed_call(0,self._do_update)
         
     def clear_display(self):
@@ -589,6 +589,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         display = self.display
         self.clear_display()
         displayed_shapes = {}
+        #log.error( "_do_update {}")
         for shape in self.shapes:
             update = shape==self.shapes[-1]
             d = shape.declaration
@@ -599,6 +600,8 @@ class QtOccViewer(QtControl,ProxyOccViewer):
                                  transparency=d.transparency,
                                  update=update,
                                  fit=not self._displayed_shapes)
+        
         self._displayed_shapes = displayed_shapes
+        
     
     
