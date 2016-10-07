@@ -97,7 +97,7 @@ class Shape(ToolkitObject):
     def _default_axis(self):
         return gp_Ax2(self.position,self.direction)
     
-    @observe('axis','color')
+    @observe('axis','color','transparency')
     def _update_proxy(self, change):
         super(Shape, self)._update_proxy(change)
         self.proxy.update_display(change)

@@ -6,14 +6,16 @@ from enaml.layout.api import (
 )
 from enaml.widgets.api import (
     Window, DockArea, DockItem,  Form, GroupBox, ScrollArea,
-    Notebook, Page,
+    Notebook, Page, 
     SpinBox, Container, Label, Menu, Action
 )
 from enaml.widgets.dock_events import DockItemEvent
-from enaml.core.api import Conditional, Include, Looper
+from enaml.core.api import Conditional, Include, Looper, DynamicTemplate
 #: TODO: Breaks proxy pattern...
 from enaml.qt.QtCore import Qt
-from enamlx.widgets.api import OccViewer, DoubleSpinBox
+from enamlx.widgets.api import (
+    OccViewer, TreeView, TreeViewItem, TreeViewColumn
+)
 from advanced import AutoForm
 
 from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
@@ -21,51 +23,98 @@ from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Ve
 from occ.algo import Common, Cut, Fuse, Fillet, Chamfer
 from occ.shape import Shape
 
-# enamldef Model2():
-#     Box: box:
-#         position = (10,0,0)
-#         dx = 10
-#         dy = 2
-#         dz = 5
-#          
-#     Cone: cone:
-#         position = (0,10,0)
-#         radius = 1
-#         height = 5
-#      
-#     Cylinder: cylinder:
-#         position = (10,10,0)
-#         radius = 2
-#         #angle = math.pi/2.0
-#          
-#     Sphere: sphere:
-#         position = (0,0,0)
-#         radius = 3
-#         #angle = 1.5*math.pi
-#          
-#     Wedge: wedge:
-#         position = (-10,0,0)
-#         dy = 2
-#      
-#     Torus:
-#         position = (-10,-10,0)
-#         radius = 2
-#         radius2 = 0.4
-#         angle = math.pi
+
+
+template TreeItemLoop(items):
+    """ A templated loop which maps a template over a sequence."""
+    TreeItemLoop(tuple(items[:-1])):
+        pass
+    AutoTreeItem:
+        item = items[-1]
+  
+template TreeItemLoop(items: ()):
+    """ The terminating condition for the templated loop."""
+    pass
+
+template AutoTreeItemNode(item):
+    """ Template for tree item nodes. This defines
+        the columns and how the tree will be walked.
+    """
+    TreeViewColumn:
+        text << str(item)
+    TreeItemLoop(tuple(item.children)):
+        pass
+
+enamldef AutoTreeItem(TreeViewItem):
+    attr item
+    text = str(item)
+    items << item.children
+    DynamicTemplate:
+        base = AutoTreeItemNode
+        args = (item,)
+
+enamldef ModelViewer(OccViewer): viewer:
+    attr p0 = None
+#     on_mouse_press::
+#         display, event = change['value']
+#         #print 'mouse_press',event
+#         pt = event.pos()
+#         if event.button() == Qt.LeftButton:
+#             display.Select(pt.x(), pt.y())
+#         #viewer.p0 = display.View.Convert(pt.x(),pt.y())
+#             #raise StopIteration
+    on_mouse_move::
+        display, event = change['value']
+        pt = event.pos()
+        display.MoveTo(pt.x(),pt.y())
+        
+        #: Drag selected object
+        if event.buttons() == Qt.LeftButton:
+            p0 = viewer.p0
+            p1 =  display.View.Convert(pt.x(),pt.y())
+            viewer.p0 = p1
+            if viewer.selection and p0:
+                dx,dy,dz = p1[0]-p0[0],p1[1]-p0[1],0 
+                for item in viewer.selection:
+                    item.position = (item.x+dx,item.y+dy,item.z)
+            
+                raise StopIteration
+        else:
+            viewer.p0 = None
+    #on_mouse_release::
+    #    display, event = change['value']
+    #    print 'mouse_release',event
+    #    raise StopIteration
+    Menu:
+        context_menu = True
+        Action:
+            text = 'Fit all'
+            triggered :: viewer.proxy.display.FitAll()
+        Menu:
+            title = 'View'
+            Looper:
+                iterable << viewer.get_member('view_mode').items
+                Action:
+                    text << loop_item
+                    triggered :: viewer.view_mode = loop_item
 
 
 enamldef Main(Window): window:
     minimum_size = (960,540)
     #attr active_model = [Model()]
+    attr viewer = None
     Container:
         padding = 0   
         DockArea:
             layout = HSplitLayout(
-                'properties',
+                    VSplitLayout(
+                    'model',
+                    'properties',
+                ),
                 TabLayout(
-                    'model1',
-                    'model2',
-                    'model3'
+                    'viewer1',
+                    'viewer2',
+                    'viewer3'
                 ),
                 sizes=[10,90]
             )
@@ -74,80 +123,76 @@ enamldef Main(Window): window:
                 event = change['value']
                 if event.type==DockItemEvent.TabSelected:
                     item = self.find(event.name)
-                    if event.name.startswith('model'):
+                    if event.name.startswith('viewer'):
                         viewer = item.children[0].children[0]
+                        window.viewer = viewer
                         viewer.proxy.display.OnResize()
                 print event.name,event.type
-                
+            
+            DockItem:
+                title = 'Model'
+                name = 'model'
+                stretch = 0
+                Container:
+                    padding = 0
+                    TreeView:
+                        horizontal_headers = ['Item']
+                        items << viewer.children if viewer else []
+                        Looper:
+                            iterable << parent.items
+                            AutoTreeItem:
+                                item = loop_item
+                                
+            
             DockItem:
                 title = 'Properties'
                 name = 'properties'
                 stretch = 0
                 Container:
                     padding = 0
-
-                    Notebook: notebook:
-                        #tab_style = 'preferences'
-                        Conditional:
-                            condition << bool(viewer.selection and isinstance(viewer.selection[0],Atom))
-#                             Page:
-#                                 closable = False
-#                                 title << '{}'.format(viewer.selection[0].__class__.__name__)
-#                                 Container:
-#                                     padding = 0
-#                                     
-#                                     AutoForm:
-#                                         model << viewer.selection[0]
-                            Looper:
-                                iterable << viewer.selection[0].children
-                                Page:
-                                    closable = False
-                                    title = '{}'.format(loop_item.__class__.__name__)
-                                    Container:
-                                        padding = 0
-                                        
-                                        AutoForm:
-                                            model = loop_item
+                    Conditional:
+                        condition << viewer is not None
+                        Looper:
+                            iterable << viewer.selection
+                            Form:
+                                Label:
+                                    text = "Object"
+                                Label:
+                                    text = "{}".format(loop_item)
+                            AutoForm:
+                                model = loop_item
+#                     Notebook: notebook:
+#                         #tab_style = 'preferences'
+#                         Conditional:
+#                             condition << bool(viewer.selection and isinstance(viewer.selection[0],Atom))
+# #                             Page:
+# #                                 closable = False
+# #                                 title << '{}'.format(viewer.selection[0].__class__.__name__)
+# #                                 Container:
+# #                                     padding = 0
+# #                                     
+# #                                     AutoForm:
+# #                                         model << viewer.selection[0]
+#                             Looper:
+#                                 iterable << viewer.selection[0].children
+#                                 Page:
+#                                     closable = False
+#                                     title = '{}'.format(loop_item.__class__.__name__)
+#                                     Container:
+#                                         padding = 0
+#                                         
+#                                         AutoForm:
+#                                             model = loop_item
 
                                 
             DockItem:
                 title = "Operations"
-                name = 'model1'
+                name = 'viewer1'
                 Container:
                     padding = 0
-                    OccViewer: viewer:
+                    ModelViewer: #viewer:
                         view_mode = 'top'
-                        attr p0 = None
-#                         on_mouse_press::
-#                             display, event = change['value']
-#                             #print 'mouse_press',event
-#                             pt = event.pos()
-#                             if event.button() == Qt.LeftButton:
-#                                 display.Select(pt.x(), pt.y())
-#                             #viewer.p0 = display.View.Convert(pt.x(),pt.y())
-#                                 #raise StopIteration
-                        on_mouse_move::
-                            display, event = change['value']
-                            pt = event.pos()
-                            display.MoveTo(pt.x(),pt.y())
-                            
-                            #: Drag selected object
-                            if event.buttons() == Qt.LeftButton:
-                                p0 = viewer.p0
-                                p1 =  display.View.Convert(pt.x(),pt.y())
-                                viewer.p0 = p1
-                                if viewer.selection and p0:
-                                    dx,dy,dz = p1[0]-p0[0],p1[1]-p0[1],0 
-                                    for item in viewer.selection:
-                                        item.position = (item.x+dx,item.y+dy,item.z)
-                                
-                                    raise StopIteration
-                            else:
-                                viewer.p0 = None
-                        #on_mouse_release::
-                        #    display, event = change['value']
-                        #    print 'mouse_release',event
-                        #    raise StopIteration
+
                         #Common:
                        
                         Cut:
@@ -183,25 +228,13 @@ enamldef Main(Window): window:
 
                         #Include:
                         #    objects <<  [Model()]
-                    Menu:
-                        context_menu = True
-                        Action:
-                            text = 'Fit all'
-                            triggered :: viewer.proxy.display.FitAll()
-                        Menu:
-                            title = 'View'
-                            Looper:
-                                iterable << viewer.get_member('view_mode').items
-                                Action:
-                                    text << loop_item
-                                    triggered :: viewer.view_mode = loop_item
+                  
             DockItem:
                 title = "Draw"
-                name = 'model3'
+                name = 'viewer2'
                 Container:
                     padding = 0
-                    OccViewer: top_view:
-                        view_mode = 'top'
+                    ModelViewer:
                         Wire:
                             Circle:
                                 radius = 10
@@ -227,21 +260,16 @@ enamldef Main(Window): window:
 #                                 Point:
 #                                     x = 0
 #                                     y = 10
-                    Menu:
-                        context_menu = True
-                        Action:
-                            text = "Reset"
-                            triggered :: top_view.proxy.display.View_Top()
                         
             DockItem:
                 title = "Shapes"
-                name = 'model2'
+                name = 'viewer3'
                 Container:   
                     padding = 0      
-                    OccViewer:
+                    ModelViewer:
                         selection:: print change['value']
                         Looper:
-                            iterable << range(50)
+                            iterable << range(10)
                             Box: 
                                 position = (10,0,loop_item*10)
                                 dx = 10

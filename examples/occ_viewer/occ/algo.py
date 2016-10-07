@@ -66,6 +66,20 @@ class ProxyChamfer(ProxyShape):
 class Operation(Shape):
     #: Reference to the implementation control
     proxy = Typed(ProxyOperation)
+    
+    def _update_proxy(self, change):
+        if change['name']=='axis':
+            dx,dy,dz = self.x,self.y,self.z
+            if change.get('oldvalue',None):
+                old = change['oldvalue'].Location()
+                dx -= old.X()
+                dy -= old.Y()
+                dz -= old.Z()
+            for c in self.children:
+                c.position = (c.x+dx,c.y+dy,c.z+dz) 
+        else:
+            super(Operation, self)._update_proxy(change)
+        self.proxy.update_display(change)
 
 class BooleanOperation(Operation):
     shape1 = d_(Instance(object))
@@ -77,19 +91,8 @@ class BooleanOperation(Operation):
     
     @observe('shape1','shape2','pave_filler')
     def _update_proxy(self, change):
-        if change['name']=='axis':
-            dx,dy,dz = self.x,self.y,self.z
-            if change.get('oldvalue',None):
-                old = change['oldvalue'].Location()
-                dx -= old.X()
-                dy -= old.Y()
-                dz -= old.Z()
-            for c in self.children:
-                c.position = (c.x+dx,c.y+dy,c.z+dz) 
-                #c.axis = self.axis
-        else:
-            super(BooleanOperation, self)._update_proxy(change)
-        self.proxy.update_display(change)
+        super(BooleanOperation, self)._update_proxy(change)
+        
         
 class Common(BooleanOperation):
     #: Reference to the implementation control
@@ -112,20 +115,18 @@ class Fillet(LocalOperation):
     proxy = Typed(ProxyFillet)
     
     #: Fillet shape type
-    shape = d_(Enum('rational','angular','polynomial'))
+    shape = d_(Enum('rational','angular','polynomial')).tag(view=True, group='Fillet')
     
     #: Radius of fillet
-    radius = d_(Float(1, strict=False))
+    radius = d_(Float(1, strict=False)).tag(view=True, group='Fillet')
     
     #: Edges to apply fillet to
     #: Leave blank to use all edges of the shape 
-    edges = d_(ContainerList(object))
+    edges = d_(ContainerList(object)).tag(view=True, group='Fillet')
     
     @observe('shape','radius','edges')
     def _update_proxy(self, change):
         super(Fillet, self)._update_proxy(change)
-        self.proxy.update_display(change)
-        
         
 class Chamfer(LocalOperation):
     #: Reference to the implementation control
@@ -144,5 +145,4 @@ class Chamfer(LocalOperation):
     @observe('distance','distance2','edges')
     def _update_proxy(self, change):
         super(Fillet, self)._update_proxy(change)
-        self.proxy.update_display(change)
         

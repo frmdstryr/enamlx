@@ -8,6 +8,7 @@ Created on Sep 26, 2016
 '''
 import sys
 import logging
+import traceback
 from atom.api import Dict, Typed, Int, Property
 
 from OCC.Display import OCCViewer
@@ -18,7 +19,7 @@ from enaml.qt import QtCore, QtGui, QtOpenGL
 from enaml.qt.QtCore import Qt
 from enaml.qt.qt_control import QtControl
 from enaml.application import timed_call
-import traceback
+from enaml.qt.qt_toolkit_object import QtToolkitObject
 
 log = logging.getLogger(__name__)
 
@@ -412,7 +413,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         return self.widget._display
     
     def get_shapes(self):
-        return [c for c in self.children()]
+        return [c for c in self.children() if not isinstance(c,QtToolkitObject)]
     
     def create_widget(self):
         self.widget = QtViewer3d(parent=self.parent_widget())
@@ -463,18 +464,20 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             
     def child_added(self, child):
         super(QtOccViewer, self).child_added(child)
-        self.get_member('shapes').reset(self)
-        child.observe('shape',self.update_display)
-        self.update_display({'value':child.shape,
-                             'type':'update',
-                             'name':'shape',
-                             'owner':child})
+        if not isinstance(child,QtToolkitObject):
+            self.get_member('shapes').reset(self)
+            child.observe('shape',self.update_display)
+            self.update_display({'value':child.shape,
+                                 'type':'update',
+                                 'name':'shape',
+                                 'owner':child})
         
         
     def child_removed(self, child):
         super(QtOccViewer, self).child_removed(child)
-        self.get_member('shapes').reset(self)
-        child.unobserve('shape',self.update_display)
+        if not isinstance(child,QtToolkitObject):
+            self.get_member('shapes').reset(self)
+            child.unobserve('shape',self.update_display)
         
     def set_antialiasing(self, enabled):
         if enabled:
@@ -595,11 +598,12 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             d = shape.declaration
             s = shape.shape.Shape()
             displayed_shapes[s] = shape
-            display.DisplayShape(s,
+            ais_shape = display.DisplayShape(s,
                                  color=d.color,
                                  transparency=d.transparency,
                                  update=update,
                                  fit=not self._displayed_shapes)
+            
         
         self._displayed_shapes = displayed_shapes
         
