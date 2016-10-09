@@ -118,6 +118,7 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
     def set_model(self, model):
         super(QtTreeView, self).set_model(model)
         
+        
     #--------------------------------------------------------------------------
     # View refresh handlers
     #--------------------------------------------------------------------------

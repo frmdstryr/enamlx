@@ -241,6 +241,10 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         are added. """
         self._pending_view_refreshes +=1
         timed_call(100,self._refresh_layout)
+        
+    def set_selection(self, items):
+        #: TODO
+        pass
     
     #--------------------------------------------------------------------------
     # Widget Events
@@ -308,15 +312,19 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item.declaration.entered()
     
     def on_selection_changed(self,selected,deselected):
+        selection = []
         for index in selected.indexes():
             item = self.item_at(index)
             if not item:
                 continue
             d = item.declaration
+            selection.append(d)
             if d.selected != True:
                 d.selected = True
                 d.selection_changed(d.selected)
-
+        
+        self.declaration.selection = selection
+        
         for index in deselected.indexes():
             item = self.item_at(index)
             if not item:

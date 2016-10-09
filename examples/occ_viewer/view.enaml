@@ -137,7 +137,11 @@ enamldef Main(Window): window:
                     padding = 0
                     TreeView:
                         horizontal_headers = ['Item']
+                        horizontal_stretch = True
                         items << viewer.children if viewer else []
+                        selection :: 
+                            if viewer:
+                                viewer.selection = [node.item for node in change['value']]
                         Looper:
                             iterable << parent.items
                             AutoTreeItem:

@@ -24,6 +24,9 @@ class ProxyAbstractItemView(ProxyControl):
     def set_selection_behavior(self,behavior):
         pass
     
+    def set_selection(self,items):
+        pass
+    
     def set_scroll_to_bottom(self,scroll_to_bottom):
         pass
     
@@ -89,8 +92,11 @@ class AbstractItemView(Control):
     #: Selection mode of the view
     selection_mode = d_(Enum('extended','none','multi','single','contiguous'))
     
-    #: Selectio behavior of the view
+    #: Selection behavior of the view
     selection_behavior = d_(Enum('items','rows','columns'))
+    
+    #: Selection
+    selection = d_(ContainerList(default=[]))
     
     #: Automatically scroll to bottm when new items are added 
     scroll_to_bottom = d_(Bool(False))
@@ -161,12 +167,12 @@ class AbstractItemView(Control):
     #: Cached property listing the row or columns of the table
     _items = Property(_get_items,cached=True)
     
-    @observe('items','scroll_to_bottom','alternating_row_colors',
-             'selection_mode','selection_behavior','cell_padding',
-             'auto_resize','resize_mode','word_wrap',
-             'show_horizontal_header','horizontal_headers','horizontal_stretch',
-             'show_vertical_header','vertical_header','vertical_stretch',
-             'visible_row','visible_column')
+    @observe('items', 'scroll_to_bottom', 'alternating_row_colors',
+             'selection_mode', 'selection_behavior', 'selection',
+             'cell_padding', 'auto_resize', 'resize_mode', 'word_wrap',
+             'show_horizontal_header', 'horizontal_headers', 'horizontal_stretch',
+             'show_vertical_header', 'vertical_header', 'vertical_stretch',
+             'visible_row', 'visible_column')
     def _update_proxy(self, change):
         """ An observer which sends state change to the proxy.
         """
