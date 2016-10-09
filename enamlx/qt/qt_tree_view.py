@@ -189,7 +189,7 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
             if not self._is_visible():
                 return
             
-            print self.index.row(),self.index.column(),self.index.internalPointer()
+            #print self.index.row(),self.index.column(),self.index.internalPointer()
             # The table destroys when it goes out of view
             # so we always have to make a new one
             delegate.create_widget()
