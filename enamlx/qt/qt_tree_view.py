@@ -153,10 +153,11 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
     _loading_interval = Int(100)
     
     def create_widget(self):
-        for child in self.children():
-            if isinstance(child, (Pattern, QtWidget)):
-                self.delegate = child
-    
+        if self.declaration:
+            for child in self.children():
+                if isinstance(child, (Pattern, QtWidget)):
+                    self.delegate = child
+        
     def set_row(self, row):
         self._update_index()
         
