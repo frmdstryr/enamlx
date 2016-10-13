@@ -11,7 +11,7 @@ from enaml.application import timed_call
 
 from .algo import (
     ProxyOperation, ProxyCommon, ProxyCut, ProxyFuse,
-    ProxyFillet, ProxyChamfer, ProxyChamferEdge
+    ProxyFillet, ProxyChamfer, ProxyThickSolid
 )
 from .occ_shape import OccShape
 
@@ -25,6 +25,12 @@ from OCC.BRepFilletAPI import (
 from OCC.ChFi3d import ChFi3d_Rational, ChFi3d_QuasiAngular, ChFi3d_Polynomial
 from OCC import BRepBuilderAPI
 from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+from OCC.BRepOffsetAPI import BRepOffsetAPI_MakeThickSolid
+from OCC.BRepOffset import BRepOffset_Skin, BRepOffset_Pipe,\
+    BRepOffset_RectoVerso
+from OCC.GeomAbs import GeomAbs_Arc, GeomAbs_Tangent, GeomAbs_Intersection
+from OCC.TopoDS import TopoDS_ListOfShape
+from OCC.TopTools import TopTools_ListOfShape
 
 
 class OccOperation(OccShape, ProxyOperation):
@@ -208,4 +214,67 @@ class OccChamfer(OccOperation, ProxyChamfer):
         self.update_shape()
          
     def set_face(self, face):
+        self.update_shape()
+        
+class OccThickSolid(OccOperation, ProxyThickSolid):
+    
+    offset_modes = Dict(default={
+        'skin': BRepOffset_Skin,
+        'pipe': BRepOffset_Pipe,
+        'recto_verso': BRepOffset_RectoVerso
+    })
+    
+    join_types = Dict(default={
+        'arc': GeomAbs_Arc,
+        'tangent': GeomAbs_Tangent,
+        'intersection': GeomAbs_Intersection,
+    })
+    
+    def create_shape(self):
+        """ Cannot be created until the child shape exists. """
+        pass
+    
+    def get_shape(self):
+        """ Return shape to apply the chamfer to. """
+        for child in self.children():
+            return child
+        
+    def get_faces(self, shape):
+        d = self.declaration
+        if d.closing_faces:
+            return d.closing_faces
+        for face in shape.topology.faces():
+            return [face]
+    
+    def update_shape(self, change={}):
+        d = self.declaration
+        
+        #: Get the shape to apply the fillet to
+        s = self.get_shape()
+        
+        faces = TopTools_ListOfShape()
+        for f in self.get_faces(s):
+            faces.Append(f)
+        
+        self.shape = BRepOffsetAPI_MakeThickSolid(
+            s.shape.Shape(),
+            faces,
+            d.offset,
+            d.tolerance,
+            self.offset_modes[d.offset_mode],
+            d.intersection,
+            False,
+            self.join_types[d.join_type]
+        )
+    
+    def set_offset(self, offset):
+        self.update_shape()
+        
+    def set_offset_mode(self, mode):
+        self.update_shape()
+        
+    def set_join_type(self, mode):
+        self.update_shape()
+        
+    def set_intersection(self, enabled):
         self.update_shape()

@@ -20,7 +20,7 @@ from advanced import AutoForm
 
 from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
-from occ.algo import Common, Cut, Fuse, Fillet, Chamfer
+from occ.algo import Common, Cut, Fuse, Fillet, Chamfer, ThickSolid
 from occ.shape import Shape
 
 
@@ -42,13 +42,13 @@ template AutoTreeItemNode(item):
     """
     TreeViewColumn:
         text << str(item)
-    TreeItemLoop(tuple(item.children)):
+    TreeItemLoop(tuple([c for c in item.children if isinstance(c,Shape)])):
         pass
 
 enamldef AutoTreeItem(TreeViewItem):
     attr item
     text = str(item)
-    items << item.children
+    items << [c for c in item.children if isinstance(c,Shape)]
     DynamicTemplate:
         base = AutoTreeItemNode
         args = (item,)
@@ -138,7 +138,7 @@ enamldef Main(Window): window:
                     TreeView:
                         horizontal_headers = ['Item']
                         horizontal_stretch = True
-                        items << viewer.children if viewer else []
+                        items << [c for c in viewer.children if isinstance(c,Shape)] if viewer else []
                         selection :: 
                             if viewer:
                                 viewer.selection = [node.item for node in change['value']]
@@ -205,6 +205,12 @@ enamldef Main(Window): window:
                             Cylinder:
                                 position = (-4,4,0)
                                 radius = 2
+                                
+                        ThickSolid:
+                            offset = 0.1
+                            Box:
+                                position = (4,-4,0)
+                                
                             #ChamferEdge:
                             #    edge = parent.edges[0]
                                 

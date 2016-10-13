@@ -105,6 +105,11 @@ def occ_chamfer_factory():
     from occ.occ_algo import OccChamfer
     return OccChamfer
 
+def occ_thick_solid_factory():
+    from occ.occ_algo import OccThickSolid
+    return OccThickSolid
+
+
 #: Solids
 QT_FACTORIES['Box'] = occ_box_factory
 QT_FACTORIES['Cone'] = occ_cone_factory
@@ -127,6 +132,7 @@ QT_FACTORIES['Cut'] = occ_cut_factory
 QT_FACTORIES['Fuse'] = occ_fuse_factory
 QT_FACTORIES['Fillet'] = occ_fillet_factory
 QT_FACTORIES['Chamfer'] = occ_chamfer_factory
+QT_FACTORIES['ThickSolid'] = occ_thick_solid_factory
 
 #: Draw
 QT_FACTORIES['Point'] = occ_point_factory
