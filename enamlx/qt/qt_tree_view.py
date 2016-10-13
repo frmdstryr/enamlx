@@ -55,7 +55,9 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
   
     def parent(self, index):
         item = index.internalPointer()
-        if not item or item.declaration==self.declaration:
+        if ((not item) or 
+            (not hasattr(item, 'declaration')) or 
+            (item.declaration==self.declaration)):
             return QModelIndex()
         parent = item.parent()
         return self.createIndex(parent.declaration.row,0,parent)
