@@ -127,7 +127,7 @@ enamldef Main(Window): window:
                         viewer = item.children[0].children[0]
                         window.viewer = viewer
                         viewer.proxy.display.OnResize()
-                print event.name,event.type
+                #print event.name,event.type
             
             DockItem:
                 title = 'Model'
@@ -158,35 +158,10 @@ enamldef Main(Window): window:
                         condition << viewer is not None
                         Looper:
                             iterable << viewer.selection
-                            Form:
-                                Label:
-                                    text = "Object"
-                                Label:
-                                    text = "{}".format(loop_item)
-                            AutoForm:
-                                model = loop_item
-#                     Notebook: notebook:
-#                         #tab_style = 'preferences'
-#                         Conditional:
-#                             condition << bool(viewer.selection and isinstance(viewer.selection[0],Atom))
-# #                             Page:
-# #                                 closable = False
-# #                                 title << '{}'.format(viewer.selection[0].__class__.__name__)
-# #                                 Container:
-# #                                     padding = 0
-# #                                     
-# #                                     AutoForm:
-# #                                         model << viewer.selection[0]
-#                             Looper:
-#                                 iterable << viewer.selection[0].children
-#                                 Page:
-#                                     closable = False
-#                                     title = '{}'.format(loop_item.__class__.__name__)
-#                                     Container:
-#                                         padding = 0
-#                                         
-#                                         AutoForm:
-#                                             model = loop_item
+                            GroupBox:
+                                title << "{}".format(loop_item)
+                                AutoForm:
+                                    model = loop_item
 
                                 
             DockItem:
@@ -224,7 +199,15 @@ enamldef Main(Window): window:
                                 dx = 2
                                 dy = 2
                                 dz = 2
-                            
+                                
+                        Chamfer:
+                            distance = 0.1
+                            Cylinder:
+                                position = (-4,4,0)
+                                radius = 2
+                            #ChamferEdge:
+                            #    edge = parent.edges[0]
+                                
                             
                             
                             #Cylinder:

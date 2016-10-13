@@ -11,7 +11,7 @@ from enaml.application import timed_call
 
 from .algo import (
     ProxyOperation, ProxyCommon, ProxyCut, ProxyFuse,
-    ProxyFillet, ProxyChamfer,
+    ProxyFillet, ProxyChamfer, ProxyChamferEdge
 )
 from .occ_shape import OccShape
 
@@ -23,6 +23,8 @@ from OCC.BRepFilletAPI import (
     BRepFilletAPI_MakeFillet, BRepFilletAPI_MakeChamfer
 )
 from OCC.ChFi3d import ChFi3d_Rational, ChFi3d_QuasiAngular, ChFi3d_Polynomial
+from OCC import BRepBuilderAPI
+from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 
 
 class OccOperation(OccShape, ProxyOperation):
@@ -158,4 +160,52 @@ class OccFillet(OccOperation, ProxyFillet):
         self.update_shape()
         
     def set_edges(self, edges):
+        self.update_shape()
+        
+        
+class OccChamfer(OccOperation, ProxyChamfer):
+    
+    def create_shape(self):
+        """ Cannot be created until the child shape exists. """
+        pass
+    
+    def get_shape(self):
+        """ Return shape to apply the chamfer to. """
+        for child in self.children():
+            return child
+    
+    def get_edges(self,shape):
+        d = self.declaration
+        edges = d.edges or shape.topology.edges()
+        faces = d.faces or shape.topology.faces()
+        return zip(edges,faces)#[c for c in self.children() if isinstance(c,OccChamferEdge)]
+    
+    def update_shape(self, change={}):
+        d = self.declaration
+        
+        #: Get the shape to apply the fillet to
+        s = self.get_shape()
+        
+        shape = BRepFilletAPI_MakeChamfer(s.shape.Shape())
+        
+        for edge,face in self.get_edges(s):
+            args = [d.distance]
+            if d.distance2:
+                args.append(d.distance2)
+            args.extend([edge,face])
+            shape.Add(*args)
+                
+        self.shape = shape
+
+     
+    def set_distance(self, d):
+        self.update_shape()
+         
+    def set_distance2(self, d):
+        self.update_shape()
+         
+    def set_edge(self, edge):
+        self.update_shape()
+         
+    def set_face(self, face):
         self.update_shape()

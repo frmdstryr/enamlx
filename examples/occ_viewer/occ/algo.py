@@ -54,14 +54,23 @@ class ProxyChamfer(ProxyShape):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: Chamfer)
     
+class ProxyChamferEdge(ProxyShape):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: ChamferEdge)
+    
     def set_distance(self, d):
         raise NotImplementedError
     
     def set_distance2(self, d):
         raise NotImplementedError
     
-    def set_edges(self, edges):
+    def set_edge(self, edge):
         raise NotImplementedError
+    
+    def set_face(self, face):
+        raise NotImplementedError
+
+    
 
 class Operation(Shape):
     #: Reference to the implementation control
@@ -133,16 +142,18 @@ class Chamfer(LocalOperation):
     proxy = Typed(ProxyChamfer)
     
     #: Distance of chamfer
-    distance = d_(Float(1, strict=False))
+    distance = d_(Float(1, strict=False)).tag(view=True, group='Chamfer')
     
     #: Second of chamfer (leave 0 if not used)
-    distance2 = d_(Float(0, strict=False))
+    distance2 = d_(Float(0, strict=False)).tag(view=True, group='Chamfer')
     
     #: Edges to apply fillet to
     #: Leave blank to use all edges of the shape 
-    edges = d_(ContainerList(object))
+    edges = d_(ContainerList()).tag(view=True, group='Chamfer')
     
-    @observe('distance','distance2','edges')
+    faces = d_(ContainerList()).tag(view=True, group='Chamfer')
+    
+    @observe('distance','distance2','edges','faces')
     def _update_proxy(self, change):
-        super(Fillet, self)._update_proxy(change)
+        super(Chamfer, self)._update_proxy(change)
         
