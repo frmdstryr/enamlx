@@ -598,8 +598,13 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             d = shape.declaration
             if not shape.shape:
                 log.error("{} has no shape property!".format(shape))
-            #    continue
-            s = shape.shape.Shape()
+                continue
+            try:
+                s = shape.shape.Shape()
+            except:
+                log.error("{} failed to create shape: {}".format(shape,traceback.format_exc()))
+                continue
+                
             displayed_shapes[s] = shape
             ais_shape = display.DisplayShape(s,
                                  color=d.color,
