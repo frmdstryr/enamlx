@@ -5,6 +5,7 @@
 #
 # The full license is in the file COPYING.txt, distributed with this software.
 #------------------------------------------------------------------------------
+import traceback
 """ An advanced example of Enaml templates.
 
 This example shows how Enaml templates can be used to automatically
@@ -154,7 +155,7 @@ template FormItem(Attr, MemberType):
         pass
 
 
-def form_spec(obtype):
+def form_spec(obtype, model):
     """ Generate a form specification for an atom type.
 
     Parameters
@@ -170,9 +171,30 @@ def form_spec(obtype):
 
     """
     items = []
+    
+    typemap = {int:Int,
+               float:Float,
+               unicode:Unicode,
+               str:Str}
     for name, member in obtype.members().iteritems():
-        if not name.startswith('_') and member.metadata and member.metadata.get('view',False):
-            items.append((name, type(member)))
+        if (not name.startswith('_') 
+             and member.metadata 
+             and (
+                  member.metadata.get('view',False) or
+                  not member.metadata.get('d_final',True)
+                )
+            ):
+            if not member.metadata.get('d_final'):
+                try:
+                    vtype = type(getattr(model,name))
+                    if vtype in typemap:
+                        items.append((name,typemap[vtype]))
+                except:
+                    traceback.print_exc()
+            else:
+                items.append((name, type(member)))
+        #elif (name not in classmembers) and (type(name) in typemap):
+        #    items.append((name, typemap[type(name)]))
     items.sort()
     return tuple(items)
 
@@ -202,7 +224,7 @@ template ForEach(Spec: (), Item):
     pass
 
 
-template AutoFormBody(ModelType):
+template AutoFormBody(ModelType, model):
     """ A template which builds the body for an AutoForm.
 
     Parameters
@@ -211,12 +233,12 @@ template AutoFormBody(ModelType):
         The type of the model. This should be an Atom subclass.
 
     """
-    const Spec = form_spec(ModelType)
+    const Spec = form_spec(ModelType,model)
     ForEach(Spec, FormItem):
         pass
 
 
-template AutoFormBody(ModelType: type(None)):
+template AutoFormBody(ModelType: type(None), model):
     """ A template specialization for null models.
 
     """
@@ -230,7 +252,7 @@ enamldef AutoForm(Form):
     attr model: Atom
     DynamicTemplate:
         base = AutoFormBody
-        args = (type(model),)
+        args << (type(model),model)
 
 
 #------------------------------------------------------------------------------

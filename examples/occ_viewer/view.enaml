@@ -1,5 +1,5 @@
 import math
-from atom.api import Atom
+from atom.api import Atom, Int, Float
 from enaml.layout.api import (
     HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
     hbox, vbox, spacer
@@ -314,8 +314,8 @@ enamldef Main(Window): window:
                     ModelViewer:
                         # Example showing some parametric properties
                         Cut:
-                            attr padding = 4
-                            attr ports = 4
+                            attr padding << 4
+                            attr ports <<  4
                             Fillet:
                                 Box: flange:
                                     dx = 20
