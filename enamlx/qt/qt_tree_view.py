@@ -31,7 +31,8 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         if not item:
             return len(self.declaration.items)
         d = item.declaration
-        #print 'rowcount ',len(d.items)
+        if not d:
+            return 0
         return len(d.items)
     
     def columnCount(self, index):
@@ -39,7 +40,10 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         if d.horizontal_headers:
             return len(d.horizontal_headers)
         item = index.internalPointer()
-        return len(item.declaration._columns)
+        d = item.declaration
+        if not d:
+            return 0
+        return len(d._columns)
     
     def index(self, row, column, parent):
         """ The index should point to the corresponding 
@@ -55,9 +59,8 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
   
     def parent(self, index):
         item = index.internalPointer()
-        if ((not item) or 
-            (not hasattr(item, 'declaration')) or 
-            (item.declaration==self.declaration)):
+        if ((not isinstance(item,AbstractQtWidgetItem)) or 
+            (not item.is_valid)):
             return QModelIndex()
         parent = item.parent()
         return self.createIndex(parent.declaration.row,0,parent)

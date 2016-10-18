@@ -4,7 +4,7 @@ Created on Aug 20, 2015
 
 @author: jrm
 '''
-from atom.api import Instance, Int
+from atom.api import Instance, Int, Bool
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
 from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
@@ -137,6 +137,9 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     #: Hold reference to selection model to PySide segfault
     selection_model = Instance(QItemSelectionModel)
     
+    #: If the items are still valid
+    is_valid = Bool(True)
+    
     #: Refreshing the view on every update makes it really slow
     #: So if we defer refreshing until everything is added it's fast :) 
     _pending_view_refreshes = Int(0)
@@ -194,6 +197,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     
     def destroy(self):
         """ Make sure all the table widgets are destroyed first."""
+        self.is_valid = False
         self.model.clear()
         super(QtAbstractItemView, self).destroy()
     

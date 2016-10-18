@@ -88,7 +88,7 @@ class Circle(Edge):
     proxy = Typed(ProxyCircle)
     
     #: Radius of the circle
-    radius = d_(Float(1,strict=False))
+    radius = d_(Float(1,strict=False)).tag(view=True)
     
     @observe('radius')
     def _update_proxy(self, change):
@@ -100,10 +100,10 @@ class Ellipse(Edge):
     proxy = Typed(ProxyEllipse)
     
     #: Radius of the ellipse
-    major_radius = d_(Float(1,strict=False))
+    major_radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: Minor radius of the ellipse
-    minor_radius = d_(Float(1,strict=False))
+    minor_radius = d_(Float(1,strict=False)).tag(view=True)
     
     @observe('major_radius','minor_radius')
     def _update_proxy(self, change):
@@ -125,10 +125,10 @@ class Hyperbola(Edge):
     proxy = Typed(ProxyHyperbola)
     
     #: Major radius of the hyperbola
-    major_radius = d_(Float(1,strict=False))
+    major_radius = d_(Float(1,strict=False)).tag(view=True)
     
     #: Minor radius of the hyperbola
-    minor_radius = d_(Float(1,strict=False))
+    minor_radius = d_(Float(1,strict=False)).tag(view=True)
     
     @observe('major_radius','minor_radius')
     def _update_proxy(self, change):
@@ -144,7 +144,7 @@ class Parabola(Edge):
     proxy = Typed(ProxyParabola)
     
     #: Focal length of the parabola
-    focal_length = d_(Float(1,strict=False))
+    focal_length = d_(Float(1,strict=False)).tag(view=True)
     
     @observe('focal_length')
     def _update_proxy(self, change):

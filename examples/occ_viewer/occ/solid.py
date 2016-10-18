@@ -4,7 +4,7 @@ Created on Sep 27, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-    Instance, Bool, Float, ForwardTyped, observe
+    Instance, Bool, Float, Typed, ForwardTyped, observe
 )
 from enaml.core.declarative import d_
 
@@ -128,6 +128,9 @@ class ProxyWedge(ProxyShape):
         raise NotImplementedError
 
 class Box(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyBox)
+    
     #: x size
     dx = d_(Float(1,strict=False)).tag(view=True)
     
@@ -146,6 +149,9 @@ class Box(Shape):
 class Cone(Shape):
     """ Make a cone of height H radius R1 in the plane z = 0, 
         R2 in the plane Z = H. R1 and R2 may be null."""
+    #: Proxy shape
+    proxy = Typed(ProxyCone)
+    
     #: Radius
     radius = d_(Float(1,strict=False)).tag(view=True)
     
@@ -166,6 +172,9 @@ class Cylinder(Shape):
     """ Make a cylinder of radius R and length H with angle H.
     
     """
+    #: Proxy shape
+    proxy = Typed(ProxyCylinder)
+    
     #: Radius
     radius = d_(Float(1,strict=False)).tag(view=True)
     
@@ -180,6 +189,9 @@ class Cylinder(Shape):
         super(Cylinder, self)._update_proxy(change)
         
 class HalfSpace(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyHalfSpace)
+    
     #: Surface that is either a face or a Shell
     surface = d_(Instance((TopoDS_Face,TopoDS_Shell)))
                  
@@ -188,6 +200,9 @@ class HalfSpace(Shape):
         super(HalfSpace, self)._update_proxy(change)
         
 class Prism(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyPrism)
+    
     #: Shape to build prism from
     shape = d_(Instance(TopoDS_Shape)).tag(view=True)
     
@@ -205,6 +220,9 @@ class Prism(Shape):
         super(HalfSpace, self)._update_proxy(change)
         
 class Sphere(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxySphere)
+    
     #: Radius of sphere
     radius = d_(Float(1,strict=False)).tag(view=True)
     
@@ -222,6 +240,9 @@ class Sphere(Shape):
         super(Sphere, self)._update_proxy(change)
         
 class Torus(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyTorus)
+    
     #: Radius of sphere
     radius = d_(Float(1,strict=False)).tag(view=True)
     
@@ -239,6 +260,9 @@ class Torus(Shape):
         super(Torus, self)._update_proxy(change)
         
 class Wedge(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyWedge)
+    
     #: x size
     dx = d_(Float(1,strict=False)).tag(view=True)
     
@@ -256,4 +280,5 @@ class Wedge(Shape):
     @observe('dx','dy','dz','itx')
     def _update_proxy(self, change):
         super(Wedge, self)._update_proxy(change)
+        
     

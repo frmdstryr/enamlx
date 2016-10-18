@@ -97,7 +97,8 @@ class Operation(Shape):
                 dy -= old.Y()
                 dz -= old.Z()
             for c in self.children:
-                c.position = (c.x+dx,c.y+dy,c.z+dz) 
+                if isinstance(c,Shape):
+                    c.position = (c.x+dx,c.y+dy,c.z+dz) 
         else:
             super(Operation, self)._update_proxy(change)
         self.proxy.update_display(change)

@@ -1,4 +1,6 @@
 import enamlx
+from OCC.BRep import BRep_Tool
+import faulthandler
 enamlx.install()
 
 import occ
@@ -15,6 +17,13 @@ import logging
 
 def main():
     logging.basicConfig(level='DEBUG',stream=sys.stdout,format='%(asctime)s %(levelname)-8s %(name)-15s %(message)s')
+    
+    try:
+        import faulthandler
+        faulthandler.enable()
+    except ImportError:
+        pass
+        
 
     with enaml.imports():
         from view import Main

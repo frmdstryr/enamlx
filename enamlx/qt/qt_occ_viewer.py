@@ -596,6 +596,9 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         for shape in self.shapes:
             update = shape==self.shapes[-1]
             d = shape.declaration
+            if not shape.shape:
+                log.error("{} has no shape property!".format(shape))
+            #    continue
             s = shape.shape.Shape()
             displayed_shapes[s] = shape
             ais_shape = display.DisplayShape(s,

@@ -4,7 +4,7 @@ Created on Aug 24, 2015
 
 @author: jrm
 '''
-from atom.api import Instance, Property, ForwardInstance
+from atom.api import Instance, Property, ForwardInstance, Bool
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_menu import QtMenu
@@ -81,6 +81,9 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
     #: Reference to view
     view = ForwardInstance(_abstract_item_view)
     
+    #: Used to check if the item has been destroyed already
+    is_valid = Bool(True)
+    
     def create_widget(self):
         # View items have no widget!
         for child in self.children():
@@ -97,3 +100,12 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup,ProxyAbstractWidgetItem):
     def _update_index(self):
         """ Update where this item is within the model"""
         raise NotImplementedError
+    
+    def destroy(self):
+        """ Since Views use deferred calls to make items, we
+        must be able to check if the item was destroyed before accessing it
+        to avoid crashes.
+        
+        """
+        self.is_valid = False
+        super(AbstractQtWidgetItem, self).destroy()

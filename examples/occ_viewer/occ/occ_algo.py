@@ -266,6 +266,9 @@ class OccThickSolid(OccOperation, ProxyThickSolid):
             False,
             self.join_types[d.join_type]
         )
+        
+    def set_closing_faces(self, faces):
+        self.update_shape()
     
     def set_offset(self, offset):
         self.update_shape()

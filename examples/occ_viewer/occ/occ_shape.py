@@ -7,7 +7,7 @@ from atom.api import (
    Typed, observe
 )
 
-from .shape import ProxyShape
+from .shape import ProxyShape#, ProxyEdge, ProxyFace
 
 from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape
 
@@ -536,11 +536,27 @@ class OccShape(ProxyShape):
     def update_topology(self,change):
         if self.shape:
             self.topology = self._default_topology()
+            
         
     @observe('shape')    
     def update_display(self,change):
         self.parent().update_display(change)
         
+#     @observe('topology','shape')    
+#     def update_edges(self):
+#         if self.topology:
+#             topo = self.topology
+#             for e in topo.edges():
+#                 d
+#         
+#     @observe('topology','shape')    
+#     def update_faces(self):
+        
     def set_axis(self, axis):
         self.create_shape()
-    
+        
+# class OccEdge(ProxyEdge):
+#     shape = Typed(TopoDS_Edge)
+#     
+# class OccFace(ProxyFace):
+#     shape = Typed(TopoDS_Face)

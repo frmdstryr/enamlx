@@ -4,7 +4,7 @@ Created on Sep 30, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-   Typed
+   Typed, Int
 )
 
 from .draw import (
@@ -19,6 +19,7 @@ from OCC.TopoDS import TopoDS_Vertex
 from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeWire,\
     BRepBuilderAPI_MakeVertex
 from OCC.gce import gce_MakeLin
+from enaml.application import timed_call
 
 class OccPoint(OccShape, ProxyPoint):
     #: A reference to the toolkit shape created by the proxy.
@@ -55,22 +56,23 @@ class OccVertex(OccShape, ProxyVertex):
     def set_z(self, z):
         self.create_shape()
     
-        
 class OccEdge(OccShape, ProxyEdge):
     shape = Typed(BRepBuilderAPI_MakeEdge)
     
     def make_edge(self,*args):
         self.shape = BRepBuilderAPI_MakeEdge(*args)
-
+        
 class OccLine(OccEdge, ProxyLine):
     
     def create_shape(self):
         pass
     
     def init_layout(self):
+        for child in self.children():
+            self.child_added(child)
         self.update_shape()
     
-    def update_shape(self):
+    def update_shape(self,change={}):
         d = self.declaration
         if len(d.children)==2:
             points = [c.shape for c in self.children()]
@@ -83,11 +85,11 @@ class OccLine(OccEdge, ProxyLine):
         super(OccLine, self).child_added(child)
         if not isinstance(child, (OccPoint, OccVertex)):
             raise TypeError("Line can only have Points or Vertices as children")
-        self.create_shape()
+        child.observe('shape',self.update_shape)
         
     def child_removed(self, child):
         super(OccLine, self).child_removed(child)
-        self.create_shape()
+        child.unobserve('shape',self.update_shape)
 
 class OccCircle(OccEdge, ProxyCircle):
     def create_shape(self):
@@ -130,18 +132,20 @@ class OccParabola(OccEdge, ProxyParabola):
     def set_focal_length(self, l):
         self.create_shape()
     
-
-        
 class OccWire(OccShape, ProxyWire):
+    _update_count = Int(0)
+    
     shape = Typed(BRepBuilderAPI_MakeWire)
     
     def create_shape(self):
         pass
     
     def init_layout(self):
+        for child in self.children():
+            self.child_added(child)
         self.update_shape()
     
-    def update_shape(self):
+    def update_shape(self,change={}):
         d = self.declaration
         shape = BRepBuilderAPI_MakeWire()
         for c in self.children():
@@ -151,9 +155,20 @@ class OccWire(OccShape, ProxyWire):
         
     def child_added(self, child):
         super(OccWire, self).child_added(child)
-        self.create_shape()
+        child.observe('shape',self._queue_update)
         
     def child_removed(self, child):
-        super(OccWire, self).child_removed(child)
-        self.create_shape()
+        super(OccEdge, self).child_removed(child)
+        child.unobserve('shape',self._queue_update)
+        
+    def _queue_update(self,change):
+        self._update_count +=1
+        timed_call(0,self._dequeue_update,change)
+    
+    def _dequeue_update(self,change):
+        # Only update when all changes are done
+        self._update_count -=1
+        if self._update_count !=0:
+            return
+        self.update_shape(change)
         

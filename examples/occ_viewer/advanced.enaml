@@ -149,7 +149,7 @@ template FormItem(Attr, MemberType):
     """
     const LabelText = Attr[0].upper() + Attr[1:].lower()
     Label:
-        text = LabelText
+        text = LabelText.replace("_"," ")
     FormControl(Attr, MemberType):
         pass
 

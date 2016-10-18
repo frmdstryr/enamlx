@@ -4,7 +4,7 @@ Created on Sep 30, 2016
 @author: jrmarti3
 '''
 from atom.api import (
-    Str, Float, Coerced, Typed, ForwardTyped, observe
+    Str, Float, Property, Coerced, Typed, ForwardTyped, observe
 )
 
 from enaml.core.declarative import d_
@@ -70,6 +70,25 @@ class Shape(ToolkitObject):
     #: Axis
     axis = d_(Coerced(gp_Ax2,((0,0,0),(0,0,1)),coercer=coerce_axis))
     
+    
+    def _get_edges(self):
+        topo = self.proxy.topology
+        if not topo:
+            return []
+        return [e for e in topo.edges()]
+    
+    #: Edges of this shape
+    shape_edges = Property(lambda self:self._get_edges(),cached=True)
+    
+    def _get_faces(self):
+        topo = self.proxy.topology
+        if not topo:
+            return []
+        return [e for e in topo.faces()]
+    
+    #: Faces of this shape
+    shape_faces = Property(lambda self:self._get_faces(),cached=True)
+    
     @observe('x','y','z')
     def _update_position(self, change):
         """ Keep position in sync with x,y,z """
@@ -101,3 +120,13 @@ class Shape(ToolkitObject):
     def _update_proxy(self, change):
         super(Shape, self)._update_proxy(change)
         self.proxy.update_display(change)
+    
+    @observe('proxy.shape')
+    def _update_topo(self,change):
+        self.get_member('shape_edges').reset(self)
+        self.get_member('shape_faces').reset(self)
+        
+    
+    
+    
+    
