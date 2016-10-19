@@ -109,6 +109,13 @@ def occ_thick_solid_factory():
     from occ.occ_algo import OccThickSolid
     return OccThickSolid
 
+def occ_part_factory():
+    from occ.occ_part import OccPart
+    return OccPart
+
+
+#: Part
+QT_FACTORIES['Part'] = occ_part_factory
 
 #: Solids
 QT_FACTORIES['Box'] = occ_box_factory

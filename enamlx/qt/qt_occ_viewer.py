@@ -467,10 +467,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         if not isinstance(child,QtToolkitObject):
             self.get_member('shapes').reset(self)
             child.observe('shape',self.update_display)
-            self.update_display({'value':child.shape,
-                                 'type':'update',
-                                 'name':'shape',
-                                 'owner':child})
+            self.update_display()
         
         
     def child_removed(self, child):
@@ -572,7 +569,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
 #             return
 #         self.update_shape(change)
             
-    def update_display(self, change):
+    def update_display(self, change=None):
         self._update_count +=1
         #log.debug('update_display')
         timed_call(0,self._do_update)
@@ -582,38 +579,51 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         # Erase all just HiDES them
         display.Context.PurgeDisplay()
         display.Context.RemoveAll()
-        
+    
+    def _expand_shapes(self,shapes):
+        expansion = []
+        for s in shapes:
+            if hasattr(s,'shapes'):
+                expansion.extend(self._expand_shapes(s.shapes))
+            else:
+                expansion.append(s)
+        return expansion
+    
     def _do_update(self):
         # Only update when all changes are done
         self._update_count -=1
         if self._update_count !=0:
             return
         #: TO
-        display = self.display
-        self.clear_display()
-        displayed_shapes = {}
-        #log.error( "_do_update {}")
-        for shape in self.shapes:
-            update = shape==self.shapes[-1]
-            d = shape.declaration
-            if not shape.shape:
-                log.error("{} has no shape property!".format(shape))
-                continue
-            try:
-                s = shape.shape.Shape()
-            except:
-                log.error("{} failed to create shape: {}".format(shape,traceback.format_exc()))
-                continue
+        try:
+            display = self.display
+            self.clear_display()
+            displayed_shapes = {}
+            #log.error( "_do_update {}")
+            shapes = self._expand_shapes(self.shapes[:])
+            for shape in shapes:
+                update = shape==shapes[-1]
+                d = shape.declaration
+                if not shape.shape:
+                    log.error("{} has no shape property!".format(shape))
+                    continue
+                try:
+                    s = shape.shape.Shape()
+                except:
+                    log.error("{} failed to create shape: {}".format(shape,traceback.format_exc()))
+                    continue
+                    
+                displayed_shapes[s] = shape
+                ais_shape = display.DisplayShape(s,
+                                     color=d.color,
+                                     transparency=d.transparency,
+                                     update=update,
+                                     fit=not self._displayed_shapes)
                 
-            displayed_shapes[s] = shape
-            ais_shape = display.DisplayShape(s,
-                                 color=d.color,
-                                 transparency=d.transparency,
-                                 update=update,
-                                 fit=not self._displayed_shapes)
             
-        
-        self._displayed_shapes = displayed_shapes
-        
+            self._displayed_shapes = displayed_shapes
+        except:
+            log.error("Failed to display shapes: {}".format(traceback.format_exc()))
+
     
     

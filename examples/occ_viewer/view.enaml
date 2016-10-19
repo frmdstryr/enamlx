@@ -1,5 +1,5 @@
 import math
-from atom.api import Atom, Int, Float
+from atom.api import Atom
 from enaml.layout.api import (
     HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
     hbox, vbox, spacer
@@ -20,13 +20,10 @@ from advanced import AutoForm
 
 from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
 from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
-from occ.algo import Common, Cut, Fuse, Fillet, Chamfer, ThickSolid
+from occ.algo import Common, Cut, Fuse, Fillet, Chamfer
 from occ.shape import Shape
-from OCC.BRep import BRep_Tool
-from OCC.Standard import Standard_Type
-from OCC.Geom import Geom_Plane, Handle_Geom_Plane, Handle_Geom_Plane_DownCast
-import traceback
 
+from examples.turners_cube import TurnersCube
 
 
 template TreeItemLoop(items):
@@ -46,13 +43,13 @@ template AutoTreeItemNode(item):
     """
     TreeViewColumn:
         text << str(item)
-    TreeItemLoop(tuple([c for c in item.children if isinstance(c,Shape)])):
+    TreeItemLoop(tuple(item.children)):
         pass
 
 enamldef AutoTreeItem(TreeViewItem):
     attr item
     text = str(item)
-    items << [c for c in item.children if isinstance(c,Shape)]
+    items << item.children
     DynamicTemplate:
         base = AutoTreeItemNode
         args = (item,)
@@ -103,17 +100,6 @@ enamldef ModelViewer(OccViewer): viewer:
                     triggered :: viewer.view_mode = loop_item
 
 
-def top_face(f):
-    """ Ugly way to sort faces..."""
-    s = BRep_Tool.Surface(f)
-    try:
-        p = Handle_Geom_Plane_DownCast(s).GetObject()
-        return -p.Location().Z()
-    except:
-        traceback.print_exc()
-        return 0
-
-
 enamldef Main(Window): window:
     minimum_size = (960,540)
     #attr active_model = [Model()]
@@ -126,7 +112,12 @@ enamldef Main(Window): window:
                     'model',
                     'properties',
                 ),
-                TabLayout(*['viewer{}'.format(i) for i in range(1,1+4)]),
+                TabLayout(
+                    'viewer1',
+                    'viewer2',
+                    'viewer3',
+                    'viewer5',
+                ),
                 sizes=[10,90]
             )
             dock_events_enabled = True
@@ -138,7 +129,7 @@ enamldef Main(Window): window:
                         viewer = item.children[0].children[0]
                         window.viewer = viewer
                         viewer.proxy.display.OnResize()
-                #print event.name,event.type
+                print event.name,event.type
             
             DockItem:
                 title = 'Model'
@@ -147,10 +138,9 @@ enamldef Main(Window): window:
                 Container:
                     padding = 0
                     TreeView:
-                        hug_height = 'weak'
                         horizontal_headers = ['Item']
                         horizontal_stretch = True
-                        items << [c for c in viewer.children if isinstance(c,Shape)] if viewer else []
+                        items << viewer.children if viewer else []
                         selection :: 
                             if viewer:
                                 viewer.selection = [node.item for node in change['value']]
@@ -170,10 +160,13 @@ enamldef Main(Window): window:
                         condition << viewer is not None
                         Looper:
                             iterable << viewer.selection
-                            GroupBox:
-                                title << "{}".format(loop_item)
-                                AutoForm:
-                                    model = loop_item
+                            Form:
+                                Label:
+                                    text = "Object"
+                                Label:
+                                    text = "{}".format(loop_item)
+                            AutoForm:
+                                model = loop_item
 
                                 
             DockItem:
@@ -211,22 +204,7 @@ enamldef Main(Window): window:
                                 dx = 2
                                 dy = 2
                                 dz = 2
-                                
-                        Chamfer:
-                            distance = 0.1
-                            Cylinder:
-                                position = (-4,4,0)
-                                radius = 2
-                                
-                        ThickSolid:
-                            offset = 0.1
-                            Box: box1:
-                                position = (4,-4,0)
-                            closing_faces << [sorted(box1.shape_faces,key=top_face)[0]] # Get top face
-                                
-                            #ChamferEdge:
-                            #    edge = parent.edges[0]
-                                
+                            
                             
                             
                             #Cylinder:
@@ -307,44 +285,10 @@ enamldef Main(Window): window:
                                 radius2 = 0.4
                                 angle = math.pi
             DockItem:
-                title = "Flange"
-                name = 'viewer4'
+                title = "Turners Cube"
+                name = 'viewer5'
                 Container:   
                     padding = 0      
                     ModelViewer:
-                        # Example showing some parametric properties
-                        Cut:
-                            attr padding << 4
-                            attr ports <<  4
-                            Fillet:
-                                Box: flange:
-                                    dx = 20
-                                    dy = 100
-                                    dz = 5
-                            
-                            # Bolt holes
-                            Looper:
-                                iterable << [
-                                             (padding,padding),
-                                             (padding,flange.dy-padding),
-                                             (flange.dx-padding,flange.dy-padding),
-                                             (flange.dx-padding,padding),
-                                            ]                       
-                                Cylinder: 
-                                    position << (loop_item[0],loop_item[1],0)
-                                    height := flange.dz
-                                    radius = 1
-                                    
-                            # Exhaust holes
-                            attr port_radius << (min(flange.dx,flange.dy)-padding)/2.0
-                            Looper:
-                                iterable << [
-                                        (flange.dx/2.0,i*flange.dy/(float(ports))+port_radius+padding)
-                                        for i in range(ports)
-                                    ]
-                                Cylinder: 
-                                    position << (loop_item[0],loop_item[1],0)
-                                    height := flange.dz
-                                    radius << port_radius
-                            
-
+                        TurnersCube:
+                            pass
