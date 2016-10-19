@@ -1,7 +1,7 @@
 '''
 Created on Sep 27, 2016
 
-@author: jrmarti3
+@author: jrm
 '''
 from atom.api import (
     ContainerList, Float, Typed, ForwardTyped, observe

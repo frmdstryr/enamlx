@@ -1,4 +1,8 @@
-import math
+'''
+Created on Sep 28, 2016
+
+@author: jrm
+'''
 from atom.api import Atom
 from enaml.layout.api import (
     HSplitLayout, VSplitLayout, TabLayout, InsertItem, 
@@ -6,8 +10,7 @@ from enaml.layout.api import (
 )
 from enaml.widgets.api import (
     Window, DockArea, DockItem,  Form, GroupBox, ScrollArea,
-    Notebook, Page, 
-    SpinBox, Container, Label, Menu, Action
+    Notebook, Page, SpinBox, Container, Label, Menu, Action
 )
 from enaml.widgets.dock_events import DockItemEvent
 from enaml.core.api import Conditional, Include, Looper, DynamicTemplate
@@ -18,13 +21,14 @@ from enamlx.widgets.api import (
 )
 from advanced import AutoForm
 
-from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
-from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
-from occ.algo import Common, Cut, Fuse, Fillet, Chamfer
+from occ.part import Part
 from occ.shape import Shape
 
+from examples.shapes import PrimativeShapes
+from examples.operations import Operations
+from examples.draw import Draw
+from examples.exhaust_flange import ExhaustFlange
 from examples.turners_cube import TurnersCube
-
 
 template TreeItemLoop(items):
     """ A templated loop which maps a template over a sequence."""
@@ -43,13 +47,13 @@ template AutoTreeItemNode(item):
     """
     TreeViewColumn:
         text << str(item)
-    TreeItemLoop(tuple(item.children)):
+    TreeItemLoop(tuple([c for c in item.children if isinstance(c,Shape)])):
         pass
 
 enamldef AutoTreeItem(TreeViewItem):
     attr item
     text = str(item)
-    items << item.children
+    items << [c for c in item.children if isinstance(c,Shape)]
     DynamicTemplate:
         base = AutoTreeItemNode
         args = (item,)
@@ -99,10 +103,15 @@ enamldef ModelViewer(OccViewer): viewer:
                     text << loop_item
                     triggered :: viewer.view_mode = loop_item
 
-
 enamldef Main(Window): window:
     minimum_size = (960,540)
-    #attr active_model = [Model()]
+    attr models = [
+        PrimativeShapes(),
+        Operations(),
+        Draw(),
+        TurnersCube(),
+        ExhaustFlange()
+    ]
     attr viewer = None
     Container:
         padding = 0   
@@ -112,12 +121,7 @@ enamldef Main(Window): window:
                     'model',
                     'properties',
                 ),
-                TabLayout(
-                    'viewer1',
-                    'viewer2',
-                    'viewer3',
-                    'viewer5',
-                ),
+                TabLayout(*['viewer{}'.format(i) for i in range(len(window.models))]),
                 sizes=[10,90]
             )
             dock_events_enabled = True
@@ -129,7 +133,7 @@ enamldef Main(Window): window:
                         viewer = item.children[0].children[0]
                         window.viewer = viewer
                         viewer.proxy.display.OnResize()
-                print event.name,event.type
+                #print event.name,event.type
             
             DockItem:
                 title = 'Model'
@@ -140,7 +144,7 @@ enamldef Main(Window): window:
                     TreeView:
                         horizontal_headers = ['Item']
                         horizontal_stretch = True
-                        items << viewer.children if viewer else []
+                        items << [c for c in viewer.children if isinstance(c,(Shape,Part))] if viewer else []
                         selection :: 
                             if viewer:
                                 viewer.selection = [node.item for node in change['value']]
@@ -160,135 +164,18 @@ enamldef Main(Window): window:
                         condition << viewer is not None
                         Looper:
                             iterable << viewer.selection
-                            Form:
-                                Label:
-                                    text = "Object"
-                                Label:
-                                    text = "{}".format(loop_item)
-                            AutoForm:
-                                model = loop_item
+                            GroupBox:
+                                title << "{}".format(loop_item)
+                                AutoForm:
+                                    model = loop_item
 
-                                
-            DockItem:
-                title = "Operations"
-                name = 'viewer1'
-                Container:
-                    padding = 0
-                    ModelViewer: #viewer:
-                        view_mode = 'top'
-
-                        #Common:
-                       
-                        Cut:
-                            Box:
-                                position = (-1, -1, 0)
-                                dx = 2
-                                dy = 2
-                                dz = 1
-                            Cone:
-                                radius = 1
-                                height = 5
-                                 
-                        Common:
-                            Cylinder:
-                                position = (4,4,0)
-                                height = 4
-                            Sphere:
-                                position = (4,4,0)
-                                radius = 2
-                                
-                        Fillet:
-                            radius = 0.1
-                            Box:
-                                position = (-4,-4,0)
-                                dx = 2
-                                dy = 2
-                                dz = 2
-                            
-                            
-                            
-                            #Cylinder:
-                            #    radius = 1
-
-                        #Include:
-                        #    objects <<  [Model()]
-                  
-            DockItem:
-                title = "Draw"
-                name = 'viewer2'
-                Container:
-                    padding = 0
-                    ModelViewer:
-                        Wire:
-                            Circle:
-                                radius = 10
-                        Wire:
-                            Ellipse:
-                                x = - 10
-                                major_radius = 10
-                                minor_radius = 4
-                        Wire:
-                            #Circle:
-                            #    radius = 4
-                            Line:
-                                Point:
-                                    x = 4
-                                    y = 0
-                                Point:
-                                    x = 10
-                                    y = 10
-#                             Line:
-#                                 Point:
-#                                     x = 10
-#                                     y = 10
-#                                 Point:
-#                                     x = 0
-#                                     y = 10
-                        
-            DockItem:
-                title = "Shapes"
-                name = 'viewer3'
-                Container:   
-                    padding = 0      
-                    ModelViewer:
-                        selection:: print change['value']
-                        Looper:
-                            iterable << range(10)
-                            Box: 
-                                position = (10,0,loop_item*10)
-                                dx = 10
-                                dy = 2
-                                dz = 5
-                                  
-                            Cone: 
-                                position = (0,10,loop_item*10)
-                                radius = 1
-                                height = 5
-                              
-                            Cylinder: 
-                                position = (10,10,loop_item*10)
-                                radius = 2
-                                #angle = math.pi/2.0
-                                  
-                            Sphere: 
-                                position = (0,0,loop_item*10)
-                                radius = 3
-                                #angle = 1.5*math.pi
-                                  
-                            Wedge: 
-                                position = (-10,0,loop_item*10)
-                                dy = 2
-                              
-                            Torus:
-                                position = (-10,-10,loop_item*10)
-                                radius = 2
-                                radius2 = 0.4
-                                angle = math.pi
-            DockItem:
-                title = "Turners Cube"
-                name = 'viewer5'
-                Container:   
-                    padding = 0      
-                    ModelViewer:
-                        TurnersCube:
-                            pass
+            Looper:
+                iterable << window.models 
+                DockItem:
+                    title = loop_item.name
+                    name = 'viewer{}'.format(loop_index)
+                    Container:
+                        padding = 0
+                        ModelViewer: #viewer:
+                            Include:
+                                objects << [loop_item]

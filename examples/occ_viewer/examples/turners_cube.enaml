@@ -1,0 +1,20 @@
+
+from enaml.core.api import Looper
+from occ.shape import Box, Sphere 
+from occ.algo import Cut
+from occ.part import Part
+
+enamldef TurnersCube(Part):
+    name = "Turners Cube"
+    
+    attr levels: int = 3
+    Looper:
+        iterable << range(1,1+levels)
+        Cut:
+            Box:
+                position = (-loop_item/2.0,-loop_item/2.0,-loop_item/2.0)
+                dx = loop_item
+                dy = loop_item
+                dz = loop_item
+            Sphere:
+                radius = loop_item/1.5 

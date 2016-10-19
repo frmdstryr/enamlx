@@ -1,3 +1,8 @@
+'''
+Created on Sep 28, 2016
+
+@author: jrm
+'''
 import enamlx
 from OCC.BRep import BRep_Tool
 import faulthandler

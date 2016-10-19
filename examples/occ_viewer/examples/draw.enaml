@@ -1,0 +1,25 @@
+
+from occ.part import Part
+from occ.draw import Wire, Circle, Ellipse, Line, Point
+
+enamldef Draw(Part):
+    name = "Draw Example"
+
+    Wire:
+        Circle:
+            radius = 10
+    Wire:
+        Ellipse:
+            x = - 10
+            major_radius = 10
+            minor_radius = 4
+    Wire:
+        #Circle:
+        #    radius = 4
+        Line:
+            Point:
+                x = 4
+                y = 0
+            Point:
+                x = 10
+                y = 10

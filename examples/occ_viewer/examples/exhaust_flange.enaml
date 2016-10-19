@@ -1,0 +1,41 @@
+from enaml.core.api import Looper
+from occ.part import Part
+from occ.algo import Fillet, Cut 
+from occ.shape import Cylinder, Box
+
+enamldef ExhaustFlange(Part):
+    name = "Exhaust Flange"
+    # Example showing some parametric properties
+    Cut:
+        attr padding = 4
+        attr ports =  4
+        Fillet:
+            Box: flange:
+                dx = 20
+                dy = 100
+                dz = 5
+        
+        # Bolt holes
+        Looper:
+            iterable << [
+                         (padding,padding),
+                         (padding,flange.dy-padding),
+                         (flange.dx-padding,flange.dy-padding),
+                         (flange.dx-padding,padding),
+                        ]                       
+            Cylinder: 
+                position << (loop_item[0],loop_item[1],0)
+                height := flange.dz
+                radius = 1
+                
+        # Exhaust holes
+        attr port_radius << (min(flange.dx,flange.dy)-padding)/2.0
+        Looper:
+            iterable << [
+                    (flange.dx/2.0,i*flange.dy/(float(ports))+port_radius+padding)
+                    for i in range(ports)
+                ]
+            Cylinder: 
+                position << (loop_item[0],loop_item[1],0)
+                height := flange.dz
+                radius << port_radius

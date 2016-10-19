@@ -5,7 +5,7 @@ Created on Sep 28, 2016
 '''
 
 from atom.api import (
-    Typed, ForwardTyped
+    Typed, ForwardTyped, Unicode
 )
 from enaml.core.declarative import d_
 
@@ -24,6 +24,12 @@ class Part(ToolkitObject):
     """ A part is simply a group of shapes """
     #: Reference to the implementation control
     proxy = Typed(ProxyPart)
+    
+    #: Optional name of the part
+    name = d_(Unicode())
+    
+    #: Optional description of the part
+    description = d_(Unicode())
     
     @property
     def shapes(self):

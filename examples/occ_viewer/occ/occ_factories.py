@@ -1,56 +1,56 @@
 '''
 Created on Sep 28, 2016
 
-@author: 
+@author: jrm
 '''
 from enaml.qt.qt_factories import QT_FACTORIES
 
 def occ_box_factory():
-    from occ.occ_solid import OccBox
+    from occ.occ_shape import OccBox
     return OccBox
 
 def occ_cone_factory():
-    from occ.occ_solid import OccCone
+    from occ.occ_shape import OccCone
     return OccCone
 
 def occ_cylinder_factory():
-    from occ.occ_solid import OccCylinder
+    from occ.occ_shape import OccCylinder
     return OccCylinder
 
 def occ_half_space_factory():
-    from occ.occ_solid import OccHalfSpace
+    from occ.occ_shape import OccHalfSpace
     return OccHalfSpace
 
 def occ_one_axis_factory():
-    from occ.occ_solid import OccOneAxis
+    from occ.occ_shape import OccOneAxis
     return OccOneAxis
 
 def occ_prism_factory():
-    from occ.occ_solid import OccPrism
+    from occ.occ_shape import OccPrism
     return OccPrism
 
 def occ_revol_factory():
-    from occ.occ_solid import OccRevol
+    from occ.occ_shape import OccRevol
     return OccRevol
 
 def occ_revolution_factory():
-    from occ.occ_solid import OccRevolution
+    from occ.occ_shape import OccRevolution
     return OccRevolution
 
 def occ_sphere_factory():
-    from occ.occ_solid import OccSphere
+    from occ.occ_shape import OccSphere
     return OccSphere
 
 def occ_sweep_factory():
-    from occ.occ_solid import OccSweep
+    from occ.occ_shape import OccSweep
     return OccSweep
 
 def occ_torus_factory():
-    from occ.occ_solid import OccTorus
+    from occ.occ_shape import OccTorus
     return OccTorus
 
 def occ_wedge_factory():
-    from occ.occ_solid import OccWedge
+    from occ.occ_shape import OccWedge
     return OccWedge
 
 def occ_common_factory():
