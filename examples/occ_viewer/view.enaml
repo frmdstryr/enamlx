@@ -29,6 +29,7 @@ from examples.operations import Operations
 from examples.draw import Draw
 from examples.exhaust_flange import ExhaustFlange
 from examples.turners_cube import TurnersCube
+from examples.bottle import Bottle
 
 template TreeItemLoop(items):
     """ A templated loop which maps a template over a sequence."""
@@ -106,11 +107,13 @@ enamldef ModelViewer(OccViewer): viewer:
 enamldef Main(Window): window:
     minimum_size = (960,540)
     attr models = [
-        PrimativeShapes(),
-        Operations(),
-        Draw(),
-        TurnersCube(),
-        ExhaustFlange()
+         PrimativeShapes(),
+         Operations(),
+         Draw(),
+         TurnersCube(),
+        ExhaustFlange(),
+        Bottle(),
+        
     ]
     attr viewer = None
     Container:
@@ -120,9 +123,10 @@ enamldef Main(Window): window:
                     VSplitLayout(
                     'model',
                     'properties',
+                    sizes=[50,50],
                 ),
                 TabLayout(*['viewer{}'.format(i) for i in range(len(window.models))]),
-                sizes=[10,90]
+                sizes=[30,70]
             )
             dock_events_enabled = True
             dock_event::
@@ -138,7 +142,6 @@ enamldef Main(Window): window:
             DockItem:
                 title = 'Model'
                 name = 'model'
-                stretch = 0
                 Container:
                     padding = 0
                     TreeView:
@@ -157,17 +160,18 @@ enamldef Main(Window): window:
             DockItem:
                 title = 'Properties'
                 name = 'properties'
-                stretch = 0
                 Container:
                     padding = 0
-                    Conditional:
-                        condition << viewer is not None
-                        Looper:
-                            iterable << viewer.selection
-                            GroupBox:
-                                title << "{}".format(loop_item)
-                                AutoForm:
-                                    model = loop_item
+                    ScrollArea:
+                        Container:
+                            Conditional:
+                                condition << viewer is not None
+                                Looper:
+                                    iterable << viewer.selection
+                                    GroupBox:
+                                        title << "{}".format(loop_item)
+                                        AutoForm:
+                                            model = loop_item
 
             Looper:
                 iterable << window.models 

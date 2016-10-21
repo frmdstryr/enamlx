@@ -16,6 +16,9 @@ class ProxyPoint(ProxyShape):
     #: A reference to the shape declaration.
     declaration = ForwardTyped(lambda: Point)
     
+    def set_position(self, position):
+        raise NotImplementedError
+    
 class ProxyVertex(ProxyShape):
     #: A reference to the shape declaration.
     declaration = ForwardTyped(lambda: Vertex)
@@ -26,6 +29,15 @@ class ProxyEdge(ProxyShape):
 class ProxyLine(ProxyEdge):
     #: A reference to the shape declaration.
     declaration = ForwardTyped(lambda: Line)
+    
+class ProxySegment(ProxyEdge):
+    #: A reference to the shape declaration.
+    declaration = ForwardTyped(lambda: Segment)
+    
+class ProxyArc(ProxyEdge):
+    #: A reference to the shape declaration.
+    declaration = ForwardTyped(lambda: Arc)
+    
 
 class ProxyCircle(ProxyEdge):
     #: A reference to the shape declaration.
@@ -80,6 +92,14 @@ class Line(Edge):
         of the positioning axis of the line).
     """
     proxy = Typed(ProxyLine)
+    
+class Segment(Line):
+    """ Creates a segment from two points. """
+    proxy = Typed(ProxySegment)
+    
+class Arc(Line):
+    """ Creates an arc from three points. """
+    proxy = Typed(ProxyArc)
     
 class Circle(Edge):
     """ A2 locates the circle and gives its orientation in 3D space.

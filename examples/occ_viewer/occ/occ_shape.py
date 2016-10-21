@@ -7,23 +7,26 @@ from atom.api import (
    Typed, observe
 )
 
-from .shape import ProxyShape#, ProxyEdge, ProxyFace
+from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape, BRepBuilderAPI_MakeFace
 
-from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape
-
-from OCC.BRep import BRep_Tool
 from OCC.BRepTools import BRepTools_WireExplorer
-from OCC.TopAbs import (TopAbs_VERTEX, TopAbs_EDGE, TopAbs_FACE, TopAbs_WIRE,
-                        TopAbs_SHELL, TopAbs_SOLID, TopAbs_COMPOUND,
-                        TopAbs_COMPSOLID)
+from OCC.TopAbs import (
+    TopAbs_VERTEX, TopAbs_EDGE, TopAbs_FACE, TopAbs_WIRE,
+    TopAbs_SHELL, TopAbs_SOLID, TopAbs_COMPOUND,
+    TopAbs_COMPSOLID
+)
 from OCC.TopExp import TopExp_Explorer, topexp_MapShapesAndAncestors
-from OCC.TopTools import (TopTools_ListOfShape,
-                          TopTools_ListIteratorOfListOfShape,
-                          TopTools_IndexedDataMapOfShapeListOfShape)
-from OCC.TopoDS import (topods, TopoDS_Wire, TopoDS_Vertex, TopoDS_Edge,
-                        TopoDS_Face, TopoDS_Shell, TopoDS_Solid,
-                        TopoDS_Compound, TopoDS_CompSolid, topods_Edge,
-                        topods_Vertex, TopoDS_Iterator)
+from OCC.TopTools import (
+    TopTools_ListOfShape,
+    TopTools_ListIteratorOfListOfShape,
+    TopTools_IndexedDataMapOfShapeListOfShape
+)
+from OCC.TopoDS import (
+    topods, TopoDS_Wire, TopoDS_Vertex, TopoDS_Edge,
+    TopoDS_Face, TopoDS_Shell, TopoDS_Solid,
+    TopoDS_Compound, TopoDS_CompSolid, topods_Edge,
+    topods_Vertex
+)
 
 from OCC.BRepPrimAPI import (
     BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,
@@ -32,10 +35,11 @@ from OCC.BRepPrimAPI import (
 )
 
 from .shape import (
-    ProxyBox, ProxyCone, ProxyCylinder,
+    ProxyShape, ProxyFace, ProxyBox, ProxyCone, ProxyCylinder,
     ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,
     ProxyTorus
 )
+from OCC.gp import gp_Vec
 
 class WireExplorer(object):
     '''
@@ -556,6 +560,35 @@ class OccShape(ProxyShape):
     def set_axis(self, axis):
         self.create_shape()
         
+class OccFace(OccShape,ProxyFace):
+    #: A reference to the toolkit shape created by the proxy.
+    shape = Typed(BRepBuilderAPI_MakeFace)
+    
+    def create_shape(self):
+        pass
+    
+    def init_layout(self):
+        for child in self.children():
+            self.child_added(child)
+        self.update_shape({})
+    
+    def get_shape(self):
+        for child in self.children():
+            if isinstance(child,OccShape):
+                return child
+    
+    def update_shape(self, change):
+        c = self.get_shape()
+        self.shape = BRepBuilderAPI_MakeFace(c.shape.Wire())
+        
+    def child_added(self, child):
+        super(OccFace, self).child_added(child)
+        child.observe('shape',self.update_shape)
+        
+    def child_removed(self, child):
+        super(OccFace, self).child_removed(child)
+        child.unobserve('shape',self.update_shape)
+
 class OccBox(OccShape,ProxyBox):
     
     def create_shape(self):
@@ -622,21 +655,65 @@ class OccHalfSpace(OccShape, ProxyHalfSpace):
 class OccPrism(OccShape, ProxyPrism):
     
     def create_shape(self):
+        pass
+    
+    def init_layout(self):
+        for child in self.children():
+            self.child_added(child)
+        self.update_shape({})
+        
+    def update_shape(self,change):
         d = self.declaration
-        self.shape = BRepPrimAPI_MakePrism(d.shape,d.direction,
-                                           d.infinite,d.copy,d.canonize)
+        
+        if d.shape:
+            c = d.shape.proxy
+        else:
+            c = self.get_shape()
+        
+        if d.infinite:
+            self.shape = BRepPrimAPI_MakePrism(c.shape.Shape(),
+                                           d.direction,
+                                           True,
+                                           d.copy,
+                                           d.canonize)
+        else:
+            self.shape = BRepPrimAPI_MakePrism(c.shape.Shape(),
+                                           gp_Vec(*d.vector),
+                                           d.copy,
+                                           d.canonize)
+        
+
+    
+    def get_shape(self):
+        for child in self.children():
+            if isinstance(child,OccShape):
+                return child
+    
+    def child_added(self, child):
+        super(OccPrism, self).child_added(child)
+        child.observe('shape',self.update_shape)
+        
+    def child_removed(self, child):
+        super(OccPrism, self).child_removed(child)
+        child.unobserve('shape',self.update_shape)
         
     def set_shape(self, shape):
-        self.create_shape()
+        self.update_shape({})
         
     def set_infinite(self, infinite):
-        self.create_shape()
+        self.update_shape({})
         
     def set_copy(self, copy):
-        self.create_shape()
+        self.update_shape({})
         
     def set_canonize(self, canonize):
-        self.create_shape()
+        self.update_shape({})
+        
+    def set_direction(self, direction):
+        self.update_shape({})
+        
+    def set_vector(self, vector):
+        self.update_shape({})
 
 class OccSphere(OccShape, ProxySphere):
     

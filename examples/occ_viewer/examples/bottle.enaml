@@ -1,61 +1,62 @@
-from occ.solid import Box, Cone, Cylinder, Sphere, Wedge, Torus
-from occ.draw import Line, Wire, Circle, Ellipse, Parabola, Hyperbola, Point, Vertex
-from occ.algo import Common, Cut, Fuse
-from occ.shape import Shape
-from occ.axis import XAxis
+from occ.shape import Cylinder, Prism, Face
+from occ.draw import Segment, Arc, Wire, Point
+from occ.algo import Fuse, ThickSolid, Fillet, Transform
+from occ.part import Part
+#from occ.axis import XAxis
 
 
-enamldef Bottle(Shape):
+enamldef Bottle(Part): part:
+    name = "Bottle"
     
     #: "Parametric" properties of this shape
-    attr height = 7
-    attr width = 5
-    attr thickness = 3
+    attr height = 7.0
+    attr width = 5.0
+    attr thickness = 3.0
     
     #: Actual shape
     ThickSolid:
-        """ Hollows out the bottle """
-        faces << [neck.faces[-1]]
+        color = '#333333'
+        # Hollows out the bottle
+        #faces << [neck.faces[-1]]
         offset << thickness/50.0
         Fuse:
-            """ Fuse the bottle to the neck"""
+            # Fuse the bottle to the neck
             Cylinder: neck:
-                """ Bottle neck"""
-                y << height
+                # Bottle neck
+                position << (0,0,part.height)
                 direction = (0,0,1)
                 radius << thickness/4.0
-                height << height/10.0
+                height << part.height/10.0
             Fillet: bottle:
-                """ Bottle, with filleted edges """
+                # Bottle, with filleted edges 
                 radius << thickness/12.0
                 Prism:
-                    """ Create a solid from the bottle face"""
-                    direction << (0,0,height)
+                    # Create a solid from the bottle face
+                    vector << (0,0,height)
                     Face:
-                        """ Create a face from the base profile"""
+                        # Create a face from the base profile
                         Wire:
-                            """ Create a wire from the profile and mirrored profile"""
+                            # Create a wire from the profile and mirrored profile
                             Wire: profile:
-                                Line:
+                                Segment:
                                     Point: p1:
-                                        x = -width/2.0
+                                        position << (-width/2.0, 0, 0)
                                     Point: p2:
-                                        x = -width/2.0
-                                        y = -thickness/4.0
+                                        position << (-width/2.0, -thickness/4.0, 0)
                                 Arc:
                                     Point:
-                                        position := p1.position
+                                        position := p2.position
+                                    Point: p3:
+                                        position << (0, -thickness/2.0, 0) 
                                     Point:
-                                        y = -thickness/2.0 
-                                    Point:
-                                        position := p4.position
+                                        position := p5.position
                                         
-                                Line:
+                                Segment:
                                     Point: p4:
-                                        x = width/2.0
+                                        position << (width/2.0, 0, 0)
                                     Point: p5:
-                                        x = width/2.0
-                                        y = -thickness/4.0
+                                        position << (width/2.0, -thickness/4.0, 0) 
                             Transform:
-                                mirror = XAxis
-                                object << profile
+                                #: TODO coerce
+                                mirror = ((0,0,0),(1,0,0))
+                                shape = profile

@@ -5,6 +5,10 @@ Created on Sep 28, 2016
 '''
 from enaml.qt.qt_factories import QT_FACTORIES
 
+def occ_face_factory():
+    from occ.occ_shape import OccFace
+    return OccFace
+
 def occ_box_factory():
     from occ.occ_shape import OccBox
     return OccBox
@@ -77,6 +81,14 @@ def occ_line_factory():
     from occ.occ_draw import OccLine
     return OccLine
 
+def occ_segment_factory():
+    from occ.occ_draw import OccSegment
+    return OccSegment
+
+def occ_arc_factory():
+    from occ.occ_draw import OccArc
+    return OccArc
+
 def occ_circle_factory():
     from occ.occ_draw import OccCircle
     return OccCircle
@@ -109,6 +121,10 @@ def occ_thick_solid_factory():
     from occ.occ_algo import OccThickSolid
     return OccThickSolid
 
+def occ_transform_factory():
+    from occ.occ_algo import OccTransform
+    return OccTransform
+
 def occ_part_factory():
     from occ.occ_part import OccPart
     return OccPart
@@ -118,6 +134,7 @@ def occ_part_factory():
 QT_FACTORIES['Part'] = occ_part_factory
 
 #: Solids
+QT_FACTORIES['Face'] = occ_face_factory
 QT_FACTORIES['Box'] = occ_box_factory
 QT_FACTORIES['Cone'] = occ_cone_factory
 QT_FACTORIES['Cylinder'] = occ_cylinder_factory
@@ -140,11 +157,14 @@ QT_FACTORIES['Fuse'] = occ_fuse_factory
 QT_FACTORIES['Fillet'] = occ_fillet_factory
 QT_FACTORIES['Chamfer'] = occ_chamfer_factory
 QT_FACTORIES['ThickSolid'] = occ_thick_solid_factory
+QT_FACTORIES['Transform'] = occ_transform_factory
 
 #: Draw
 QT_FACTORIES['Point'] = occ_point_factory
 QT_FACTORIES['Vertex'] = occ_vertex_factory
 QT_FACTORIES['Line'] = occ_line_factory
+QT_FACTORIES['Segment'] = occ_segment_factory
+QT_FACTORIES['Arc'] = occ_arc_factory
 QT_FACTORIES['Circle'] = occ_circle_factory
 QT_FACTORIES['Ellipse'] = occ_ellipse_factory
 QT_FACTORIES['Hyperbola'] = occ_hyperbola_factory

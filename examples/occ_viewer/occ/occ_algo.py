@@ -4,14 +4,14 @@ Created on Sep 27, 2016
 @author: jrm
 '''
 from atom.api import (
-   Int, Dict
+   Int, Dict, Instance
 )
 
 from enaml.application import timed_call
 
 from .algo import (
     ProxyOperation, ProxyCommon, ProxyCut, ProxyFuse,
-    ProxyFillet, ProxyChamfer, ProxyThickSolid
+    ProxyFillet, ProxyChamfer, ProxyThickSolid, ProxyTransform,
 )
 from .occ_shape import OccShape
 
@@ -23,14 +23,13 @@ from OCC.BRepFilletAPI import (
     BRepFilletAPI_MakeFillet, BRepFilletAPI_MakeChamfer
 )
 from OCC.ChFi3d import ChFi3d_Rational, ChFi3d_QuasiAngular, ChFi3d_Polynomial
-from OCC import BRepBuilderAPI
-from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 from OCC.BRepOffsetAPI import BRepOffsetAPI_MakeThickSolid
 from OCC.BRepOffset import BRepOffset_Skin, BRepOffset_Pipe,\
     BRepOffset_RectoVerso
 from OCC.GeomAbs import GeomAbs_Arc, GeomAbs_Tangent, GeomAbs_Intersection
-from OCC.TopoDS import TopoDS_ListOfShape
 from OCC.TopTools import TopTools_ListOfShape
+from OCC.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCC.gp import gp_Trsf, gp_Vec, gp_Pnt, gp_Ax2, gp_Ax1, gp_Dir
 
 
 class OccOperation(OccShape, ProxyOperation):
@@ -255,6 +254,8 @@ class OccThickSolid(OccOperation, ProxyThickSolid):
         faces = TopTools_ListOfShape()
         for f in self.get_faces(s):
             faces.Append(f)
+        if faces.IsEmpty():
+            return
         
         self.shape = BRepOffsetAPI_MakeThickSolid(
             s.shape.Shape(),
@@ -281,3 +282,79 @@ class OccThickSolid(OccOperation, ProxyThickSolid):
         
     def set_intersection(self, enabled):
         self.update_shape()
+        
+class OccTransform(OccOperation, ProxyTransform):
+    
+    _old_shape = Instance(OccShape)
+    
+    def create_shape(self):
+        """ Cannot be created until the child shape exists. """
+        pass
+    
+    def init_shape(self):
+        d = self.declaration
+        if d.shape:
+            #: Make sure we bind the observer
+            self.set_shape(d.shape)
+    
+    def get_shape(self):
+        """ Return shape to apply the transform to. """
+        for child in self.children():
+            return child
+        
+    def get_transform(self):
+        d = self.declaration
+        t = gp_Trsf()
+        #: TODO: Order matters... how to configure it???
+        if d.mirror:
+            p,v = d.mirror
+            t.SetMirror(gp_Ax1(gp_Pnt(*p),
+                               gp_Dir(*v)))
+        if d.scale:
+            p,s = d.scale
+            t.SetScale(gp_Pnt(*p),s)
+        
+        if d.translate:
+            t.SetTranslate(gp_Vec(*d.translate))
+        
+        if d.rotate:
+            p,v,a = d.rotate
+            t.SetRotate(gp_Ax1(gp_Pnt(*p),
+                               gp_Dir(*v)),a)
+            
+        return t
+    
+    def update_shape(self, change):
+        d = self.declaration
+        
+        #: Get the shape to apply the tranform to
+        if d.shape:
+            make_copy = True
+            s = d.shape.proxy
+        else:
+            # Use the first child
+            make_copy = False
+            s = self.get_shape()
+        t = self.get_transform()
+        self.shape = BRepBuilderAPI_Transform(s.shape.Shape(),
+                                         t,
+                                         make_copy)
+
+    def set_shape(self, shape):
+        if self._old_shape:
+            self._old_shape.unobserve('shape',self._queue_update)
+        self._old_shape = shape.proxy
+        self._old_shape.observe('shape',self._queue_update)
+        
+    def set_translate(self, translation):
+        self.update_shape()
+        
+    def set_rotate(self, rotation):
+        self.update_shape()
+        
+    def set_scale(self,scale):
+        self.update_shape()
+        
+    def set_mirror(self, axis):
+        self.update_shape()
+         

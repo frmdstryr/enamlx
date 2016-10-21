@@ -5,7 +5,7 @@ from occ.part import Part
 from occ.algo import Cut, Common, Fillet, ThickSolid, Chamfer
 
 from OCC.BRep import BRep_Tool
-
+from OCC._Geom import Handle_Geom_Plane_DownCast
 
 def top_face(f):
     """ Ugly way to sort faces..."""

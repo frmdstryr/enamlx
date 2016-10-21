@@ -4,7 +4,7 @@ Created on Sep 30, 2016
 @author: jrm
 '''
 from atom.api import (
-    Instance, Bool, Str, Float, Property, Coerced, Typed, ForwardTyped, observe
+    Tuple, Instance, Bool, Str, Float, Property, Coerced, Typed, ForwardTyped, observe
 )
 
 from enaml.core.declarative import d_
@@ -33,6 +33,10 @@ class ProxyShape(ProxyControl):
     
     def set_transparency(self, alpha):
         pass
+    
+class ProxyFace(ProxyShape):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: Face)
     
 def coerce_axis(value):
     pos = gp_Pnt(*value[0])
@@ -93,6 +97,9 @@ class ProxyPrism(ProxyShape):
     declaration = ForwardTyped(lambda: Prism)
     
     def set_shape(self, surface):
+        raise NotImplementedError
+    
+    def set_vector(self, vector):
         raise NotImplementedError
     
     def set_infinite(self, infinite):
@@ -205,7 +212,11 @@ class Shape(ToolkitObject):
     @observe('x','y','z')
     def _update_position(self, change):
         """ Keep position in sync with x,y,z """
-        self.position = gp_Pnt(self.x,self.y,self.z)
+        if change['type']!='update':
+            return
+        pt = gp_Pnt(self.x,self.y,self.z)
+        if not pt.IsEqual(self.position,self.tolerance):
+            self.position = pt 
         
     @observe('position')
     def _update_xyz(self, change):
@@ -239,7 +250,11 @@ class Shape(ToolkitObject):
         self.get_member('shape_edges').reset(self)
         self.get_member('shape_faces').reset(self)
         
-    
+
+class Face(Shape):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyFace)
+
 class Box(Shape):
     #: Proxy shape
     proxy = Typed(ProxyBox)
@@ -319,6 +334,9 @@ class Prism(Shape):
     #: Shape to build prism from
     shape = d_(Instance(TopoDS_Shape)).tag(view=True)
     
+    #: Vector to build prism from, ignored if infinite is true
+    vector = d_(Tuple((float,int))).tag(view=True)
+    
     #: Infinite
     infinite = d_(Bool(False)).tag(view=True)
     
@@ -328,9 +346,9 @@ class Prism(Shape):
     #: Attempt to canonize
     canonize = d_(Bool(True)).tag(view=True)
     
-    @observe('shape','infinite','copy','canonize')
+    @observe('shape','vector','infinite','copy','canonize')
     def _update_proxy(self, change):
-        super(HalfSpace, self)._update_proxy(change)
+        super(Prism, self)._update_proxy(change)
         
 class Sphere(Shape):
     #: Proxy shape

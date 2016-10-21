@@ -5,7 +5,7 @@ Created on Sep 28, 2016
 '''
 
 from atom.api import (
-    Instance, Typed, ForwardTyped, ContainerList, Enum, Float, Bool, observe
+    Instance, Typed, ForwardTyped, ContainerList, Enum, Float, Bool, Coerced, observe
 )
 from enaml.core.declarative import d_
 
@@ -82,6 +82,25 @@ class ProxyThickSolid(ProxyShape):
         raise NotImplementedError
     
     def set_join_type(self, mode):
+        raise NotImplementedError
+    
+class ProxyTransform(ProxyShape):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: Transform)
+    
+    def set_shape(self, shape):
+        raise NotImplementedError
+    
+    def set_mirror(self, axis):
+        raise NotImplementedError
+    
+    def set_rotate(self, rotation):
+        raise NotImplementedError
+    
+    def set_scale(self, scale):
+        raise NotImplementedError
+    
+    def set_translate(self, translation):
         raise NotImplementedError
     
 class Operation(Shape):
@@ -195,3 +214,29 @@ class ThickSolid(Operation):
     @observe('closing_faces','offset','offset_mode','intersection','join_type')
     def _update_proxy(self, change):
         super(ThickSolid, self)._update_proxy(change)
+        
+class Transform(Operation):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyTransform)
+    
+    #: Shape to transform
+    #: if none is given the first child will be used
+    shape = d_(Instance(Shape))
+    
+    #: Mirror
+    mirror = d_(Instance((tuple,list)))
+    
+    #: Scale
+    scale = d_(Instance((tuple,list)))
+    
+    #: Rotation
+    rotate = d_(Instance((tuple,list)))
+    
+    #: Translation
+    translate = d_(Instance((tuple,list)))
+    
+    @observe('shape','mirror','scale','rotate','translate')
+    def _update_proxy(self, change):
+        super(Transform, self)._update_proxy(change)
+        
+        
