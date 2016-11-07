@@ -32,14 +32,15 @@ from OCC.BRepPrimAPI import (
     BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,
     BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakeHalfSpace, BRepPrimAPI_MakePrism,
     BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeWedge, BRepPrimAPI_MakeTorus,
+    BRepPrimAPI_MakeRevol,
 )
 
 from .shape import (
     ProxyShape, ProxyFace, ProxyBox, ProxyCone, ProxyCylinder,
     ProxyHalfSpace, ProxyPrism, ProxySphere, ProxyWedge,
-    ProxyTorus
+    ProxyTorus, ProxyRevol,
 )
-from OCC.gp import gp_Vec
+from OCC.gp import gp_Vec, gp_Ax1
 
 class WireExplorer(object):
     '''
@@ -557,38 +558,74 @@ class OccShape(ProxyShape):
     def update_display(self,change):
         self.parent().update_display(change)
         
-    def set_axis(self, axis):
+    def set_direction(self, direction):
         self.create_shape()
         
-class OccFace(OccShape,ProxyFace):
-    #: A reference to the toolkit shape created by the proxy.
-    shape = Typed(BRepBuilderAPI_MakeFace)
+    def set_axis(self, axis):
+        self.create_shape()
+
+
+class OccDependentShape(OccShape):
+    """ Shape that is dependent on another shape """
     
     def create_shape(self):
+        """ Create the toolkit shape for the proxy object.
+        
+        Operations depend on child or properties so they cannot be created
+        in the top down pass but rather must be done in the init_layout method.
+        
+        """
         pass
-    
+
     def init_layout(self):
+        """ Initialize the layout of the toolkit shape.
+
+        This method is called during the bottom-up pass. This method
+        should initialize the layout of the widget. The child widgets
+        will be fully initialized and layed out when this is called.
+
+        """
         for child in self.children():
             self.child_added(child)
         self.update_shape({})
     
-    def get_shape(self):
-        for child in self.children():
-            if isinstance(child,OccShape):
-                return child
-    
     def update_shape(self, change):
-        c = self.get_shape()
-        self.shape = BRepBuilderAPI_MakeFace(c.shape.Wire())
+        """ Must be implmented in subclasses to create the shape
+            when the dependent shapes change.
+        """
+        print self
+        raise NotImplementedError
         
     def child_added(self, child):
-        super(OccFace, self).child_added(child)
-        child.observe('shape',self.update_shape)
+        super(OccDependentShape, self).child_added(child)
+        if isinstance(child,OccShape):
+            child.observe('shape',self.update_shape)
         
     def child_removed(self, child):
-        super(OccFace, self).child_removed(child)
-        child.unobserve('shape',self.update_shape)
+        super(OccDependentShape, self).child_removed(child)
+        if isinstance(child,OccShape):
+            child.unobserve('shape',self.update_shape)
+            
+    def set_direction(self, direction):
+        self.update_shape({})
+        
+    def set_axis(self, axis):
+        self.update_shape({})
 
+
+class OccFace(OccDependentShape,ProxyFace):
+    #: A reference to the toolkit shape created by the proxy.
+    shape = Typed(BRepBuilderAPI_MakeFace)
+    
+    def update_shape(self, change):
+        wires = [c for c in self.children() if isinstance(c,OccShape)]
+        for i,wire in enumerate(wires):
+            if i==0: 
+                shape = BRepBuilderAPI_MakeFace(wire.shape.Wire())
+            else:
+                shape.Add(wire.shape.Wire())
+        self.shape = shape
+        
 class OccBox(OccShape,ProxyBox):
     
     def create_shape(self):
@@ -652,16 +689,8 @@ class OccHalfSpace(OccShape, ProxyHalfSpace):
     def set_surface(self, surface):
         self.create_shape()
         
-class OccPrism(OccShape, ProxyPrism):
+class OccPrism(OccDependentShape, ProxyPrism):
     
-    def create_shape(self):
-        pass
-    
-    def init_layout(self):
-        for child in self.children():
-            self.child_added(child)
-        self.update_shape({})
-        
     def update_shape(self,change):
         d = self.declaration
         
@@ -689,14 +718,6 @@ class OccPrism(OccShape, ProxyPrism):
             if isinstance(child,OccShape):
                 return child
     
-    def child_added(self, child):
-        super(OccPrism, self).child_added(child)
-        child.observe('shape',self.update_shape)
-        
-    def child_removed(self, child):
-        super(OccPrism, self).child_removed(child)
-        child.unobserve('shape',self.update_shape)
-        
     def set_shape(self, shape):
         self.update_shape({})
         
@@ -783,3 +804,37 @@ class OccWedge(OccShape,ProxyWedge):
         
     def set_itx(self, itx):
         self.create_shape()
+        
+class OccRevol(OccDependentShape, ProxyRevol):
+    
+    def update_shape(self,change):
+        d = self.declaration
+        
+        c = d.shape if d.shape else self.get_shape()
+        
+        #: Build arguments
+        args = [c.shape.Shape(),
+                gp_Ax1(d.position,d.direction)]
+        if d.angle:
+            args.append(d.angle)
+        args.append(d.copy)
+        
+        self.shape = BRepPrimAPI_MakeRevol(*args)
+    
+    def get_shape(self):
+        """ Get the first child shape """
+        for child in self.children():
+            if isinstance(child,OccShape):
+                return child
+    
+    def set_shape(self, shape):
+        self.update_shape({})
+        
+    def set_angle(self, angle):
+        self.update_shape({})
+        
+    def set_copy(self, copy):
+        self.update_shape({})
+        
+    def set_direction(self, direction):
+        self.update_shape({})

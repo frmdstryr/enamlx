@@ -7,19 +7,25 @@ from atom.api import (
    Typed, Int, List
 )
 
+from enaml.application import timed_call
+
 from .draw import (
     ProxyPoint, ProxyVertex, ProxyLine, ProxyCircle, ProxyEllipse, 
-    ProxyHyperbola, ProxyParabola, ProxyEdge, ProxyWire, ProxySegment, ProxyArc,
+    ProxyHyperbola, ProxyParabola, ProxyEdge, ProxyWire, 
+    ProxySegment, ProxyArc, ProxyPolygon,
 )
+from .occ_shape import OccShape, OccDependentShape
 
-from .occ_shape import OccShape
+from OCC.BRepBuilderAPI import (
+    BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeWire,
+    BRepBuilderAPI_MakeVertex, BRepBuilderAPI_Transform, 
+    BRepBuilderAPI_MakePolygon
+)
+from OCC.BRepOffsetAPI import BRepOffsetAPI_MakeOffset
+from OCC.gce import gce_MakeLin
 from OCC.GC import GC_MakeSegment, GC_MakeArcOfCircle
 from OCC.gp import gp_Pnt, gp_Lin, gp_Circ, gp_Elips, gp_Hypr, gp_Parab
 from OCC.TopoDS import TopoDS_Vertex, topods
-from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeWire,\
-    BRepBuilderAPI_MakeVertex, BRepBuilderAPI_Transform
-from OCC.gce import gce_MakeLin
-from enaml.application import timed_call
 
 class OccPoint(OccShape, ProxyPoint):
     #: A reference to the toolkit shape created by the proxy.
@@ -116,7 +122,6 @@ class OccArc(OccLine, ProxyArc):
                 arc = GC_MakeArcOfCircle(points[0],points[1],points[2]).Value()
                 self.make_edge(arc)
     
-
 class OccCircle(OccEdge, ProxyCircle):
     def create_shape(self):
         d = self.declaration
@@ -157,6 +162,21 @@ class OccParabola(OccEdge, ProxyParabola):
         
     def set_focal_length(self, l):
         self.create_shape()
+        
+class OccPolygon(OccDependentShape, OccEdge, ProxyPolygon):
+    
+    shape = Typed(BRepBuilderAPI_MakePolygon)
+    
+    def update_shape(self, change):
+        d = self.declaration
+        shape = BRepBuilderAPI_MakePolygon()
+        for child in self.children():
+            if isinstance(child,(OccPoint, OccVertex)):
+                shape.Add(child.shape)
+        self.shape = shape
+        
+    def set_closed(self, closed):
+        self.update_shape({})
     
 class OccWire(OccShape, ProxyWire):
     _update_count = Int(0)
@@ -177,19 +197,20 @@ class OccWire(OccShape, ProxyWire):
         d = self.declaration
         shape = BRepBuilderAPI_MakeWire()
         for c in self.children():
-            if isinstance(c.shape,(list,tuple)):
+            if hasattr(c.shape,'Wire'):
+                #: No conversion needed
+                shape.Add(c.shape.Wire())
+            elif hasattr(c.shape,'Edge'):
+                #: No conversion needed
+                shape.Add(c.shape.Edge())
+            elif isinstance(c.shape,(list,tuple)):
                 #: Assume it's a list of drawn objects...
                 for e in c.shape: 
                     shape.Add(e.Edge())
-            elif isinstance(c.shape,BRepBuilderAPI_MakeWire):
-                #: No conversion needed
-                shape.Add(c.shape.Wire())
-            elif isinstance(c.shape,BRepBuilderAPI_Transform):
+            else:
                 #: Attempt to convert the shape into a wire
                 shape.Add(topods.Wire(c.shape.Shape()))
-            else:
-                #: Assume it's a line type 
-                shape.Add(c.shape.Edge())
+                    
         assert shape.IsDone(), 'Edges must be connected'
         self.shape = shape
         

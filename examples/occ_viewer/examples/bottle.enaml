@@ -17,7 +17,7 @@ enamldef Bottle(Part): part:
     ThickSolid:
         color = '#333333'
         # Hollows out the bottle
-        #faces << [neck.faces[-1]]
+        #closing_faces << [neck.shape_faces[0]]
         offset << thickness/50.0
         Fuse:
             # Fuse the bottle to the neck

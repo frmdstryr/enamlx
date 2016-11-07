@@ -1,0 +1,48 @@
+from enaml.core.api import Looper
+from occ.algo import ThruSections, Cut
+from occ.draw import Wire, Circle
+from occ.part import Part
+import math
+
+              
+enamldef ThruSection(Part): 
+    name = "ThruSections"
+    
+    attr thickness = 0.2
+    attr diameter = 3
+    
+    #: Make a faucet like shape
+    Cut:
+        ThruSections:
+            solid = True
+            Wire:
+                Circle: c1:
+                    radius << diameter/2.0
+            Wire:
+                Circle: c2:
+                    position << (c1.x+3,c1.y,c1.z+5)
+                    direction = (1,0,0)
+                    radius << c1.radius*0.5
+                    
+            Wire:
+                Circle: c3:
+                    position << (c1.x+6,c1.y,c1.z+3)
+                    direction = (0,0,-1)
+                    radius << c1.radius*0.6
+                    
+        ThruSections:
+            solid = True
+            Wire:
+                Circle: ci1:
+                    axis := c1.axis
+                    radius << c1.radius-thickness/2.0
+            Wire:
+                Circle: ci2:
+                    axis := c2.axis
+                    radius << c2.radius-thickness/2.0
+                    
+            Wire:
+                Circle: ci3:
+                    axis := c3.axis
+                    radius << c3.radius-thickness/2.0
+

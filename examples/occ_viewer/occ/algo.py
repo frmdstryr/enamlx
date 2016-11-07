@@ -15,6 +15,10 @@ class ProxyOperation(ProxyShape):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: Operation)
     
+class ProxyBooleanOperation(ProxyOperation):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: BooleanOperation)
+    
     def set_shape1(self,shape):
         raise NotImplementedError
     
@@ -27,16 +31,16 @@ class ProxyOperation(ProxyShape):
     def _do_operation(self,shape1,shape2):
         raise NotImplementedError
     
-class ProxyCommon(ProxyOperation):
+class ProxyCommon(ProxyBooleanOperation):
     declaration = ForwardTyped(lambda: Common)
 
-class ProxyCut(ProxyOperation):
+class ProxyCut(ProxyBooleanOperation):
     declaration = ForwardTyped(lambda: Cut)
 
-class ProxyFuse(ProxyOperation):
+class ProxyFuse(ProxyBooleanOperation):
     declaration = ForwardTyped(lambda: Fuse)
 
-class ProxyFillet(ProxyShape):
+class ProxyFillet(ProxyOperation):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: Fillet)
     
@@ -49,7 +53,7 @@ class ProxyFillet(ProxyShape):
     def set_shape(self, shape):
         raise NotImplementedError
 
-class ProxyChamfer(ProxyShape):
+class ProxyChamfer(ProxyOperation):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: Chamfer)
     
@@ -64,13 +68,10 @@ class ProxyChamfer(ProxyShape):
     
     def set_faces(self, faces):
         raise NotImplementedError
-
-class ProxyThickSolid(ProxyShape):
-    #: A reference to the Shape declaration.
-    declaration = ForwardTyped(lambda: ThickSolid)
     
-    def set_closing_faces(self, faces):
-        raise NotImplementedError
+class ProxyOffset(ProxyOperation):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: Offset)
     
     def set_offset(self, offset):
         raise NotImplementedError
@@ -83,8 +84,41 @@ class ProxyThickSolid(ProxyShape):
     
     def set_join_type(self, mode):
         raise NotImplementedError
+
+class ProxyThickSolid(ProxyOffset):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: ThickSolid)
     
-class ProxyTransform(ProxyShape):
+    def set_closing_faces(self, faces):
+        raise NotImplementedError
+    
+class ProxyPipe(ProxyOffset):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: Pipe)
+    
+    def set_spline(self, spline):
+        raise NotImplementedError
+    
+    def set_profile(self, profile):
+        raise NotImplementedError
+    
+    def set_fill_mode(self, mode):
+        raise NotImplementedError
+
+class ProxyThruSections(ProxyOperation):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: ThruSections)
+    
+    def set_solid(self, solid):
+        raise NotImplementedError
+    
+    def set_ruled(self, ruled):
+        raise NotImplementedError
+    
+    def set_precision(self, pres3d):
+        raise NotImplementedError
+    
+class ProxyTransform(ProxyOperation):
     #: A reference to the Shape declaration.
     declaration = ForwardTyped(lambda: Transform)
     
@@ -188,32 +222,77 @@ class Chamfer(LocalOperation):
     @observe('distance','distance2','edges','faces')
     def _update_proxy(self, change):
         super(Chamfer, self)._update_proxy(change)
+
+class Offset(Operation):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyOffset)
+    
+    #: Offset
+    offset = d_(Float(1,strict=False)).tag(view=True, group='Offset')
+    
+    #: Offset mode
+    offset_mode = d_(Enum('skin','pipe','recto_verso')).tag(view=True, group='Offset')
+    
+    #: Intersection
+    intersection = d_(Bool(False)).tag(view=True, group='Offset')
+    
+    #: Join type
+    join_type = d_(Enum('arc','tangent','intersection')).tag(view=True, group='Offset')
         
-class ThickSolid(Operation):
+    @observe('offset','offset_mode','intersection','join_type')
+    def _update_proxy(self, change):
+        super(Offset, self)._update_proxy(change)
+
+class ThickSolid(Offset):
     #: Reference to the implementation control
     proxy = Typed(ProxyThickSolid)
     
     #: Closing faces
     closing_faces = d_(ContainerList()).tag(view=True, group='ThickSolid')
     
-    #: Offset
-    offset = d_(Float(1,strict=False)).tag(view=True, group='ThickSolid')
-    
-    #: Offset mode
-    offset_mode = d_(Enum('skin','pipe','recto_verso')).tag(view=True, group='ThickSolid')
-    
-    #: Intersection
-    intersection = d_(Bool(False)).tag(view=True, group='ThickSolid')
-    
-    #: SelfInter tells the algorithm whether a computation to eliminate self-intersections needs to be applied to the resulting shape
-    #self_intersection = d_(Bool(False))
-    
-    #: Join type
-    join_type = d_(Enum('arc','tangent','intersection')).tag(view=True, group='ThickSolid')
-    
-    @observe('closing_faces','offset','offset_mode','intersection','join_type')
+    @observe('closing_faces')
     def _update_proxy(self, change):
         super(ThickSolid, self)._update_proxy(change)
+        
+class Pipe(Operation):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyPipe)
+    
+    #: Spline to make the pipe along
+    spline = d_(Instance(Shape))
+    
+    #: Profile to make the pipe from
+    profile = d_(Instance(Shape))
+    
+    #: Fill mode
+    fill_mode = d_(Enum(None,'corrected_frenet','fixed','frenet','constant_normal','darboux',
+                        'guide_ac','guide_plan','guide_ac_contact','guide_plan_contact','discrete_trihedron')).tag(view=True, group='Pipe')
+    
+    @observe('spline','profile','fill_mode')
+    def _update_proxy(self, change):
+        super(Pipe, self)._update_proxy(change)
+        
+class ThruSections(Operation):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyThruSections)
+    
+    #: isSolid is set to true if the construction algorithm is required 
+    #: to build a solid or to false if it is required to build a shell (the default value),
+    solid = d_(Bool(False)).tag(view=True, group='Through Sections')
+    
+    #: ruled is set to true if the faces generated between the edges 
+    #: of two consecutive wires are ruled surfaces or to false (the default value) 
+    #: if they are smoothed out by approximation
+    ruled = d_(Bool(False)).tag(view=True, group='Through Sections')
+    
+    #: pres3d defines the precision criterion used by the approximation algorithm; 
+    #: the default value is 1.0e-6. Use AddWire and AddVertex to define 
+    #: the successive sections of the shell or solid to be built.
+    precision = d_(Float(1e-6)).tag(view=True, group='Through Sections')
+    
+    @observe('solid','ruled','precision')
+    def _update_proxy(self, change):
+        super(ThruSections, self)._update_proxy(change)
         
 class Transform(Operation):
     #: Reference to the implementation control

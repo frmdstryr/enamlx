@@ -158,7 +158,20 @@ class ProxyWedge(ProxyShape):
     
     def set_itx(self, itx):
         raise NotImplementedError 
-
+    
+class ProxyRevol(ProxyShape):
+    #: A reference to the shape declaration.
+    declaration = ForwardTyped(lambda: Revol)
+    
+    def set_shape(self, shape):
+        raise NotImplementedError
+    
+    def set_angle(self, angle):
+        raise NotImplementedError
+    
+    def set_copy(self, copy):
+        raise NotImplementedError
+    
 class Shape(ToolkitObject):
     #: Reference to the implementation control
     proxy = Typed(ProxyShape)
@@ -209,6 +222,9 @@ class Shape(ToolkitObject):
     #: Faces of this shape
     shape_faces = Property(lambda self:self._get_faces(),cached=True)
     
+    #: Block change updates to prevent loops when updated synced properties
+    _block_updates = Bool()
+    
     @observe('x','y','z')
     def _update_position(self, change):
         """ Keep position in sync with x,y,z """
@@ -226,17 +242,19 @@ class Shape(ToolkitObject):
     @observe('position','direction')
     def _update_axis(self, change):
         """ Keep axis in sync with position and direction """
-        axis = self._default_axis()
-        if (not self.axis.Location().IsEqual(axis.Location(),self.tolerance) or 
-            not self.axis.Direction().IsEqual(self.axis.Direction(),self.tolerance)):
-            self.axis = axis
+        if not self._block_updates:
+            self.axis = self._default_axis()
     
     @observe('axis')
     def _update_state(self, change):
         """ Keep position and direction in sync with axis """
-        self.position = self.axis.Location()
-        self.direction = self.axis.Direction()
-    
+        self._block_updates = True
+        try:
+            self.position = self.axis.Location()
+            self.direction = self.axis.Direction()
+        finally:
+            self._block_updates = False
+        
     def _default_axis(self):
         return gp_Ax2(self.position,self.direction)
     
@@ -332,7 +350,7 @@ class Prism(Shape):
     proxy = Typed(ProxyPrism)
     
     #: Shape to build prism from
-    shape = d_(Instance(TopoDS_Shape)).tag(view=True)
+    shape = d_(Instance(Shape)).tag(view=True)
     
     #: Vector to build prism from, ignored if infinite is true
     vector = d_(Tuple((float,int))).tag(view=True)
@@ -411,5 +429,22 @@ class Wedge(Shape):
     @observe('dx','dy','dz','itx')
     def _update_proxy(self, change):
         super(Wedge, self)._update_proxy(change)
+        
+class Revol(Shape):
+    #: Proxy shape
+    proxy = Typed(ProxyRevol)
+    
+    #: Shape to build prism from
+    shape = d_(Instance(Shape)).tag(view=True)
+    
+    #: Angle to revolve
+    angle = d_(Float(0,strict=False)).tag(view=True)
+    
+    #: Copy the surface
+    copy = d_(Bool(False)).tag(view=True)
+    
+    @observe('shape','angle','copy',)
+    def _update_proxy(self, change):
+        super(Revol, self)._update_proxy(change)
         
     

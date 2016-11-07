@@ -20,6 +20,7 @@ from enaml.qt.QtCore import Qt
 from enaml.qt.qt_control import QtControl
 from enaml.application import timed_call
 from enaml.qt.qt_toolkit_object import QtToolkitObject
+from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape
 
 log = logging.getLogger(__name__)
 
@@ -608,7 +609,10 @@ class QtOccViewer(QtControl,ProxyOccViewer):
                     log.error("{} has no shape property!".format(shape))
                     continue
                 try:
-                    s = shape.shape.Shape()
+                    if isinstance(shape.shape, BRepBuilderAPI_MakeShape):
+                        s = shape.shape.Shape()
+                    else:
+                        s = shape.shape
                 except:
                     log.error("{} failed to create shape: {}".format(shape,traceback.format_exc()))
                     continue

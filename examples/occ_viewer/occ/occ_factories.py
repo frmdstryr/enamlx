@@ -105,6 +105,10 @@ def occ_parabola_factory():
     from occ.occ_draw import OccParabola
     return OccParabola
 
+def occ_polygon_factory():
+    from occ.occ_draw import OccPolygon
+    return OccPolygon
+
 def occ_wire_factory():
     from occ.occ_draw import OccWire
     return OccWire
@@ -117,9 +121,21 @@ def occ_chamfer_factory():
     from occ.occ_algo import OccChamfer
     return OccChamfer
 
+def occ_offset_factory():
+    from occ.occ_algo import OccOffset
+    return OccOffset
+
 def occ_thick_solid_factory():
     from occ.occ_algo import OccThickSolid
     return OccThickSolid
+
+def occ_pipe_factory():
+    from occ.occ_algo import OccPipe
+    return OccPipe
+
+def occ_thru_sections_factory():
+    from occ.occ_algo import OccThruSections
+    return OccThruSections
 
 def occ_transform_factory():
     from occ.occ_algo import OccTransform
@@ -156,7 +172,10 @@ QT_FACTORIES['Cut'] = occ_cut_factory
 QT_FACTORIES['Fuse'] = occ_fuse_factory
 QT_FACTORIES['Fillet'] = occ_fillet_factory
 QT_FACTORIES['Chamfer'] = occ_chamfer_factory
+QT_FACTORIES['Offset'] = occ_offset_factory
 QT_FACTORIES['ThickSolid'] = occ_thick_solid_factory
+QT_FACTORIES['Pipe'] = occ_pipe_factory
+QT_FACTORIES['ThruSections'] = occ_thru_sections_factory
 QT_FACTORIES['Transform'] = occ_transform_factory
 
 #: Draw
@@ -169,4 +188,5 @@ QT_FACTORIES['Circle'] = occ_circle_factory
 QT_FACTORIES['Ellipse'] = occ_ellipse_factory
 QT_FACTORIES['Hyperbola'] = occ_hyperbola_factory
 QT_FACTORIES['Parabola'] = occ_parabola_factory
+QT_FACTORIES['Polygon'] = occ_polygon_factory
 QT_FACTORIES['Wire'] = occ_wire_factory

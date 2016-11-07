@@ -4,7 +4,7 @@ Created on Sep 27, 2016
 @author: jrm
 '''
 from atom.api import (
-    ContainerList, Float, Typed, ForwardTyped, observe
+    Bool, ContainerList, Float, Typed, ForwardTyped, observe
 )
 from enaml.core.declarative import d_
 
@@ -71,6 +71,13 @@ class ProxyParabola(ProxyEdge):
     declaration = ForwardTyped(lambda: Parabola)
     
     def set_focal_length(self, l):
+        raise NotImplementedError
+    
+class ProxyPolygon(ProxyEdge):
+    #: A reference to the shape declaration.
+    declaration = ForwardTyped(lambda: Polygon)
+    
+    def set_closed(self, closed):
         raise NotImplementedError
     
 class ProxyWire(ProxyShape):
@@ -153,7 +160,8 @@ class Hyperbola(Edge):
     @observe('major_radius','minor_radius')
     def _update_proxy(self, change):
         super(Hyperbola, self)._update_proxy(change)
-        
+
+
 class Parabola(Edge):
     """ Creates a parabola with its local coordinate system "A2" and it's focal length "Focal". 
         The XDirection of A2 defines the axis of symmetry of the parabola. 
@@ -169,7 +177,20 @@ class Parabola(Edge):
     @observe('focal_length')
     def _update_proxy(self, change):
         super(Parabola, self)._update_proxy(change)     
+
+class Polygon(Edge):
+    """ A polygonal wire can be built from any number of points or vertices, 
+        and consists of a sequence of connected rectilinear edges. 
+    """
+    proxy = Typed(ProxyPolygon)
     
+    #: Polygon is closed
+    closed = d_(Bool(False)).tag(view=True)
+    
+    @observe('closed')
+    def _update_proxy(self, change):
+        super(Polygon, self)._update_proxy(change) 
+
 class Wire(Shape):
     proxy = Typed(ProxyWire)
     

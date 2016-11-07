@@ -6,38 +6,84 @@ Created on Sep 27, 2016
 from atom.api import (
    Int, Dict, Instance
 )
-
 from enaml.application import timed_call
-
 from .algo import (
-    ProxyOperation, ProxyCommon, ProxyCut, ProxyFuse,
-    ProxyFillet, ProxyChamfer, ProxyThickSolid, ProxyTransform,
+    ProxyOperation, ProxyBooleanOperation, ProxyCommon, ProxyCut, ProxyFuse,
+    ProxyFillet, ProxyChamfer, ProxyOffset, ProxyThickSolid, 
+    ProxyPipe, ProxyThruSections, ProxyTransform, 
 )
-from .occ_shape import OccShape
-
+from .occ_shape import OccShape, OccDependentShape
 from OCC.BRepAlgoAPI import (
     BRepAlgoAPI_Fuse, BRepAlgoAPI_Common,
     BRepAlgoAPI_Cut
 )
+from OCC.BRepBuilderAPI import (
+    BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire
+)
 from OCC.BRepFilletAPI import (
     BRepFilletAPI_MakeFillet, BRepFilletAPI_MakeChamfer
 )
-from OCC.ChFi3d import ChFi3d_Rational, ChFi3d_QuasiAngular, ChFi3d_Polynomial
-from OCC.BRepOffsetAPI import BRepOffsetAPI_MakeThickSolid
-from OCC.BRepOffset import BRepOffset_Skin, BRepOffset_Pipe,\
+from OCC.BRepOffsetAPI import (
+    BRepOffsetAPI_MakeOffset, BRepOffsetAPI_MakeOffsetShape, 
+    BRepOffsetAPI_MakeThickSolid, BRepOffsetAPI_MakePipe,
+    BRepOffsetAPI_ThruSections
+)
+from OCC.BRepOffset import (
+    BRepOffset_Skin, BRepOffset_Pipe,
     BRepOffset_RectoVerso
-from OCC.GeomAbs import GeomAbs_Arc, GeomAbs_Tangent, GeomAbs_Intersection
+)
+from OCC.ChFi3d import (
+    ChFi3d_Rational, ChFi3d_QuasiAngular, ChFi3d_Polynomial
+)
+from OCC.GeomAbs import (
+    GeomAbs_Arc, GeomAbs_Tangent, GeomAbs_Intersection
+)
+from OCC.GeomFill import (
+    GeomFill_IsCorrectedFrenet, GeomFill_IsFixed,
+    GeomFill_IsFrenet, GeomFill_IsConstantNormal, GeomFill_IsDarboux,
+    GeomFill_IsGuideAC, GeomFill_IsGuidePlan, 
+    GeomFill_IsGuideACWithContact,GeomFill_IsGuidePlanWithContact, 
+    GeomFill_IsDiscreteTrihedron
+)
+from OCC.gp import (
+    gp_Trsf, gp_Vec, gp_Pnt, gp_Ax1, gp_Dir
+)
 from OCC.TopTools import TopTools_ListOfShape
-from OCC.BRepBuilderAPI import BRepBuilderAPI_Transform
-from OCC.gp import gp_Trsf, gp_Vec, gp_Pnt, gp_Ax2, gp_Ax1, gp_Dir
 
-
-class OccOperation(OccShape, ProxyOperation):
+class OccOperation(OccDependentShape, ProxyOperation):
+    """ Operation is a dependent shape that uses queuing to only 
+        perform the operation once all changes have settled because
+        in general these operations are expensive.
+    """
     _update_count = Int(0)
     
     #--------------------------------------------------------------------------
     # Initialization API
     #--------------------------------------------------------------------------
+    def _queue_update(self,change):
+        """ Schedule an update to be performed in the next available cycle.
+            This should be used for expensive operations as opposed to an
+            immediate update with update_shape.
+        
+        """
+        self._update_count +=1
+        timed_call(0,self._dequeue_update,change)
+    
+    def _dequeue_update(self,change):
+        """ Only update when all changes are done """
+        self._update_count -=1
+        if self._update_count !=0:
+            return
+        self.update_shape(change)
+    
+    def set_direction(self, direction):
+        self._queue_update({})
+    
+    def set_axis(self, axis):
+        self._queue_update({})
+        
+class OccBooleanOperation(OccOperation,ProxyBooleanOperation):
+    
     def create_shape(self):
         """ Create the toolkit shape for the proxy object.
 
@@ -51,39 +97,7 @@ class OccOperation(OccShape, ProxyOperation):
             self.shape = self._do_operation(d.shape1, d.shape2)
         else:
             self.shape = None
-
-    def init_layout(self):
-        """ Initialize the layout of the toolkit shape.
-
-        This method is called during the bottom-up pass. This method
-        should initialize the layout of the widget. The child widgets
-        will be fully initialized and layed out when this is called.
-
-        """
-        for child in self.children():
-            self.child_added(child)
-        self.update_shape({})
-        
     
-    def child_added(self, child):
-        super(OccOperation, self).child_added(child)
-        child.observe('shape',self._queue_update)
-        
-    def child_removed(self, child):
-        super(OccOperation, self).child_removed(child)
-        child.unobserve('shape',self._queue_update)
-        
-    def _queue_update(self,change):
-        self._update_count +=1
-        timed_call(0,self._dequeue_update,change)
-    
-    def _dequeue_update(self,change):
-        # Only update when all changes are done
-        self._update_count -=1
-        if self._update_count !=0:
-            return
-        self.update_shape(change)
-        
     def update_shape(self,change):
         self.create_shape()
         for c in self.children():
@@ -91,15 +105,9 @@ class OccOperation(OccShape, ProxyOperation):
                 self.shape = self._do_operation(self.shape.Shape(),c.shape.Shape())
             else:
                 self.shape = c.shape
-    
-    def update_display(self,change):
-        self.parent().update_display(change)
-        
-    def set_axis(self, axis):
-        self._queue_update({})
 
-class OccCommon(OccOperation,ProxyCommon):
-    """ Fuse two shapes along with all child shapes """
+class OccCommon(OccBooleanOperation,ProxyCommon):
+    """ Common of all the child shapes together. """
     
     def _do_operation(self,shape1,shape2):
         d = self.declaration
@@ -108,8 +116,8 @@ class OccCommon(OccOperation,ProxyCommon):
             args.append(d.pave_filler)
         return BRepAlgoAPI_Common(*args)
     
-class OccCut(OccOperation,ProxyCut):
-    """ Fuse two shapes along with all child shapes """
+class OccCut(OccBooleanOperation,ProxyCut):
+    """ Cut all the child shapes from the first shape. """
     
     def _do_operation(self,shape1,shape2):
         d = self.declaration
@@ -118,8 +126,8 @@ class OccCut(OccOperation,ProxyCut):
             args.append(d.pave_filler)
         return BRepAlgoAPI_Cut(*args)
 
-class OccFuse(OccOperation,ProxyFuse):
-    """ Fuse two shapes along with all child shapes """
+class OccFuse(OccBooleanOperation,ProxyFuse):
+    """ Fuse all the child shapes together. """
     
     def _do_operation(self,shape1,shape2):
         d = self.declaration
@@ -135,10 +143,6 @@ class OccFillet(OccOperation, ProxyFillet):
         'angular':ChFi3d_QuasiAngular, 
         'polynomial':ChFi3d_Polynomial
     })
-    
-    def create_shape(self):
-        """ Cannot be created until the child shape exists. """
-        pass
     
     def update_shape(self, change={}):
         d = self.declaration
@@ -159,20 +163,16 @@ class OccFillet(OccOperation, ProxyFillet):
         self.shape = shape
         
     def set_shape(self, shape):
-        self.update_shape()
+        self._queue_update({})
         
     def set_radius(self, r):
-        self.update_shape()
+        self._queue_update({})
         
     def set_edges(self, edges):
-        self.update_shape()
+        self._queue_update({})
         
         
 class OccChamfer(OccOperation, ProxyChamfer):
-    
-    def create_shape(self):
-        """ Cannot be created until the child shape exists. """
-        pass
     
     def get_shape(self):
         """ Return shape to apply the chamfer to. """
@@ -201,21 +201,20 @@ class OccChamfer(OccOperation, ProxyChamfer):
             shape.Add(*args)
                 
         self.shape = shape
-
      
     def set_distance(self, d):
-        self.update_shape()
+        self._queue_update({})
          
     def set_distance2(self, d):
-        self.update_shape()
+        self._queue_update({})
          
     def set_edge(self, edge):
-        self.update_shape()
+        self._queue_update({})
          
     def set_face(self, face):
-        self.update_shape()
-        
-class OccThickSolid(OccOperation, ProxyThickSolid):
+        self._queue_update({})
+
+class OccOffset(OccOperation, ProxyOffset):
     
     offset_modes = Dict(default={
         'skin': BRepOffset_Skin,
@@ -229,15 +228,49 @@ class OccThickSolid(OccOperation, ProxyThickSolid):
         'intersection': GeomAbs_Intersection,
     })
     
-    def create_shape(self):
-        """ Cannot be created until the child shape exists. """
-        pass
-    
     def get_shape(self):
         """ Return shape to apply the chamfer to. """
         for child in self.children():
             return child
         
+    def update_shape(self, change={}):
+        d = self.declaration
+        
+        #: Get the shape to apply the fillet to
+        s = self.get_shape()
+        
+        if isinstance(s.shape,BRepBuilderAPI_MakeWire):
+            shape = BRepOffsetAPI_MakeOffset(
+                s.shape.Wire(),
+                self.join_types[d.join_type]
+            )
+            shape.Perform(d.offset)
+            self.shape = shape
+        else:
+            self.shape = BRepOffsetAPI_MakeOffsetShape(
+                s.shape.Shape(),
+                d.offset,
+                d.tolerance,
+                self.offset_modes[d.offset_mode],
+                d.intersection,
+                False,
+                self.join_types[d.join_type]
+            )
+        
+    def set_offset(self, offset):
+        self._queue_update({})
+        
+    def set_offset_mode(self, mode):
+        self._queue_update({})
+        
+    def set_join_type(self, mode):
+        self._queue_update({})
+        
+    def set_intersection(self, enabled):
+        self._queue_update({})
+
+class OccThickSolid(OccOffset, ProxyThickSolid):
+    
     def get_faces(self, shape):
         d = self.declaration
         if d.closing_faces:
@@ -269,27 +302,91 @@ class OccThickSolid(OccOperation, ProxyThickSolid):
         )
         
     def set_closing_faces(self, faces):
-        self.update_shape()
+        self._queue_update({})
     
-    def set_offset(self, offset):
-        self.update_shape()
+
+class OccPipe(OccOperation, ProxyPipe):
+    
+    fill_modes = Dict(default={
+        'corrected_frenet': GeomFill_IsCorrectedFrenet,
+        'fixed': GeomFill_IsFixed,
+        'frenet': GeomFill_IsFrenet,
+        'constant_normal': GeomFill_IsConstantNormal,
+        'darboux': GeomFill_IsDarboux,
+        'guide_ac': GeomFill_IsGuideAC,
+        'guide_plan': GeomFill_IsGuidePlan,
+        'guide_ac_contact': GeomFill_IsGuideACWithContact,
+        'guide_plan_contact': GeomFill_IsGuidePlanWithContact,
+        'discrete_trihedron': GeomFill_IsDiscreteTrihedron
+    })
+    
+    def update_shape(self, change):
+        d = self.declaration
         
-    def set_offset_mode(self, mode):
-        self.update_shape()
+        i = 0
+        shapes = [c for c in self.children() if isinstance(c,OccShape)]
         
-    def set_join_type(self, mode):
-        self.update_shape()
+        if d.spline:
+            spline = d.spline
+        else:
+            spline = shapes[i]
+            i+=1
+             
+        profile = d.profile or shapes[i]
         
-    def set_intersection(self, enabled):
-        self.update_shape()
+        if d.fill_mode:
+            self.shape = BRepOffsetAPI_MakePipe(spline.shape.Wire(),
+                                                profile.shape.Shape(),
+                                                self.fill_modes[d.fill_mode])
+        else:
+            self.shape = BRepOffsetAPI_MakePipe(spline.shape.Wire(),
+                                                profile.shape.Shape())
+    
+    def set_spline(self, spline):
+        self._queue_update({})
         
+    def set_profile(self, profile):
+        self._queue_update({})
+        
+    def set_fill_mode(self, mode):
+        self._queue_update({})
+
+
+class OccThruSections(OccOperation, ProxyThruSections):
+
+    def update_shape(self, change):
+        from .occ_draw import OccVertex, OccWire
+        
+        d = self.declaration
+        
+        shape = BRepOffsetAPI_ThruSections(d.solid,
+                                           d.ruled,
+                                           d.precision)
+        
+        #: TODO: Support Smoothing, Max degree, par type, etc...
+        
+        for child in self.children():
+            if isinstance(child,OccVertex):
+                shape.AddVertex(child.shape.Vertex())
+            elif isinstance(child,OccWire):
+                shape.AddWire(child.shape.Wire())
+            #: TODO: Handle transform???
+        
+        #: Set the shape
+        self.shape = shape
+        
+    def set_solid(self, solid):
+        self._queue_update({})
+        
+    def set_ruled(self, ruled):
+        self._queue_update({})
+        
+    def set_precision(self, pres3d):
+        self._queue_update({})
+
 class OccTransform(OccOperation, ProxyTransform):
     
     _old_shape = Instance(OccShape)
-    
-    def create_shape(self):
-        """ Cannot be created until the child shape exists. """
-        pass
     
     def init_shape(self):
         d = self.declaration
@@ -307,19 +404,28 @@ class OccTransform(OccOperation, ProxyTransform):
         t = gp_Trsf()
         #: TODO: Order matters... how to configure it???
         if d.mirror:
-            p,v = d.mirror
+            try:
+                p,v = d.mirror
+            except ValueError:
+                raise ValueError("You must specify a tuple containing a (point,direction)")
             t.SetMirror(gp_Ax1(gp_Pnt(*p),
                                gp_Dir(*v)))
         if d.scale:
-            p,s = d.scale
+            try:
+                p,s = d.scale
+            except ValueError:
+                raise ValueError("You must specify a tuple containing a (point,scale)")
             t.SetScale(gp_Pnt(*p),s)
         
         if d.translate:
-            t.SetTranslate(gp_Vec(*d.translate))
+            t.SetTranslation(gp_Vec(*d.translate))
         
         if d.rotate:
-            p,v,a = d.rotate
-            t.SetRotate(gp_Ax1(gp_Pnt(*p),
+            try:
+                p,v,a = d.rotate
+            except ValueError:
+                raise ValueError("You must specify a tuple containing a (point,direction,angle)")
+            t.SetRotation(gp_Ax1(gp_Pnt(*p),
                                gp_Dir(*v)),a)
             
         return t
@@ -347,14 +453,13 @@ class OccTransform(OccOperation, ProxyTransform):
         self._old_shape.observe('shape',self._queue_update)
         
     def set_translate(self, translation):
-        self.update_shape()
+        self._queue_update({})
         
     def set_rotate(self, rotation):
-        self.update_shape()
+        self._queue_update({})
         
     def set_scale(self,scale):
-        self.update_shape()
+        self._queue_update({})
         
     def set_mirror(self, axis):
-        self.update_shape()
-         
+        self._queue_update({})

@@ -1,0 +1,149 @@
+import math
+from enaml.core.api import Looper, Conditional
+from occ.shape import Box, Prism, Face
+from occ.draw import Segment, Arc, Wire, Point
+from occ.algo import Cut, Fuse, Offset, Fillet, Transform, ThickSolid, Pipe
+from occ.part import Part
+from OCC.gp import gp_Dir, gp_Ax1, gp_Pnt
+from OCC.gce import gce_MakeDir
+
+
+def inch(ft):
+    return ft/12.0
+
+def distance(p0,p1):
+    # Returns distance between two points
+    return math.sqrt((p1[0]-p0[0])**2+(p1[1]-p0[1])**2)
+
+def center(a,b,c):
+    return (a/2.0, b/2.0,c/2.0)
+
+def angle(p0,p1):
+    # Returns angle vector of two x,y points
+    dx,dy = p1[0]-p0[0],p1[1]-p0[1]
+    a = math.atan2(dy, dx)
+    return a 
+    #d = gce_MakeDir(gp_Pnt(p0[0],p0[1],0),gp_Pnt(p1[0],p1[1],0)).Value()
+    #d2 = gce_MakeDir(gp_Pnt(p1[0],p1[1],0),gp_Pnt(p0[0],p0[1],0)).Value()
+    #
+    ax = gp_Ax1(gp_Pnt(0,0,0),gp_Dir(0,0,1))
+    d = gp_Dir(0,0,1)
+    d.Rotate(ax,a)
+    
+    p = (d.X(),d.Y(),d.Z())
+    print dx,dy,a,p
+    #print dx,dy
+    #dmax = max(dx,dy)
+    #d = d.Crossed(gp_Dir(abs(dy),abs(dx),0))
+    
+    return  (d.X(),d.Y(),d.Z())
+
+enamldef Wall(Fuse):
+    attr R = 13 # R value
+    attr thickness = inch(4) # ft
+    attr floor = 0 # Start of floor
+    attr height = 8 # ft
+    attr points = []
+    attr ax = 1.0
+    attr ay = 0.0
+    attr az = 0.0
+    
+#     #: First child is the spline
+#     Wire:
+#         Segment:
+#             Looper:
+#                 iterable << points
+#                 Point:
+#                     position << (loop_item[0],loop_item[1],0)
+#                     
+#     #: Second is the profile
+#     Wire:
+#         Segment:
+#             Point:
+#                 position << (0,0,0)
+#             Point:
+#                 position << (0,thickness,0)
+#             Point:
+#                 position << (0,thickness,height)
+#             Point:
+#                 position << (0,0,height)
+#             Point:
+#                 position << (0,0,0)
+#    
+#     #ThickSolid:
+#     #    offset << thickness
+#     Prism:
+#         vector << (0,0,height)
+#         Wire: wire:
+#             Segment: segment:
+#                 Looper:
+#                     iterable << points
+#                     Point:
+#                         position << (loop_item[0],loop_item[1],0)
+#             Wire:
+#                 Offset:
+#                     offset = -thickness
+#                     Wire:
+#                         Transform:
+#                             shape = wire
+#                         
+    Looper:
+        iterable << points   
+        Conditional:
+            condition = loop_index > 0
+            Transform:
+                attr pos << (points[loop_index-1][0],points[loop_index-1][1],floor)
+                rotate << (pos,(0,0,1),angle(points[loop_index-1],points[loop_index]))
+                Box:
+                    position << pos
+                    dx << distance(points[loop_index-1],points[loop_index])#+thickness
+                    dy << thickness
+                    dz << height
+                                                               
+enamldef House(Part):
+    name = "House"
+    
+    Looper:
+        iterable << [
+            (0,0),
+            (0,25),
+            (45,25),
+            (45,0),
+            (0,0)
+        ]
+        Point:
+            position << (loop_item[0],loop_item[1],0) 
+    
+    Wall:
+        # Ext
+        points = [
+            (0,0),
+            (0,25),
+            (45,25),
+            (45,0),
+            (0,0)
+        ]
+        
+    Wall:
+        # Master BR
+        points = [
+            (12,0),
+            (12,12),
+            (0,12),
+        ]
+    Wall:
+        #: Closet
+        points = [
+            (0,15),
+            (8,15),
+        ]
+    Wall:
+        #: BR 2
+        points = [
+            (8,12),
+            (8,15),
+            (11,18),
+            (11,25),
+        ]
+    
+

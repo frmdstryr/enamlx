@@ -30,6 +30,9 @@ from examples.draw import Draw
 from examples.exhaust_flange import ExhaustFlange
 from examples.turners_cube import TurnersCube
 from examples.bottle import Bottle
+from examples.house import House
+from examples.sweeps import Sweeps
+from examples.thru_sections import ThruSection
 
 template TreeItemLoop(items):
     """ A templated loop which maps a template over a sequence."""
@@ -107,12 +110,15 @@ enamldef ModelViewer(OccViewer): viewer:
 enamldef Main(Window): window:
     minimum_size = (960,540)
     attr models = [
-         PrimativeShapes(),
-         Operations(),
-         Draw(),
-         TurnersCube(),
+        PrimativeShapes(),
+        Operations(),
+        Sweeps(),
+        ThruSection(),
+        Draw(),
+        TurnersCube(),
         ExhaustFlange(),
         Bottle(),
+        House(),
         
     ]
     attr viewer = None
@@ -135,6 +141,8 @@ enamldef Main(Window): window:
                     item = self.find(event.name)
                     if event.name.startswith('viewer'):
                         viewer = item.children[0].children[0]
+                        if window.viewer:
+                            window.viewer.selection = []
                         window.viewer = viewer
                         viewer.proxy.display.OnResize()
                 #print event.name,event.type

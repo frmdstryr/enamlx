@@ -1,0 +1,43 @@
+from enaml.core.api import Looper
+from occ.algo import Transform
+from occ.shape import Revol, Face
+from occ.draw import Segment, Wire, Point
+from occ.part import Part
+import math
+
+enamldef Bit(Transform): bit:
+    attr length = 30 # Todo
+    attr width = 10 
+    alias angle: revol.angle
+    attr points << [
+            (0,0,0),
+            (0,bit.width,0),
+            (0,bit.width,bit.length),
+            (0,bit.width/2.0,bit.length-bit.length/4.0),
+            (0,bit.width/2.0,bit.length-bit.length/2.0),
+            (0,0,bit.length/4.0),
+            (0,0,0)
+        ]
+    Revol: revol:
+        #: Axis of rotation
+        position << (0,bit.width,0)
+        Face:
+            #: Face similar to https://www.opencascade.com/doc/occt-7.0.0/overview/html/occt_user_guides__modeling_algos.html
+            Wire:
+                Segment:
+                    Looper:
+                        iterable << bit.points
+                        Point:
+                            position << loop_item 
+              
+enamldef Sweeps(Part): 
+    name = "Sweeps"
+    Bit:
+        pass
+    Bit:
+        length = 40
+        translate = (-10,-10,0)
+        angle = math.pi/3
+                
+    
+

@@ -1,6 +1,6 @@
 
 from occ.part import Part
-from occ.draw import Wire, Circle, Ellipse, Line, Point
+from occ.draw import Wire, Circle, Ellipse, Line, Point, Polygon
 
 enamldef Draw(Part):
     name = "Draw Example"
@@ -21,3 +21,16 @@ enamldef Draw(Part):
                 position = (4,0,0)
             Point:
                 position = (10,10,0)
+    Wire:
+        Polygon:
+            Point:
+                position = (0,5,0)
+            Point:
+                position = (2,6,0)
+            Point:
+                position = (5,4,0)
+            Point:
+                position = (1,2,0)
+            Point:
+                position = (0,5,0)
+            
