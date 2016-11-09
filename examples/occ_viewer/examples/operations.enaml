@@ -20,14 +20,15 @@ def top_face(f):
 enamldef Operations(Part):
     name = "Shape Operations"
     Cut:
-        Box:
-            position = (-1, -1, 0)
-            dx = 2
-            dy = 2
+        Box: box1:
+            position = (-1/2.0, -1/2.0, 0)
+            dx = 1
+            dy = 1
             dz = 1
-        Cone:
-            radius = 1
-            height = 5
+        Cylinder:
+            #position := box1.position
+            radius = 1/2.0
+            height = 1
              
     Common:
         Cylinder:

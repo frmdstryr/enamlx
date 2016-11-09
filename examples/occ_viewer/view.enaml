@@ -32,6 +32,7 @@ from examples.turners_cube import TurnersCube
 from examples.bottle import Bottle
 from examples.house import House
 from examples.sweeps import Sweeps
+from examples.pipes import Pipes
 from examples.thru_sections import ThruSection
 
 template TreeItemLoop(items):
@@ -113,6 +114,7 @@ enamldef Main(Window): window:
         PrimativeShapes(),
         Operations(),
         Sweeps(),
+        Pipes(),
         ThruSection(),
         Draw(),
         TurnersCube(),

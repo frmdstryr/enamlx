@@ -306,6 +306,9 @@ class OccThickSolid(OccOffset, ProxyThickSolid):
     
 
 class OccPipe(OccOperation, ProxyPipe):
+    #: References to observed shapes
+    _old_spline = Instance(OccShape)
+    _old_profile = Instance(OccShape)
     
     fill_modes = Dict(default={
         'corrected_frenet': GeomFill_IsCorrectedFrenet,
@@ -320,19 +323,24 @@ class OccPipe(OccOperation, ProxyPipe):
         'discrete_trihedron': GeomFill_IsDiscreteTrihedron
     })
     
+    def init_shape(self):
+        super(OccPipe, self).init_shape()
+        d = self.declaration
+        if d.spline:
+            self.set_spline(d.spline)
+        if d.profile:
+            self.set_profile(d.profile)
+    
     def update_shape(self, change):
         d = self.declaration
         
         i = 0
         shapes = [c for c in self.children() if isinstance(c,OccShape)]
         
+        spline = d.spline.proxy if d.spline else shapes[i]
         if d.spline:
-            spline = d.spline
-        else:
-            spline = shapes[i]
-            i+=1
-             
-        profile = d.profile or shapes[i]
+            i+=1 
+        profile = d.profile.proxy if d.profile else shapes[i]
         
         if d.fill_mode:
             self.shape = BRepOffsetAPI_MakePipe(spline.shape.Wire(),
@@ -343,9 +351,25 @@ class OccPipe(OccOperation, ProxyPipe):
                                                 profile.shape.Shape())
     
     def set_spline(self, spline):
+        #: Unobserve the old spline and observe the new one
+        if self._old_spline:
+            self._old_spline.unobserve('shape',self._queue_update)
+        child = spline.proxy
+        child.observe('shape',self._queue_update)
+        self._old_spline = child
+        
+        #: Trigger an update
         self._queue_update({})
         
     def set_profile(self, profile):
+        #: Unobserve the old spline and observe the new one
+        if self._old_profile:
+            self._old_profile.unobserve('shape',self._queue_update)
+        child = profile.proxy
+        child.observe('shape',self._queue_update)
+        self._old_profile = child
+        
+        #: Trigger an update
         self._queue_update({})
         
     def set_fill_mode(self, mode):
