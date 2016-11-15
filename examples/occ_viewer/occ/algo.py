@@ -5,11 +5,16 @@ Created on Sep 28, 2016
 '''
 
 from atom.api import (
-    Instance, Typed, ForwardTyped, ContainerList, Enum, Float, Bool, Coerced, observe
+    Instance, ForwardInstance, Typed, ForwardTyped, ContainerList, Enum, Float, Bool, Coerced, observe
 )
 from enaml.core.declarative import d_
 
 from .shape import ProxyShape, Shape
+
+def WireFactory():
+    #: Deferred import of wire
+    from .draw import Wire
+    return Wire
 
 class ProxyOperation(ProxyShape):
     #: A reference to the Shape declaration.
@@ -103,6 +108,47 @@ class ProxyPipe(ProxyOffset):
         raise NotImplementedError
     
     def set_fill_mode(self, mode):
+        raise NotImplementedError
+    
+class ProxyAbstractRibSlot(ProxyOperation):
+    #: Abstract class 
+    
+    def set_shape(self, shape):
+        raise NotImplementedError
+    
+    def set_contour(self, contour):
+        raise NotImplementedError
+    
+    def set_plane(self, plane):
+        raise NotImplementedError
+    
+    def set_fuse(self, fuse):
+        raise NotImplementedError
+    
+class ProxyLinearForm(ProxyAbstractRibSlot):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: LinearForm)
+    
+    def set_direction(self, direction):
+        raise NotImplementedError
+    
+    def set_direction1(self, direction):
+        raise NotImplementedError
+
+    def set_modify(self, modify):
+        raise NotImplementedError
+    
+class ProxyRevolutionForm(ProxyAbstractRibSlot):
+    #: A reference to the Shape declaration.
+    declaration = ForwardTyped(lambda: RevolutionForm)
+    
+    def set_height1(self, direction):
+        raise NotImplementedError
+    
+    def set_height2(self, direction):
+        raise NotImplementedError
+    
+    def set_sliding(self, sliding):
         raise NotImplementedError
 
 class ProxyThruSections(ProxyOperation):
@@ -262,7 +308,7 @@ class Pipe(Operation):
     spline = d_(Instance(Shape))
     
     #: Profile to make the pipe from
-    profile = d_(Instance(Shape))
+    profile = d_(ForwardInstance(WireFactory))
     
     #: Fill mode
     fill_mode = d_(Enum(None,'corrected_frenet','fixed','frenet','constant_normal','darboux',
@@ -271,6 +317,44 @@ class Pipe(Operation):
     @observe('spline','profile','fill_mode')
     def _update_proxy(self, change):
         super(Pipe, self)._update_proxy(change)
+
+
+class AbstractRibSlot(Operation):
+    #: Base shape
+    shape = d_(Instance(Shape))
+    
+    #: Profile to make the pipe from
+    contour = d_(Instance(Shape))
+    
+    #: Profile to make the pipe from
+    plane = d_(Instance(Shape))
+    
+    #: Fuse (False to remove, True to add)
+    fuse = d_(Bool(False)).tag(view=True)
+
+class LinearForm(AbstractRibSlot):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyLinearForm)
+    
+    #: Direction
+    direction1 = d_(Instance((list,tuple))).tag(view=True)
+    
+    #: Modify
+    modify = d_(Bool(False)).tag(view=True)
+    
+class RevolutionForm(AbstractRibSlot):
+    #: Reference to the implementation control
+    proxy = Typed(ProxyRevolutionForm)
+    
+    #: Height 1
+    height1 = d_(Float(1.0,strict=False)).tag(view=True)
+    
+    #: Height 2
+    height2 = d_(Float(1.0,strict=False)).tag(view=True)
+    
+    #: Sliding
+    sliding = d_(Bool(False)).tag(view=True)
+    
         
 class ThruSections(Operation):
     #: Reference to the implementation control

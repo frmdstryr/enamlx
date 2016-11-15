@@ -33,6 +33,8 @@ from examples.bottle import Bottle
 from examples.house import House
 from examples.sweeps import Sweeps
 from examples.pipes import Pipes
+from examples.faces import Faces
+from examples.gears import Gears
 from examples.thru_sections import ThruSection
 
 template TreeItemLoop(items):
@@ -114,6 +116,8 @@ enamldef Main(Window): window:
         PrimativeShapes(),
         Operations(),
         Sweeps(),
+        Faces(),
+        Gears(),
         Pipes(),
         ThruSection(),
         Draw(),
@@ -131,10 +135,10 @@ enamldef Main(Window): window:
                     VSplitLayout(
                     'model',
                     'properties',
-                    sizes=[50,50],
+                    sizes=[1,1],
                 ),
                 TabLayout(*['viewer{}'.format(i) for i in range(len(window.models))]),
-                sizes=[30,70]
+                sizes=[1,4]
             )
             dock_events_enabled = True
             dock_event::
@@ -152,6 +156,7 @@ enamldef Main(Window): window:
             DockItem:
                 title = 'Model'
                 name = 'model'
+                stretch = 1
                 Container:
                     padding = 0
                     TreeView:
@@ -170,6 +175,7 @@ enamldef Main(Window): window:
             DockItem:
                 title = 'Properties'
                 name = 'properties'
+                stretch = 1
                 Container:
                     padding = 0
                     ScrollArea:
@@ -188,6 +194,7 @@ enamldef Main(Window): window:
                 DockItem:
                     title = loop_item.name
                     name = 'viewer{}'.format(loop_index)
+                    stretch = 4
                     Container:
                         padding = 0
                         ModelViewer: #viewer:

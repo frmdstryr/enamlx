@@ -261,7 +261,8 @@ class Shape(ToolkitObject):
     @observe('axis','color','transparency')
     def _update_proxy(self, change):
         super(Shape, self)._update_proxy(change)
-        self.proxy.update_display(change)
+        if self.proxy:
+            self.proxy.update_display(change)
     
     @observe('proxy.shape')
     def _update_topo(self,change):

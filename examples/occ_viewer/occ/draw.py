@@ -10,6 +10,7 @@ from enaml.core.declarative import d_
 
 from .shape import ProxyShape, Shape
 from OCC.TopoDS import TopoDS_Edge, TopoDS_Wire
+from zmq.eventloop.minitornado.concurrent import NotImplementedFuture
 
 
 class ProxyPoint(ProxyShape):
@@ -37,6 +38,15 @@ class ProxySegment(ProxyEdge):
 class ProxyArc(ProxyEdge):
     #: A reference to the shape declaration.
     declaration = ForwardTyped(lambda: Arc)
+    
+    def set_radius(self, r):
+        raise NotImplementedError
+    
+    def set_alpha1(self, a):
+        raise NotImplementedFuture
+    
+    def set_alpha2(self, a):
+        raise NotImplementedFuture
     
 
 class ProxyCircle(ProxyEdge):
@@ -105,8 +115,25 @@ class Segment(Line):
     proxy = Typed(ProxySegment)
     
 class Arc(Line):
-    """ Creates an arc from three points. """
+    """ Creates an arc using one of the following constructors:
+    
+    1. three points
+    2. axis, radius, alpha 1, alpha 2
+    3. axis, radius, and two points
+    4. axis, radius, one point and alpha 1 
+    
+    
+    """
     proxy = Typed(ProxyArc)
+    
+    #: Radius of the circle (optional)
+    radius = d_(Float(0,strict=False)).tag(view=True)
+    
+    #: Angle circle (optional)
+    alpha1 = d_(Float(0,strict=False)).tag(view=True)
+    
+    #: 2nd Angle circle (optional)
+    alpha2 = d_(Float(0,strict=False)).tag(view=True)
     
 class Circle(Edge):
     """ A2 locates the circle and gives its orientation in 3D space.

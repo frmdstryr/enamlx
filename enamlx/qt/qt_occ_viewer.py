@@ -584,6 +584,11 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     def _expand_shapes(self,shapes):
         expansion = []
         for s in shapes:
+            for c in s.children():
+                #: HAck...
+                from occ.occ_part import OccPart
+                if isinstance(c,OccPart):
+                    expansion.extend(self._expand_shapes(c.shapes))
             if hasattr(s,'shapes'):
                 expansion.extend(self._expand_shapes(s.shapes))
             else:

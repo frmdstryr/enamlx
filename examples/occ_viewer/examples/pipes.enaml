@@ -38,26 +38,26 @@ enamldef Pipes(Part):
                 position = (0,10,0)
         #: 180 deg elbow
         Arc: a1:
-            attr radius = 5
+            attr rad = 5
             Point:
                 position := p2.position
             Point:
-                position << (p2.x+a1.radius,p2.y+a1.radius,p2.z)
+                position << (p2.x+a1.rad,p2.y+a1.rad,p2.z)
             Point: p5:
-                position << (p2.x+a1.radius*2,p2.y,p2.z)
+                position << (p2.x+a1.rad*2,p2.y,p2.z)
         #: 90 deg elbow
         Arc: a2:
-            attr radius = 3
+            attr rad = 3
             Point:
                 position := p5.position
             Point:
                 #: TOOO MUCH MATH...
-                position << (p5.x+(a2.radius*(1-1/math.sqrt(2))),#*(math.pi/2.0),
-                             p5.y-a2.radius/math.sqrt(2),#*(math.pi/2.0), # not
+                position << (p5.x+(a2.rad*(1-1/math.sqrt(2))),#*(math.pi/2.0),
+                             p5.y-a2.rad/math.sqrt(2),#*(math.pi/2.0), # not
                              p5.z)
             Point: p8:
-                position << (p5.x+a2.radius,
-                             p5.y-a2.radius,
+                position << (p5.x+a2.rad,
+                             p5.y-a2.rad,
                              p5.z)
         Segment:
             Point:

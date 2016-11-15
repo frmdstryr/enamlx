@@ -116,11 +116,34 @@ class OccArc(OccLine, ProxyArc):
     
     def update_shape(self,change):
         d = self.declaration
-        if len(d.children)==3:
-            points = [c.shape for c in self.children()]
+        points = [c.shape for c in self.children()]
+        if d.radius:
+            circle = gp_Circ(d.axis,d.radius)
+            sense = True
+            if len(points)==2:
+                arc = GC_MakeArcOfCircle(circle,points[0],points[1],sense).Value()
+                self.make_edge(arc)
+            elif len(points)==1:
+                arc = GC_MakeArcOfCircle(circle,d.alpha1,points[0],sense).Value()
+                self.make_edge(arc)
+            else:
+                arc = GC_MakeArcOfCircle(circle,d.alpha1,d.alpha2,sense).Value()
+                self.make_edge(arc)
+        elif len(points)==3:
             if not points[0].IsEqual(points[2],d.tolerance):
                 arc = GC_MakeArcOfCircle(points[0],points[1],points[2]).Value()
                 self.make_edge(arc)
+        else:
+            raise ValueError("Could not create an Arc with the given children and parameters. Must be given one of:\n\t- three points\n\t- radius and 2 points\n\t- radius, alpha1 and one point\n\t- raidus, alpha1 and alpha2")
+                
+    def set_radius(self, r):
+        self.create_shape()
+    
+    def set_alpha1(self, a):
+        self.create_shape()
+    
+    def set_alpha2(self, a):
+        self.create_shape()
     
 class OccCircle(OccEdge, ProxyCircle):
     def create_shape(self):
