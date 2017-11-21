@@ -1,26 +1,29 @@
-'''
+"""
+Copyright (c) 2015, Jairus Martin.
+Distributed under the terms of the MIT License.
+The full license is in the file COPYING.txt, distributed with this software.
 Created on Sep 26, 2016
-
-@author: 
-
-'''
+"""
 import signal 
 
-from atom.api import Instance, ForwardTyped
+from atom.api import Instance, ForwardInstance, ForwardTyped
 
 from ..widgets.console import ProxyConsole
 
 from enaml.qt import QtCore, QT_API
 from enaml.qt.qt_control import QtControl
 
+
 def console_factory():
     try:
-        from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
+        from qtconsole.rich_jupyter_widget import RichJupyterWidget \
+            as RichIPythonWidget
     except ImportError:
         from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
         
     # TODO: Support IPython < 3
     return RichIPythonWidget
+
 
 def kernel_factory():
     try:
@@ -30,13 +33,14 @@ def kernel_factory():
     return QtInProcessKernelManager
 
 
-class QtConsole(QtControl,ProxyConsole):
+class QtConsole(QtControl, ProxyConsole):
     #: Viewer widget
     widget = ForwardTyped(console_factory)
     
     #: Kernel
-    kernel = Instance(object)
-    
+    kernel = ForwardInstance(kernel_factory)
+
+    #: So it can exit
     _sigint_timer = Instance(QtCore.QTimer)
     
     def create_widget(self):
@@ -47,8 +51,7 @@ class QtConsole(QtControl,ProxyConsole):
             gui_completion = d.completion,
             display_banner = d.display_banner
         )
-        
-        
+
     def init_widget(self):
         d = self.declaration
         self.init_kernel()
@@ -113,7 +116,5 @@ class QtConsole(QtControl,ProxyConsole):
     def set_completion(self, mode):
         self.widget.gui_completion = mode
         
-    def set_execute(self, *args,**kwargs):
-        self.kernel.shell.execute(*args,**kwargs)
-
-        
+    def set_execute(self, *args, **kwargs):
+        self.kernel.shell.execute(*args, **kwargs)

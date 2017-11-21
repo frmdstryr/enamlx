@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-'''
+"""
+Copyright (c) 2015, Jairus Martin.
+Distributed under the terms of the MIT License.
+The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
-
-@author: jrm
-'''
+"""
 from atom.api import Typed
 from enamlx.widgets.double_spin_box import ProxyDoubleSpinBox
 from enaml.qt.qt_spin_box import QtSpinBox
 from enaml.qt.QtGui import QDoubleSpinBox
+
 
 class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
     """ A Qt implementation of an Enaml SpinBox.
@@ -16,9 +18,9 @@ class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
     #: A reference to the widget created by the proxy.
     widget = Typed(QDoubleSpinBox)
     
-    #--------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Initialization API
-    #--------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def create_widget(self):
         """ Create the underlying QDoubleSpinBox widget.
 

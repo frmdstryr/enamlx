@@ -1,8 +1,9 @@
-'''
+"""
+Copyright (c) 2015, Jairus Martin.
+Distributed under the terms of the MIT License.
+The full license is in the file COPYING.txt, distributed with this software.
 Created on Jun 3, 2015
-
-@author: jrm
-'''
+"""
 from atom.api import (
     ContainerList, Typed, Int, Bool, Property, ForwardTyped, observe
 )
@@ -15,21 +16,25 @@ from enamlx.widgets.abstract_item import (
     AbstractWidgetItem
 )
 
+
 class ProxyTreeView(ProxyAbstractItemView):
     declaration = ForwardTyped(lambda: TreeView)
-    
+
+
 class ProxyTreeViewColumn(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TreeViewColumn)
     
     def set_column(self,column):
         raise NotImplementedError
-    
+
+
 class ProxyTreeViewItem(ProxyAbstractWidgetItem):
     declaration = ForwardTyped(lambda: TreeViewItem)
     
     def refresh_model(self,change):
         raise NotImplementedError
-    
+
+
 class TreeView(AbstractItemView):
     #: Proxy widget
     proxy = Typed(ProxyTreeView)
@@ -38,10 +43,10 @@ class TreeView(AbstractItemView):
     show_root = d_(Bool(True))
     
     #: Root item row
-    row = d_(Int(0),writable=False)
+    row = d_(Int(), writable=False)
     
     #: Root item column
-    column = d_(Int(0),writable=False)
+    column = d_(Int(), writable=False)
     
     @observe('show_root')
     def _update_proxy(self, change):
@@ -61,6 +66,7 @@ class TreeView(AbstractItemView):
     def _update_rows(self):
         for r,item in enumerate(self._items):
             item.row = r
+
 
 class TreeViewItem(AbstractWidgetItem):
     #: Proxy reference
@@ -85,16 +91,17 @@ class TreeViewItem(AbstractWidgetItem):
         """ Items should be a list of child TreeViewItems excluding
             columns.
         """
-        return [c for c in self.children if isinstance(c,TreeViewItem)]
+        return [c for c in self.children if isinstance(c, TreeViewItem)]
     
     def _get_columns(self):
         """ List of child TreeViewColumns including 
             this item as the first column
         """
-        return [self] +[c for c in self.children if isinstance(c,TreeViewColumn)]
+        return [self] + [c for c in self.children
+                         if isinstance(c, TreeViewColumn)]
     
     #: Columns
-    _columns = Property(lambda self:self._get_columns(),cached=True)
+    _columns = Property(lambda self: self._get_columns(), cached=True)
     
     def child_added(self, child):
         super(TreeViewItem, self).child_added(child)
@@ -108,14 +115,15 @@ class TreeViewItem(AbstractWidgetItem):
 
     def _update_rows(self):
         """ Update the row and column numbers of child items. """
-        for row,item in enumerate(self._items):
+        for row, item in enumerate(self._items):
             item.row = row # Row is the Parent item
             item.column = 0
         
-        for column,item in enumerate(self._columns):
+        for column, item in enumerate(self._columns):
             item.row = self.row # Row is the Parent item
             item.column = column
-        
+
+
 class TreeViewColumn(AbstractWidgetItem):
     """ Use this to build a table by defining the columns. 
     """

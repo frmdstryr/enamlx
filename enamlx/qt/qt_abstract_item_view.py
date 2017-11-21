@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
-'''
+"""
+Copyright (c) 2015, Jairus Martin.
+Distributed under the terms of the MIT License.
+The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 20, 2015
-
-@author: jrm
-'''
+"""
 from atom.api import Instance, Int, Bool
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
-from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
+from enaml.qt import QT_API, PYQT4_API, PYSIDE_API
+
+if QT_API in PYQT4_API+PYSIDE_API:
+    from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
+else:
+    from qtpy.QtWidgets import QAbstractItemView
+    from enaml.qt.QtCore import QItemSelectionModel
+
 from enaml.qt.QtCore import Qt, QAbstractItemModel, QSize
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 
@@ -18,24 +26,26 @@ from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
 
 SELECTION_MODES = {
-    'extended':QAbstractItemView.ExtendedSelection,
-    'single':QAbstractItemView.SingleSelection,
-    'contiguous':QAbstractItemView.ContiguousSelection,
-    'multi':QAbstractItemView.MultiSelection,
-    'none':QAbstractItemView.NoSelection,
+    'extended': QAbstractItemView.ExtendedSelection,
+    'single': QAbstractItemView.SingleSelection,
+    'contiguous': QAbstractItemView.ContiguousSelection,
+    'multi': QAbstractItemView.MultiSelection,
+    'none': QAbstractItemView.NoSelection,
 }
 
 SELECTION_BEHAVIORS = {
-    'items':QAbstractItemView.SelectItems,
-    'rows':QAbstractItemView.SelectRows,
-    'columns':QAbstractItemView.SelectColumns,
+    'items': QAbstractItemView.SelectItems,
+    'rows': QAbstractItemView.SelectRows,
+    'columns': QAbstractItemView.SelectColumns,
 }
 
+
 class QAbstractAtomItemModel(object):
-    
-    def setDeclaration(self,declaration):
+    """ A mixin for an ItemModel """
+
+    def setDeclaration(self, declaration):
         self.declaration = declaration
-    
+
     def data(self, index, role):
         """ @see http://doc.qt.io/qt-4.8/qt.html#ItemDataRole-enum
         """
@@ -43,7 +53,7 @@ class QAbstractAtomItemModel(object):
         if not item:
             return None
         d = item.declaration
-        
+
         if role == Qt.DisplayRole:
             return d.text
         elif role == Qt.ToolTipRole:
@@ -57,7 +67,7 @@ class QAbstractAtomItemModel(object):
         elif role == Qt.StatusTipRole:
             return d.status_tip
         elif role == Qt.TextAlignmentRole:
-            h,v = d.text_alignment
+            h, v = d.text_alignment
             return TEXT_H_ALIGNMENTS[h] | TEXT_V_ALIGNMENTS[v]
         elif role == Qt.ForegroundRole and d.foreground:
             return get_cached_qcolor(d.foreground)
@@ -65,8 +75,9 @@ class QAbstractAtomItemModel(object):
             return get_cached_qcolor(d.background)
         #elif role == Qt.SizeHintRole and (d.minimum_size):
         #    return d.minimum_size
+
         return None
-    
+
     def flags(self, index):
         item = self.itemAt(index)
         if not item:
@@ -80,24 +91,24 @@ class QAbstractAtomItemModel(object):
         if d.selectable:
             flags |= Qt.ItemIsSelectable
         return flags
-    
+
     def setData(self, index, value, role=Qt.EditRole):
         item = self.itemAt(index)
         if not item:
             return False
         d = item.declaration
-        if role==Qt.CheckStateRole:
-            checked = value==Qt.Checked
-            if checked!=d.checked:
+        if role == Qt.CheckStateRole:
+            checked = value == Qt.Checked
+            if checked != d.checked:
                 d.checked = checked
                 d.toggled(checked)
             return True
-        elif role==Qt.EditRole:
+        elif role == Qt.EditRole:
             if value != d.text:
                 d.text = value
             return True
         return super(QAbstractAtomItemModel, self).setData(index, value, role)
-    
+
     def headerData(self, index, orientation, role):
         """ QHeaderView respects the following item data roles: 
                 TextAlignmentRole, 
@@ -110,16 +121,18 @@ class QAbstractAtomItemModel(object):
         d = self.declaration
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             try:
-                return d.horizontal_headers[index] if d.horizontal_headers else index
+                return d.horizontal_headers[index] \
+                    if d.horizontal_headers else index
             except IndexError:
                 return index
         elif orientation == Qt.Vertical and role == Qt.DisplayRole:
             try:
-                return d.vertical_headers[index] if d.vertical_headers else index
+                return d.vertical_headers[index] \
+                    if d.vertical_headers else index
             except IndexError:
                 return index
         return None
-    
+
     def clear(self):
         self.beginResetModel()
         try:
@@ -128,34 +141,35 @@ class QAbstractAtomItemModel(object):
             pass
         self.endResetModel()
 
+
 class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     widget = Instance(QAbstractItemView)
-    
+
     #: View model
     model = Instance(QAbstractItemModel)
-    
+
     #: Hold reference to selection model to PySide segfault
     selection_model = Instance(QItemSelectionModel)
-    
+
     #: If the items are still valid
     is_valid = Bool(True)
-    
+
     #: Refreshing the view on every update makes it really slow
-    #: So if we defer refreshing until everything is added it's fast :) 
+    #: So if we defer refreshing until everything is added it's fast :)
     _pending_view_refreshes = Int(0)
     _pending_row_refreshes = Int(0)
     _pending_column_refreshes = Int(0)
-    
+
     def init_widget(self):
         super(QtAbstractItemView, self).init_widget()
-        
+
         self.init_model()
-        
+
         d = self.declaration
-        
+
         #: Enable context menus
         self.widget.setContextMenuPolicy(Qt.CustomContextMenu)
-        
+
         self.set_selection_mode(d.selection_mode)
         self.set_selection_behavior(d.selection_behavior)
         self.set_alternating_row_colors(d.alternating_row_colors)
@@ -168,10 +182,12 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if d.cell_padding:
             self.set_cell_padding(d.cell_padding)
         if d.vertical_minimum_section_size:
-            self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
+            self.set_vertical_minimum_section_size(
+                d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
-            self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
-        
+            self.set_horizontal_minimum_section_size(
+                d.horizontal_minimum_section_size)
+
         self.init_signals()
 
     def init_model(self):
@@ -184,92 +200,98 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self.widget.doubleClicked.connect(self.on_item_double_clicked)
         self.widget.entered.connect(self.on_item_entered)
         self.widget.pressed.connect(self.on_item_pressed)
-        self.widget.customContextMenuRequested.connect(self.on_custom_context_menu_requested)
+        self.widget.customContextMenuRequested.connect(
+            self.on_custom_context_menu_requested)
         self.selection_model = self.widget.selectionModel()
-        self.selection_model.selectionChanged.connect(self.on_selection_changed)
-        self.widget.horizontalScrollBar().valueChanged.connect(self.on_horizontal_scrollbar_moved)
-        self.widget.verticalScrollBar().valueChanged.connect(self.on_vertical_scrollbar_moved)
-    
-    def item_at(self,index):
+        self.selection_model.selectionChanged.connect(
+            self.on_selection_changed)
+        self.widget.horizontalScrollBar().valueChanged.connect(
+            self.on_horizontal_scrollbar_moved)
+        self.widget.verticalScrollBar().valueChanged.connect(
+            self.on_vertical_scrollbar_moved)
+
+    def item_at(self, index):
         if not index.isValid():
             return
         return self.model.itemAt(index)
-    
+
     def destroy(self):
         """ Make sure all the table widgets are destroyed first."""
         self.is_valid = False
         self.model.clear()
         super(QtAbstractItemView, self).destroy()
-    
-    #--------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
     # Widget Setters
-    #--------------------------------------------------------------------------
-    
+    # -------------------------------------------------------------------------
     def set_selection_mode(self,mode):
         self.widget.setSelectionMode(SELECTION_MODES[mode])
-        
+
     def set_selection_behavior(self,behavior):
         self.widget.setSelectionBehavior(SELECTION_BEHAVIORS[behavior])
-        
+
     def set_scroll_to_bottom(self,enabled):
         if enabled:
             self.widget.scrollToBottom()
-            
+
     def set_alternating_row_colors(self,enabled):
         self.widget.setAlternatingRowColors(enabled)
-        
+
     def set_sortable(self,sortable):
         self.widget.setSortingEnabled(sortable)
-        
+
     def set_word_wrap(self,wrap):
         self.widget.setWordWrap(wrap)
-        
+
     def set_auto_resize_columns(self,enabled):
         if enabled:
             self.widget.resizeColumnsToContents()
-    
+
     def set_visible_row(self, row):
         self.widget.verticalScrollBar().setValue(row)
-    
+
     def set_visible_column(self, column):
         self.widget.horizontalScrollBar().setValue(column)
-        
-    def set_model(self,model):
-        if isinstance(model,QAbstractAtomItemModel):
+
+    def set_model(self, model):
+        if isinstance(model, QAbstractAtomItemModel):
             model.setDeclaration(self.declaration)
         self.widget.setModel(model)
         self.model = self.widget.model()
-    
+
     def set_items(self, items):
         """ Defer until later so the view is only updated after all items
-        are added. """
+        are added. 
+        
+        """
         self._pending_view_refreshes +=1
         timed_call(100,self._refresh_layout)
-        
+
     def set_selection(self, items):
         #: TODO
         pass
-    
-    #--------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
     # Widget Events
-    #--------------------------------------------------------------------------
-    
-    def on_horizontal_scrollbar_moved(self,value):
+    # -------------------------------------------------------------------------
+    def on_horizontal_scrollbar_moved(self, value):
         """ When the scrollbar moves, queue a refresh of the visible
-            columns.  This makes it only update the view when needed
-            making scrolling much smoother.   
-        """
-        self._pending_column_refreshes +=1
-        timed_call(0,self._refresh_visible_column,value)
-    
-    def on_vertical_scrollbar_moved(self,value):
-        """ When the scrollbar moves, queue a refresh of the visible
-            rows.  This makes it only update the view when needed
-            making scrolling much smoother.   
-        """
-        self._pending_row_refreshes +=1
-        timed_call(0,self._refresh_visible_row,value)
+        columns.  This makes it only update the view when needed
+        making scrolling much smoother.   
         
+        """
+        self._pending_column_refreshes += 1
+        timed_call(0, self._refresh_visible_column, value)
+
+    def on_vertical_scrollbar_moved(self, value):
+        """ When the scrollbar moves, queue a refresh of the visible
+        rows.  This makes it only update the view when needed
+        making scrolling much smoother.   
+        
+        """
+        self._pending_row_refreshes += 1
+        timed_call(0, self._refresh_visible_row, value)
+
     def on_item_activated(self, index):
         item = self.item_at(index)
         if not item:
@@ -278,7 +300,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if parent != self:
             parent.declaration.activated()
         item.declaration.activated()
-        
+
     def on_item_clicked(self, index):
         item = self.item_at(index)
         if not item:
@@ -287,7 +309,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if parent != self:
             parent.declaration.clicked()
         item.declaration.clicked()
-        
+
     def on_item_double_clicked(self, index):
         item = self.item_at(index)
         if not item:
@@ -296,8 +318,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if parent != self:
             parent.declaration.double_clicked()
         item.declaration.double_clicked()
-        
-    def on_item_pressed(self,index):
+
+    def on_item_pressed(self, index):
         item = self.item_at(index)
         if not item:
             return
@@ -305,8 +327,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if parent != self:
             parent.declaration.pressed()
         item.declaration.pressed()
-    
-    def on_item_entered(self,index):
+
+    def on_item_entered(self, index):
         item = self.item_at(index)
         if not item:
             return
@@ -314,8 +336,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if parent != self:
             parent.declaration.entered()
         item.declaration.entered()
-    
-    def on_selection_changed(self,selected,deselected):
+
+    def on_selection_changed(self, selected, deselected):
         selection = []
         for index in selected.indexes():
             item = self.item_at(index)
@@ -326,9 +348,9 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             if d.selected != True:
                 d.selected = True
                 d.selection_changed(d.selected)
-        
+
         self.declaration.selection = selection
-        
+
         for index in deselected.indexes():
             item = self.item_at(index)
             if not item:
@@ -336,33 +358,34 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             d = item.declaration
             if d.selected != False:
                 d.selected = False
-                d.selection_changed(d.selected)                
-    
-    def on_custom_context_menu_requested(self,pos):
+                d.selection_changed(d.selected)
+
+    def on_custom_context_menu_requested(self, pos):
         item = self.item_at(self.widget.indexAt(pos))
         if not item:
             return
-        
+
         if item.menu:
             item.menu.popup()
             return
         parent = item.parent()
         if parent and parent.menu:
             parent.menu.popup()
-    
+
     def on_layout_refreshed(self):
         #d = self.declaration
         #self.set_scroll_to_bottom(d.scroll_to_bottom)
         pass
-            
-    #--------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
     # View refresh handlers
-    #--------------------------------------------------------------------------
-    
+    # -------------------------------------------------------------------------
     def _refresh_layout(self):
-        """ Refreshes the layout only when this is the last refresh queued. """
-        self._pending_view_refreshes -=1
-        if self._pending_view_refreshes==0:
+        """ Refreshes the layout only when this is the last refresh queued. 
+        
+        """
+        self._pending_view_refreshes -= 1
+        if self._pending_view_refreshes == 0:
             try:
                 self.model.layoutChanged.emit()
                 self.on_layout_refreshed()
@@ -370,22 +393,19 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
                 # View can be destroyed before we get here
                 return
             self._refresh_sizes()
-            
+
     def _refresh_sizes(self):
         """ Refresh column sizes when the data changes. """
         pass
-#         header = self.widget.horizontalHeader()
-#         
-#         for i,item in enumerate(self.items[0]):
-#             header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
-#             if item.declaration.width:
-#                 header.resizeSection(i,item.declaration.width)
+    #         header = self.widget.horizontalHeader()
+    #
+    #         for i,item in enumerate(self.items[0]):
+    #             header.setResizeMode(i,RESIZE_MODES[item.declaration.resize_mode])
+    #             if item.declaration.width:
+    #                 header.resizeSection(i,item.declaration.width)
 
-    def _refresh_visible_row(self,value):
-        raise NotImplementedError
-    
-    def _refresh_visible_column(self,value):
+    def _refresh_visible_row(self, value):
         raise NotImplementedError
 
-
-                                
+    def _refresh_visible_column(self, value):
+        raise NotImplementedError

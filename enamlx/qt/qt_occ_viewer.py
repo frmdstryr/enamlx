@@ -1,11 +1,13 @@
-'''
+"""
+Copyright (c) 2015, Jairus Martin.
+Distributed under the terms of the MIT License.
+The full license is in the file COPYING.txt, distributed with this software.
 Created on Sep 26, 2016
 
-@author: 
+Based on https://github.com/tpaviot/pythonocc-core/
+            blob/master/src/addons/Display/qtDisplay.py
 
-@from https://github.com/tpaviot/pythonocc-core/blob/master/src/addons/Display/qtDisplay.py
-
-'''
+"""
 import sys
 import logging
 import traceback
