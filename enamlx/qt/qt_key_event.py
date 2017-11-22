@@ -12,23 +12,31 @@ from enaml.qt import QtCore
 
 
 class QtKeyEvent(QtControl, ProxyKeyEvent):
-    _keyPressEvent = Callable()  # Refs to original functions
-    _keyReleaseEvent = Callable()  # Refs to original functions
+
+    # Reference to the original handler
+    _keyPressEvent = Callable()
+
+    # Reference to the original handler
+    _keyReleaseEvent = Callable()
+
+    #: Widget that this key press handler is overriding
     widget = Instance(QtCore.QObject)
 
     def create_widget(self):
+        """ The KeyEvent uses the parent_widget as it's widget """
         self.widget = self.parent_widget()
 
     def init_widget(self):
+        """ The KeyEvent uses the parent_widget as it's widget """
         super(QtKeyEvent, self).init_widget()
         d = self.declaration
-        widget = self.parent_widget()
+        widget = self.widget
         self._keyPressEvent = widget.keyPressEvent
-        self._keyReleaseEvent = widget.keyPressEvent
+        self._keyReleaseEvent = widget.keyReleaseEvent
         self.set_enabled(d.enabled)
 
     def set_enabled(self, enabled):
-        widget = self.parent_widget()
+        widget = self.widget
         if enabled:
             widget.keyPressEvent = lambda event: self.on_key_press(event)
             widget.keyReleaseEvent = lambda event: self.on_key_release(event)
