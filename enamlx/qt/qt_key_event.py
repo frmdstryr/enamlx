@@ -89,7 +89,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
         self.codes = codes
 
     # -------------------------------------------------------------------------
-    # ProxyKeyEvent API
+    # QWidget Keys API
     # -------------------------------------------------------------------------
     def on_key_press(self, event):
         d = self.declaration
