@@ -5,10 +5,25 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
-from atom.api import Instance, Callable
+from atom.api import Instance, Callable, Dict
 from enamlx.widgets.key_event import ProxyKeyEvent
 from enaml.qt.qt_control import QtControl
 from enaml.qt import QtCore
+
+
+Qt = QtCore.Qt
+MODIFIERS = {
+    '': Qt.NoModifier,
+    'shift': Qt.ShiftModifier,
+    'ctrl': Qt.ControlModifier,
+    'alt': Qt.AltModifier,
+    'meta': Qt.MetaModifier,
+    'keypad': Qt.KeypadModifier,
+    'group': Qt.GroupSwitchModifier,
+}
+
+KEYS = {k.split("Key_")[-1].lower(): getattr(Qt, k)
+        for k in Qt.__dict__ if k.startswith("Key_")}
 
 
 class QtKeyEvent(QtControl, ProxyKeyEvent):
@@ -22,6 +37,9 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
     #: Widget that this key press handler is overriding
     widget = Instance(QtCore.QObject)
 
+    #: Key codes to match
+    codes = Dict()
+
     def create_widget(self):
         """ The KeyEvent uses the parent_widget as it's widget """
         self.widget = self.parent_widget()
@@ -34,7 +52,11 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
         self._keyPressEvent = widget.keyPressEvent
         self._keyReleaseEvent = widget.keyReleaseEvent
         self.set_enabled(d.enabled)
+        self.set_keys(d.keys)
 
+    # -------------------------------------------------------------------------
+    # ProxyKeyEvent API
+    # -------------------------------------------------------------------------
     def set_enabled(self, enabled):
         widget = self.widget
         if enabled:
@@ -45,16 +67,44 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
             widget.keyPressEvent = self._keyPressEvent
             widget.keyReleaseEvent = self._keyReleaseEvent
 
+    def set_keys(self, keys):
+        """ Parse all the key codes and save them """
+        codes = {}
+        for key in keys:
+            parts = [k.strip().lower() for k in key.split("+")]
+            code = KEYS.get(parts[-1])
+            modifier = 0
+            if code is None:
+                raise KeyError("Invalid key code '{}'".format(key))
+            if len(parts) > 1:
+                for mod in parts[:-1]:
+                    mod_code = MODIFIERS.get(mod)
+                    if mod_code is None:
+                        raise KeyError("Invalid key modifier '{}'"
+                                       .format(mod_code))
+                    modifier |= mod_code
+            if code not in codes:
+                codes[code] = []
+            codes[code].append(modifier)
+        self.codes = codes
+
+    # -------------------------------------------------------------------------
+    # ProxyKeyEvent API
+    # -------------------------------------------------------------------------
     def on_key_press(self, event):
         d = self.declaration
         try:
-            if ((not d.key_code and not d.key) or
-                    (d.key_code and event.key() == d.key_code) or
-                    (d.key and d.key in event.text())):
-
-                if not d.repeats and event.isAutoRepeat():
+            code = event.key()
+            mods = event.modifiers()
+            is_repeat = event.isAutoRepeat()
+            if not self.codes or (code in self.codes and
+                                          mods in self.codes[code]):
+                if not d.repeats and is_repeat:
                     return
-                d.pressed(event)
+                d.pressed({'code': code,
+                           'modifiers': mods,
+                           'key': event.text(),
+                           'repeated': is_repeat})
 
         finally:
             self._keyPressEvent(event)
@@ -62,12 +112,16 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
     def on_key_release(self, event):
         d = self.declaration
         try:
-            if ((not d.key_code and not d.key) or
-                    (d.key_code and event.key() == d.key_code) or
-                    (d.key and d.key in event.text())):
-
-                if not d.repeats and event.isAutoRepeat():
+            code = event.key()
+            mods = event.modifiers()
+            is_repeat = event.isAutoRepeat()
+            if not self.codes or (code in self.codes and
+                                          mods in self.codes[code]):
+                if not d.repeats and is_repeat:
                     return
-                d.released(event)
+                d.released({'code': code,
+                            'key': event.text(),
+                            'modifiers': mods,
+                            'repeated': is_repeat})
         finally:
             self._keyReleaseEvent(event)
