@@ -48,19 +48,24 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
     def on_key_press(self, event):
         d = self.declaration
         try:
-            if (d.key_code and event.key() == d.key_code) or \
-                    (d.key and d.key in event.text()):
+            if ((not d.key_code and not d.key) or
+                    (d.key_code and event.key() == d.key_code) or
+                    (d.key and d.key in event.text())):
+
                 if not d.repeats and event.isAutoRepeat():
                     return
                 d.pressed(event)
+
         finally:
             self._keyPressEvent(event)
 
     def on_key_release(self, event):
         d = self.declaration
         try:
-            if (d.key_code and event.key() == d.key_code) or \
-                    (d.key and d.key in event.text()):
+            if ((not d.key_code and not d.key) or
+                    (d.key_code and event.key() == d.key_code) or
+                    (d.key and d.key in event.text())):
+
                 if not d.repeats and event.isAutoRepeat():
                     return
                 d.released(event)
