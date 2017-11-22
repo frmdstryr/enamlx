@@ -42,18 +42,26 @@ SELECTION_BEHAVIORS = {
 
 class QAbstractAtomItemModel(object):
     """ A mixin for an ItemModel """
+    declaration = None
 
     def setDeclaration(self, declaration):
+        """ Set the declaration this model will use for rendering
+        the the headers. 
+        
+        """
+        assert isinstance(declaration.proxy, ProxyAbstractItemView), \
+            "The model declaration must be a QtAbstractItemView subclass. " \
+            "Got {]".format(declaration)
+
         self.declaration = declaration
 
     def data(self, index, role):
-        """ @see http://doc.qt.io/qt-4.8/qt.html#ItemDataRole-enum
+        """ Retrieve the data for the item at the given index
         """
         item = self.itemAt(index)
         if not item:
             return None
         d = item.declaration
-
         if role == Qt.DisplayRole:
             return d.text
         elif role == Qt.ToolTipRole:
@@ -73,10 +81,21 @@ class QAbstractAtomItemModel(object):
             return get_cached_qcolor(d.foreground)
         elif role == Qt.BackgroundRole and d.background:
             return get_cached_qcolor(d.background)
-        #elif role == Qt.SizeHintRole and (d.minimum_size):
+        #elif role == Qt.SizeHintRole and d.minimum_size:
         #    return d.minimum_size
 
         return None
+
+    def itemAt(self, index):
+        """ Get the item at the given model index.
+         
+        Returns
+        -------
+            item: 
+                
+        
+        """
+        raise NotImplementedError
 
     def flags(self, index):
         item = self.itemAt(index)
@@ -93,6 +112,9 @@ class QAbstractAtomItemModel(object):
         return flags
 
     def setData(self, index, value, role=Qt.EditRole):
+        """ Set the data for the item at the given index to the given value.
+        
+        """
         item = self.itemAt(index)
         if not item:
             return False
@@ -135,10 +157,9 @@ class QAbstractAtomItemModel(object):
 
     def clear(self):
         self.beginResetModel()
-        try:
-            self.declaration.items = []
-        except:
-            pass
+        d = self.declaration
+        if d.items:
+            d.items = []
         self.endResetModel()
 
 
@@ -156,6 +177,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
     #: Refreshing the view on every update makes it really slow
     #: So if we defer refreshing until everything is added it's fast :)
+    _pending_timeout = Int(100)
     _pending_view_refreshes = Int(0)
     _pending_row_refreshes = Int(0)
     _pending_column_refreshes = Int(0)
@@ -211,8 +233,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             self.on_vertical_scrollbar_moved)
 
     def item_at(self, index):
-        if not index.isValid():
-            return
         return self.model.itemAt(index)
 
     def destroy(self):
@@ -224,26 +244,26 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     # -------------------------------------------------------------------------
     # Widget Setters
     # -------------------------------------------------------------------------
-    def set_selection_mode(self,mode):
+    def set_selection_mode(self, mode):
         self.widget.setSelectionMode(SELECTION_MODES[mode])
 
-    def set_selection_behavior(self,behavior):
+    def set_selection_behavior(self, behavior):
         self.widget.setSelectionBehavior(SELECTION_BEHAVIORS[behavior])
 
-    def set_scroll_to_bottom(self,enabled):
+    def set_scroll_to_bottom(self, enabled):
         if enabled:
             self.widget.scrollToBottom()
 
-    def set_alternating_row_colors(self,enabled):
+    def set_alternating_row_colors(self, enabled):
         self.widget.setAlternatingRowColors(enabled)
 
-    def set_sortable(self,sortable):
+    def set_sortable(self, sortable):
         self.widget.setSortingEnabled(sortable)
 
-    def set_word_wrap(self,wrap):
+    def set_word_wrap(self, wrap):
         self.widget.setWordWrap(wrap)
 
-    def set_auto_resize_columns(self,enabled):
+    def set_auto_resize_columns(self, enabled):
         if enabled:
             self.widget.resizeColumnsToContents()
 
@@ -265,7 +285,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         
         """
         self._pending_view_refreshes +=1
-        timed_call(100,self._refresh_layout)
+        timed_call(self._pending_timeout, self._refresh_layout)
 
     def set_selection(self, items):
         #: TODO
@@ -373,15 +393,16 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             parent.menu.popup()
 
     def on_layout_refreshed(self):
-        #d = self.declaration
-        #self.set_scroll_to_bottom(d.scroll_to_bottom)
         pass
 
     # -------------------------------------------------------------------------
     # View refresh handlers
     # -------------------------------------------------------------------------
     def _refresh_layout(self):
-        """ Refreshes the layout only when this is the last refresh queued. 
+        """ This queues and batches model changes so that the layout is only
+        refreshed after the `_pending_timeout` expires. This prevents 
+        the UI from refreshing when inserting or removing a large number of
+        items until the operation is complete.
         
         """
         self._pending_view_refreshes -= 1
@@ -405,7 +426,25 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     #                 header.resizeSection(i,item.declaration.width)
 
     def _refresh_visible_row(self, value):
+        """ Subclasses must implement this method to refresh the content in the 
+        row with the content at the given index.
+        
+        Parameters
+        ----------
+            value: int
+                Index of the row that needs to be refreshed
+        
+        """
         raise NotImplementedError
 
     def _refresh_visible_column(self, value):
+        """ Subclasses must implement this method to refresh the content in the 
+        column with the content at the given index.
+        
+        Parameters
+        ----------
+            value: int
+                Index of the column that needs to be refreshed
+        
+        """
         raise NotImplementedError

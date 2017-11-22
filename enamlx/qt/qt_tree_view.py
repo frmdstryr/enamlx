@@ -12,12 +12,13 @@ from enamlx.qt.qt_abstract_item_view import (
     QtAbstractItemView, QAbstractAtomItemModel
 )
 from enamlx.widgets.tree_view import (
-    ProxyTreeViewItem, ProxyTreeView ,ProxyTreeViewColumn
+    ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
-from enaml.qt import QT_API, PYSIDE_API, PYQT4_API, PYQT5_API, PYSIDE2_API
+from enaml.qt import QT_API, PYSIDE_API, PYQT4_API
 
-if QT_API in PYSIDE_API+PYQT4_API:
+IS_QT4 = QT_API in PYSIDE_API+PYQT4_API
+if IS_QT4:
     from enaml.qt.QtGui import QTreeView
 else:
     from qtpy.QtWidgets import QTreeView
@@ -31,7 +32,6 @@ from enaml.application import timed_call
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
 
     def rowCount(self, index):
-        #print 'rowCount',index.row(),index.column(),index.internalPointer()
         d = self.declaration
         if d.vertical_headers:
             return len(d.vertical_headers)
@@ -59,21 +59,20 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         """
         item = parent.internalPointer()
         d = item.declaration if item else self.declaration
-        r = row#%self.declaration.visible_rows
-        #print row,r,item,len(item._items)
-        if r<len(d._items):
-            return self.createIndex(row,column,d._items[r].proxy)
+        r = row
+        if r < len(d._items):
+            return self.createIndex(row, column, d._items[r].proxy)
         return QModelIndex()
 
     def parent(self, index):
         item = index.internalPointer()
-        if ((not isinstance(item,AbstractQtWidgetItem)) or
-                (not item.is_valid)):
-            return QModelIndex()
         parent = item.parent()
-        return self.createIndex(parent.declaration.row,0,parent)
+        if ((not isinstance(parent, AbstractQtWidgetItem)) or
+                (not parent.is_valid)):
+            return QModelIndex()
+        return self.createIndex(parent.declaration.row, 0, parent)
 
-    def itemAt(self,index=None):
+    def itemAt(self, index=None):
         if not index or not index.isValid():
             return
         item = index.internalPointer()
@@ -84,6 +83,7 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
             return d._columns[c].proxy
         except IndexError:
             return
+
 
 class QtTreeView(QtAbstractItemView, ProxyTreeView):
     #: Tree widget
@@ -112,42 +112,41 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
     def set_cell_padding(self,padding):
         self.widget.setStyleSheet("QTreeView::item { padding: %ipx }"%padding)
 
-    def set_horizontal_minimum_section_size(self,size):
+    def set_horizontal_minimum_section_size(self, size):
         self.widget.header().setMinimumSectionSize(size)
 
-    def set_horizontal_stretch(self,stretch):
+    def set_horizontal_stretch(self, stretch):
         self.widget.header().setStretchLastSection(stretch)
 
     def set_horizontal_headers(self, headers):
         self.widget.header().model().layoutChanged.emit()
 
-    def set_resize_mode(self,mode):
-        self.widget.header().setResizeMode(RESIZE_MODES[mode])
+    def set_resize_mode(self, mode):
+        if IS_QT4:
+            self.widget.header().setResizeMode(RESIZE_MODES[mode])
+        else:
+            self.widget.header().setSectionResizeMode(RESIZE_MODES[mode])
 
-    def set_show_horizontal_header(self,show):
+    def set_show_horizontal_header(self, show):
         header = self.widget.header()
         header.show() if show else header.hide()
-
-    def set_model(self, model):
-        super(QtTreeView, self).set_model(model)
 
     # -------------------------------------------------------------------------
     # View refresh handlers
     # -------------------------------------------------------------------------
     def _refresh_visible_column(self, value):
-        self._pending_column_refreshes -=1
-        if self._pending_column_refreshes==0:
+        self._pending_column_refreshes -= 1
+        if self._pending_column_refreshes == 0:
             d = self.declaration
-            # TODO: What about parents???
             try:
-                cols =  self.model.columnCount(self.index)-d.visible_columns
+                cols = self.model.columnCount(self.index)-d.visible_columns
                 d.visible_column = max(0, min(value, cols))
             except RuntimeError:
                 pass
 
     def _refresh_visible_row(self, value):
-        self._pending_row_refreshes -=1
-        if self._pending_row_refreshes==0:
+        self._pending_row_refreshes -= 1
+        if self._pending_row_refreshes == 0:
             d = self.declaration
             try:
                 rows = self.model.rowCount(self.index)-d.visible_rows
@@ -195,14 +194,11 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
         if self._refresh_count != 0:
             return
 
-        #return # DISABLED
-
         try:
             delegate = self.delegate
             if not self._is_visible():
                 return
 
-            #print self.index.row(),self.index.column(),self.index.internalPointer()
             # The table destroys when it goes out of view
             # so we always have to make a new one
             delegate.create_widget()
