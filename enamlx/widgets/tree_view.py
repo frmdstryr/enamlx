@@ -24,14 +24,14 @@ class ProxyTreeView(ProxyAbstractItemView):
 class ProxyTreeViewColumn(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TreeViewColumn)
     
-    def set_column(self,column):
+    def set_column(self, column):
         raise NotImplementedError
 
 
 class ProxyTreeViewItem(ProxyAbstractWidgetItem):
     declaration = ForwardTyped(lambda: TreeViewItem)
     
-    def refresh_model(self,change):
+    def refresh_model(self, schange):
         raise NotImplementedError
 
 
@@ -41,12 +41,6 @@ class TreeView(AbstractItemView):
     
     #: Show root node
     show_root = d_(Bool(True))
-    
-    #: Root item row
-    row = d_(Int(), writable=False)
-    
-    #: Root item column
-    column = d_(Int(), writable=False)
     
     @observe('show_root')
     def _update_proxy(self, change):
@@ -64,7 +58,7 @@ class TreeView(AbstractItemView):
         self._update_rows()
         
     def _update_rows(self):
-        for r,item in enumerate(self._items):
+        for r, item in enumerate(self._items):
             item.row = r
 
 
@@ -79,13 +73,13 @@ class TreeViewItem(AbstractWidgetItem):
     visible_row = d_(Int(0))
     
     #: Number of rows visible
-    visible_rows = d_(Int(100), writable=False)
+    visible_rows = d_(Int(100))
     
     #: First visible column
     visible_column = d_(Int(0))
     
     #: Number of columns visible
-    visible_columns = d_(Int(1), writable=False)
+    visible_columns = d_(Int(1))
     
     def _get_items(self):
         """ Items should be a list of child TreeViewItems excluding
@@ -116,11 +110,11 @@ class TreeViewItem(AbstractWidgetItem):
     def _update_rows(self):
         """ Update the row and column numbers of child items. """
         for row, item in enumerate(self._items):
-            item.row = row # Row is the Parent item
+            item.row = row  # Row is the Parent item
             item.column = 0
         
         for column, item in enumerate(self._columns):
-            item.row = self.row # Row is the Parent item
+            item.row = self.row  # Row is the Parent item
             item.column = column
 
 

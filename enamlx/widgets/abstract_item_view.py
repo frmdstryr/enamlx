@@ -159,13 +159,13 @@ class AbstractItemView(Control):
     visible_row = d_(Int(0))
 
     #: Number of rows visible
-    visible_rows = d_(Int(100), writable=False)
+    visible_rows = d_(Int(100))
 
     #: First visible column
     visible_column = d_(Int(0))
 
     #: Number of columns visible
-    visible_columns = d_(Int(1), writable=False)
+    visible_columns = d_(Int(1))
 
     def _get_items(self):
         return [c for c in self.children

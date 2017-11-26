@@ -34,21 +34,21 @@ class ProxyTableView(ProxyAbstractItemView):
 class ProxyTableViewRow(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TableViewRow)
     
-    def set_row(self,row):
+    def set_row(self, row):
         raise NotImplementedError
 
 
 class ProxyTableViewColumn(ProxyAbstractWidgetItemGroup):
     declaration = ForwardTyped(lambda: TableViewColumn)
     
-    def set_column(self,column):
+    def set_column(self, column):
         raise NotImplementedError
 
 
 class ProxyTableViewItem(ProxyAbstractWidgetItem):
     declaration = ForwardTyped(lambda: TableViewItem)
     
-    def data_changed(self,change):
+    def data_changed(self, change):
         raise NotImplementedError
 
 
@@ -106,7 +106,7 @@ class TableViewColumn(AbstractWidgetItemGroup):
 
     @observe('column')
     def _update_index(self, change):
-        for row,item in enumerate(self._item):
+        for row, item in enumerate(self._item):
             item.row = row
             item.column = self.column
 

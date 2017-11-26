@@ -5,7 +5,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 20, 2015
 """
-from atom.api import Instance, Int, Bool
+from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
 from enaml.qt import QT_API, PYQT4_API, PYSIDE_API
@@ -18,10 +18,7 @@ else:
 
 from enaml.qt.QtCore import Qt, QAbstractItemModel, QSize
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
-
-from enamlx.qt.qt_abstract_item import (
-    TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
-)
+from enamlx.qt.qt_abstract_item import TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
 
@@ -164,6 +161,7 @@ class QAbstractAtomItemModel(object):
 
 
 class QtAbstractItemView(QtControl, ProxyAbstractItemView):
+    #: Reference to the view
     widget = Instance(QAbstractItemView)
 
     #: View model
@@ -171,9 +169,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
     #: Hold reference to selection model to PySide segfault
     selection_model = Instance(QItemSelectionModel)
-
-    #: If the items are still valid
-    is_valid = Bool(True)
 
     #: Refreshing the view on every update makes it really slow
     #: So if we defer refreshing until everything is added it's fast :)
@@ -237,7 +232,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
     def destroy(self):
         """ Make sure all the table widgets are destroyed first."""
-        self.is_valid = False
         self.model.clear()
         super(QtAbstractItemView, self).destroy()
 
@@ -288,7 +282,6 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         timed_call(self._pending_timeout, self._refresh_layout)
 
     def set_selection(self, items):
-        #: TODO
         pass
 
     # -------------------------------------------------------------------------

@@ -5,6 +5,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 28, 2015
 """
+import weakref
 from atom.api import (
     Typed, Instance, Property, Int
 )
@@ -23,7 +24,7 @@ if IS_QT4:
 else:
     from qtpy.QtWidgets import QTreeView
 
-from enaml.qt.QtCore import Qt, QAbstractItemModel, QModelIndex
+from enaml.qt.QtCore import QAbstractItemModel, QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
 from enaml.application import timed_call
@@ -31,55 +32,64 @@ from enaml.application import timed_call
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
 
-    def rowCount(self, index):
+    def rowCount(self, parent):
         d = self.declaration
         if d.vertical_headers:
             return len(d.vertical_headers)
-        item = index.internalPointer()
-        if not item:
-            return len(self.declaration.items)
-        d = item.declaration
-        if not d:
-            return 0
-        return len(d.items)
+        elif parent.isValid():
+            item = parent.internalPointer()
+            d = item.declaration
+        return len(d.items) if d and not d.is_destroyed else 0
 
-    def columnCount(self, index):
+    def columnCount(self, parent):
         d = self.declaration
         if d.horizontal_headers:
             return len(d.horizontal_headers)
-        item = index.internalPointer()
-        d = item.declaration
-        if not d:
-            return 0
-        return len(d._columns)
+        elif parent.isValid():
+            item = parent.internalPointer()
+            d = item.declaration
+        return len(d._columns) if d and not d.is_destroyed else 0
 
     def index(self, row, column, parent):
-        """ The index should point to the corresponding 
-            QtControl in the enaml hierarchy 
+        """ The index should point to the corresponding QtControl in the 
+        enaml object hierarchy.
         """
         item = parent.internalPointer()
-        d = item.declaration if item else self.declaration
-        r = row
-        if r < len(d._items):
-            return self.createIndex(row, column, d._items[r].proxy)
-        return QModelIndex()
+        #: If the parent is None
+        d = self.declaration if item is None else item.declaration
+        if row < len(d._items):
+            proxy = d._items[row].proxy
+            assert isinstance(proxy, QtTreeViewItem), \
+                "Invalid item {}".format(proxy)
+        else:
+            proxy = d.proxy
+        return self.createIndex(row, column, proxy)
 
     def parent(self, index):
-        item = index.internalPointer()
-        parent = item.parent()
-        if ((not isinstance(parent, AbstractQtWidgetItem)) or
-                (not parent.is_valid)):
+        if not index.isValid():
             return QModelIndex()
-        return self.createIndex(parent.declaration.row, 0, parent)
+        item = index.internalPointer()
+        if not isinstance(item, QtTreeViewItem) or item.is_destroyed:
+            return QModelIndex()
+        parent = item.parent()
+        if not isinstance(parent, QtTreeViewItem) or item.is_destroyed:
+            return QModelIndex()
+        d = parent.declaration
+        return self.createIndex(d.row, 0, parent)
 
     def itemAt(self, index=None):
         if not index or not index.isValid():
             return
         item = index.internalPointer()
+        assert isinstance(item, QtTreeViewItem), \
+            "Invalid index: {} at ({},{}) {}".format(index,
+                                                     index.row(),
+                                                     index.column(),
+                                                     item)
         d = item.declaration
         try:
+            #print(c, len(d._columns), d, d.text)
             c = index.column()# - d.visible_column
-            #: First column is the item
             return d._columns[c].proxy
         except IndexError:
             return
@@ -106,11 +116,12 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
     # -------------------------------------------------------------------------
     # Widget Setters
     # -------------------------------------------------------------------------
-    def set_show_root(self,show):
+    def set_show_root(self, show):
         self.widget.setRootIsDecorated(show)
 
-    def set_cell_padding(self,padding):
-        self.widget.setStyleSheet("QTreeView::item { padding: %ipx }"%padding)
+    def set_cell_padding(self, padding):
+        self.widget.setStyleSheet(
+            "QTreeView::item { padding: %ipx }" % padding)
 
     def set_horizontal_minimum_section_size(self, size):
         self.widget.header().setMinimumSectionSize(size)
@@ -138,10 +149,12 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         self._pending_column_refreshes -= 1
         if self._pending_column_refreshes == 0:
             d = self.declaration
+            # TODO: What about parents???
             try:
                 cols = self.model.columnCount(self.index)-d.visible_columns
                 d.visible_column = max(0, min(value, cols))
             except RuntimeError:
+                #: Since refreshing is deferred several ms later
                 pass
 
     def _refresh_visible_row(self, value):
@@ -190,7 +203,7 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
         """ Update the delegate cell widget. This is deferred so it
         does not get called until the user is done scrolling. 
         """
-        self._refresh_count -=1
+        self._refresh_count -= 1
         if self._refresh_count != 0:
             return
 
@@ -207,7 +220,9 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
             #  Set the index widget
             self.view.widget.setIndexWidget(self.index, delegate.widget)
         except RuntimeError:
-            pass # Since this is deferred, the table could be deleted already
+            # Since this is deferred, the table could be deleted already
+            # and a RuntimeError is possible
+            pass
 
     def _is_visible(self):
         return self.index.isValid()

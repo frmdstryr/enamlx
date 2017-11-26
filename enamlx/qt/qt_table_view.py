@@ -19,29 +19,27 @@ from enamlx.qt.qt_abstract_item import (
 )
     
 
-class QAtomTableModel(QAbstractAtomItemModel,QAbstractTableModel):
-    """ Model that pulls it's data from the TableViewItems """
+class QAtomTableModel(QAbstractAtomItemModel, QAbstractTableModel):
+    """ Model that pulls it's data from the TableViewItems 
+    declaration.
+    """
     
     def rowCount(self, parent=None):
         d = self.declaration
-        if d.vertical_headers:
-            return len(d.vertical_headers)
-        return len(d.items)
+        return len(d.vertical_headers if d.vertical_headers else d.items)
     
     def columnCount(self, parent=None):
         d = self.declaration
-        if d.horizontal_headers:
-            return len(d.horizontal_headers)
-        return len(d.items)
+        return len(d.horizontal_headers if d.horizontal_headers else d.items)
     
-    def itemAt(self,index):
+    def itemAt(self, index):
         if not index.isValid():
             return None
         d = self.declaration
         try:
             d.current_row = index.row()
             d.current_column = index.column()
-            r = d.current_row - d.visible_row #% len(d._items)
+            r = d.current_row - d.visible_row
             c = d.current_column - d.visible_column 
             return d._items[r]._items[c].proxy
         except IndexError:
@@ -70,7 +68,8 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.widget.setShowGrid(show)
         
     def set_cell_padding(self, padding):
-        self.widget.setStyleSheet("QTableView::item { padding: %ipx }"%padding)
+        self.widget.setStyleSheet(
+            "QTableView::item { padding: %ipx }" % padding)
         
     def set_vertical_minimum_section_size(self, size):
         self.widget.verticalHeader().setMinimumSectionSize(size)
@@ -139,16 +138,16 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
     #: Pending refreshes when loading widgets
     _refresh_count = Int(0)
     
-    #: Time to wait before loading widget
+    #: Time to wait before loading widget in ms
     _loading_interval = Int(100) 
     
     def _default_view(self):
         return self.parent().parent()
 
-    def set_row(self,row):
+    def set_row(self, row):
         self._update_index()
                 
-    def set_column(self,column):
+    def set_column(self, column):
         self._update_index()
     
     def _update_index(self):
@@ -168,7 +167,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
             return
         try:
             delegate = self.delegate
-            if not self._is_visible():
+            if not self.is_visible():
                 return
             # The table destroys when it goes out of view
             # so we always have to make a new one
@@ -180,13 +179,10 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
         except RuntimeError:
             pass # Since this is deferred, the table could be deleted already
         
-    def _is_visible(self):
+    def is_visible(self):
         """ Check if this index is currently visible """
-        #: TODO
         return True
-        #d = self.table.declaration
-        #return self.declaration.row
-    
+
     def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
         self.view.model.dataChanged.emit(self.index, self.index)
