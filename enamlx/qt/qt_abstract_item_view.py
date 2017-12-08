@@ -8,7 +8,7 @@ Created on Aug 20, 2015
 from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
-from enaml.qt import QT_API, PYQT4_API, PYSIDE_API
+from qtpy import QT_API, PYQT4_API, PYSIDE_API
 
 if QT_API in PYQT4_API+PYSIDE_API:
     from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel

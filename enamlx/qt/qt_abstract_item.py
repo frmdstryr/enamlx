@@ -10,7 +10,7 @@ from enaml.core.pattern import Pattern
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_menu import QtMenu
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt import QT_API, PYSIDE_API, PYQT4_API
+from qtpy import QT_API, PYSIDE_API, PYQT4_API
 
 if QT_API in PYSIDE_API+PYQT4_API:
     from enaml.qt.QtGui import QHeaderView
