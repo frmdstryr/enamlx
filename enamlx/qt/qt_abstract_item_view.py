@@ -8,9 +8,9 @@ Created on Aug 20, 2015
 from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
-from qtpy import QT_API, PYQT4_API, PYSIDE_API
+from qtpy import API as QT_API, PYQT5_API, PYQT4_API, PYSIDE_API, PYSIDE2_API
 
-if QT_API in PYQT4_API+PYSIDE_API:
+if QT_API in PYQT4_API or QT_API in PYSIDE_API:
     from enaml.qt.QtGui import QAbstractItemView, QItemSelectionModel
 else:
     from qtpy.QtWidgets import QAbstractItemView

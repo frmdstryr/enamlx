@@ -16,9 +16,9 @@ from enamlx.widgets.tree_view import (
     ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
-from qtpy import QT_API, PYSIDE_API, PYQT4_API
+from qtpy import API as QT_API, PYQT5_API, PYQT4_API, PYSIDE_API, PYSIDE2_API
 
-IS_QT4 = QT_API in PYSIDE_API+PYQT4_API
+IS_QT4 = QT_API in PYSIDE_API or QT_API in PYQT4_API
 if IS_QT4:
     from enaml.qt.QtGui import QTreeView
 else:
