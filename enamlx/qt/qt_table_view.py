@@ -7,7 +7,7 @@ Created on Aug 28, 2015
 """
 from atom.api import Typed, Instance, Int
 from enaml.application import timed_call
-from enaml.qt.QtGui import QTableView
+from enaml.qt.QtWidgets import QTableView
 from enaml.qt.QtCore import QAbstractTableModel, QModelIndex
 
 from enamlx.qt.qt_abstract_item_view import QtAbstractItemView, QAbstractAtomItemModel

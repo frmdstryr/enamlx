@@ -8,7 +8,7 @@ Created on Aug 29, 2015
 from atom.api import Typed
 from enamlx.widgets.double_spin_box import ProxyDoubleSpinBox
 from enaml.qt.qt_spin_box import QtSpinBox
-from enaml.qt.QtGui import QDoubleSpinBox
+from enaml.qt.QtWidgets import QDoubleSpinBox
 
 
 class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
