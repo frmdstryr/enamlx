@@ -5,7 +5,6 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 28, 2015
 """
-import weakref
 from atom.api import (
     Typed, Instance, Property, Int
 )
@@ -17,11 +16,14 @@ from enamlx.widgets.tree_view import (
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
 from enaml.qt.QtWidgets import QTreeView
-
+from enaml.qt import QT_API, PYSIDE_API, PYQT4_API
 from enaml.qt.QtCore import QAbstractItemModel, QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
 from enaml.application import timed_call
+
+
+IS_QT4 = QT_API in PYSIDE_API + PYQT4_API
 
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
