@@ -11,7 +11,6 @@ from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
 
 from .abstract_item import AbstractWidgetItemGroup
-from future.builtins import str
 
 
 class ProxyAbstractItemView(ProxyControl):
@@ -126,7 +125,7 @@ class AbstractItemView(Control):
     show_vertical_header = d_(Bool(True))
 
     #: Row headers
-    vertical_headers = d_(ContainerList(str))
+    vertical_headers = d_(ContainerList())
 
     #: Stretch last row
     vertical_stretch = d_(Bool(False))
@@ -138,7 +137,7 @@ class AbstractItemView(Control):
     show_horizontal_header = d_(Bool(True))
 
     #: Column headers
-    horizontal_headers = d_(ContainerList(str))
+    horizontal_headers = d_(ContainerList())
 
     #: Stretch last column
     horizontal_stretch = d_(Bool(False))
