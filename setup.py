@@ -5,7 +5,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Mar 2, 2016
 """
-from setuptools import setup,find_packages
+from setuptools import setup, find_packages
 
 setup(
     name='enamlx',

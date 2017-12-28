@@ -1,7 +1,18 @@
-# About
-Additional Qt Widgets for Enaml.
+# enamlx
 
-_Note: This is in a very early state but still usable_
+Additional Qt Widgets for Enaml, mainly used for the Tree and Table widgets.
+
+Supports 2.7 and 3.5+ Qt4 and Qt5.
+
+## Install
+
+Now on [pypi](https://pypi.org/project/enamlx/). 
+
+```bash
+
+pip install enamlx
+
+```
 
 
 
@@ -37,12 +48,8 @@ __ConsoleWidget__
 
 IPython console widget.
 
+> Note: An IPython console is now included in enaml. 
 
-__VispyCanvas__
-
-VisPy widget
-
-Coming soon...
 
 __OCCViewer__
 
