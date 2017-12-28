@@ -378,7 +378,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             item.menu.popup()
             return
         parent = item.parent()
-        if parent and parent.menu:
+        if parent and hasattr(parent, 'menu') and parent.menu:
             parent.menu.popup()
 
     def on_layout_refreshed(self):
