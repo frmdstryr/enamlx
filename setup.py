@@ -9,17 +9,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='enamlx',
-    version='0.2.5',
+    version='0.2.6.3',
     description='Additional Qt Widgets for Enaml',
     long_description=open('README.md').read(),
     author='frmdstryr',
     author_email='frmdstryr@gmail.com',
     url='https://github.com/frmdstryr/enamlx',
-    download_url='https://github.com/frmdstryr/enamlx/',
     packages=find_packages(),
     include_package_data=True,
     install_requires=['enaml'],
-    zip_safe=False,
     keywords=['enaml', 'qt', 'tree', 'table', 'widgets'],
     classifiers=[
         'Development Status :: 3 - Alpha',

@@ -558,7 +558,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             if shape in self._displayed_shapes:
                 selection.append(self._displayed_shapes[shape].declaration)
             else:
-                print "shape {} not in {}".format(shape,self._displayed_shapes)
+                log.warning("shape {} not in {}".format(shape,self._displayed_shapes))
         d.selection = selection
         
 #     def _queue_update(self,change):

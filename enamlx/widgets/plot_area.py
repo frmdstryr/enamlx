@@ -5,6 +5,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Jun 11, 2015
 """
+import sys
 from atom.atom import set_default
 from atom.api import (Callable, Int, Tuple, Instance, Enum, Float,
                       ContainerList, Bool, FloatRange, Unicode, Dict, Typed,
@@ -13,7 +14,9 @@ from enaml.core.declarative import d_
 from enaml.widgets.api import Container
 from enaml.widgets.control import Control, ProxyControl
 from atom.instance import ForwardInstance
-from future.builtins import str
+
+if sys.version_info.major < 3:
+    str = basestring
 
 
 def numpy_ndarray():
@@ -60,7 +63,7 @@ class PlotItem(Control):
 
     # ‘c’     one of: r, g, b, c, m, y, k, w
     # R, G, B, [A]     integers 0-255
-    #(R, G, B, [A])     tuple of integers 0-255
+    # (R, G, B, [A])     tuple of integers 0-255
     # float     greyscale, 0.0-1.0
     # int     see intColor()
     # (int, hues)     see intColor()
@@ -72,10 +75,10 @@ class PlotItem(Control):
     fill_brush = d_(Instance(BRUSH_ARGTYPES))
 
     #: Symbol to use for points
-    symbol = d_(Enum(None,'o', 's', 't', 'd', '+'))
+    symbol = d_(Enum(None, 'o', 's', 't', 'd', '+'))
 
     #: Symbol sizes for points
-    symbol_size = d_(Float(10,strict=False))
+    symbol_size = d_(Float(10, strict=False))
 
     #: Symbol pen to use
     symbol_pen = d_(Instance(PEN_ARGTYPES))
@@ -92,8 +95,8 @@ class PlotItem(Control):
     label_bottom = d_(Unicode())
 
     # H, V
-    grid = d_(Tuple(bool,default=(False,False)))
-    grid_alpha = d_(FloatRange(low=0.0,high=1.0,value=0.5))
+    grid = d_(Tuple(bool, default=(False, False)))
+    grid_alpha = d_(FloatRange(low=0.0, high=1.0, value=0.5))
 
     #: Display a separate axis for each nested plot
     multi_axis = d_(Bool(True))
@@ -102,7 +105,7 @@ class PlotItem(Control):
     axis_bottom_ticks = d_(Callable())
 
     #: Display the axis on log scale
-    log_mode = d_(Tuple(bool, default=(False, False))) # x,y
+    log_mode = d_(Tuple(bool, default=(False, False)))  # x,y
 
     #: Enable antialiasing
     antialias = d_(Bool(False))

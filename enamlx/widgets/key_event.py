@@ -4,10 +4,13 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
+import sys
 from atom.api import Event, List, Bool, Typed, ForwardTyped, observe
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
-from future.builtins import str
+
+if sys.version_info.major < 3:
+    str = basestring
 
 
 class ProxyKeyEvent(ProxyControl):
