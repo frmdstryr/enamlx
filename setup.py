@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='enamlx',
-    version='0.2.6.3',
+    version='0.3.0',
     description='Additional Qt Widgets for Enaml',
     long_description=open('README.md').read(),
     author='frmdstryr',

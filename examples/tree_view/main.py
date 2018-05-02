@@ -4,8 +4,8 @@ Created on Aug 23, 2015
 
 @author: jrm
 '''
-import cProfile,pstats,cStringIO
-
+import sys
+sys.path.append('../../')
 import enamlx
 enamlx.install()
 
@@ -18,15 +18,5 @@ if __name__ == '__main__':
 
     app = QtApplication()
     view = Main()
-    profiler = cProfile.Profile()
-    profiler.enable()
-
     view.show()
-
     app.start()
-    
-    profiler.disable()
-    s = cStringIO.StringIO()
-    ps = pstats.Stats(profiler, stream=s).sort_stats('time')
-    ps.print_stats(100)
-    print s.getvalue()

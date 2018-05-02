@@ -10,14 +10,16 @@ from enaml.application import timed_call
 from enaml.qt.QtWidgets import QTableView
 from enaml.qt.QtCore import QAbstractTableModel, QModelIndex
 
-from enamlx.qt.qt_abstract_item_view import QtAbstractItemView, QAbstractAtomItemModel
+from enamlx.qt.qt_abstract_item_view import (
+    QtAbstractItemView, QAbstractAtomItemModel, IS_QT4
+)
 from enamlx.widgets.table_view import (
     ProxyTableViewItem, ProxyTableView, ProxyTableViewColumn, ProxyTableViewRow
 )
 from enamlx.qt.qt_abstract_item import (
     AbstractQtWidgetItem, AbstractQtWidgetItemGroup, RESIZE_MODES
 )
-    
+
 
 class QAtomTableModel(QAbstractAtomItemModel, QAbstractTableModel):
     """ Model that pulls it's data from the TableViewItems 
@@ -84,8 +86,14 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self.widget.verticalHeader().setStretchLastSection(stretch)
     
     def set_resize_mode(self, mode):
-        self.widget.horizontalHeader().setResizeMode(RESIZE_MODES[mode])
-        
+        header = self.widget.horizontalHeader()
+        if IS_QT4:
+            header.setResizeMode(RESIZE_MODES[mode])
+        else:
+            # Custom is obsolete, use fixed instead.
+            mode = 'fixed' if mode == 'custom' else mode
+            header.setSectionResizeMode(RESIZE_MODES[mode])
+
     def set_show_horizontal_header(self, show):
         header = self.widget.horizontalHeader()
         header.show() if show else header.hide()
@@ -115,13 +123,13 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         return
         top = self.widget.rowAt(self.widget.rect().top())
         bottom = self.widget.rowAt(self.widget.rect().bottom())
-        self.declaration.visible_rows = max(1,(bottom-top))*2 # 2x for safety 
+        self.declaration.visible_rows = max(1, (bottom-top))*2  # 2x for safety
     
     def _refresh_visible_columns(self):
         return
         left = self.widget.rowAt(self.widget.rect().left())
         right = self.widget.rowAt(self.widget.rect().right())
-        self.declaration.visible_columns = max(1,(right-left))*2  
+        self.declaration.visible_columns = max(1, (right-left))*2
 
 
 class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):

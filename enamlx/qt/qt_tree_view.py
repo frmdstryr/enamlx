@@ -9,21 +9,18 @@ from atom.api import (
     Typed, Instance, Property, Int
 )
 from enamlx.qt.qt_abstract_item_view import (
-    QtAbstractItemView, QAbstractAtomItemModel
+    QtAbstractItemView, QAbstractAtomItemModel, IS_QT4
 )
 from enamlx.widgets.tree_view import (
     ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
 from enaml.qt.QtWidgets import QTreeView
-from enaml.qt import QT_API, PYSIDE_API, PYQT4_API
 from enaml.qt.QtCore import QAbstractItemModel, QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
 from enaml.application import timed_call
 
-
-IS_QT4 = QT_API in PYSIDE_API + PYQT4_API
 
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
