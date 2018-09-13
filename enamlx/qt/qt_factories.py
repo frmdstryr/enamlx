@@ -5,7 +5,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 23, 2015
 """
-from enaml.qt.qt_factories import QT_FACTORIES
+from enaml.qt import qt_factories
 
 
 def console_factory():
@@ -16,6 +16,56 @@ def console_factory():
 def double_spin_box_factory():
     from .qt_double_spin_box import QtDoubleSpinBox
     return QtDoubleSpinBox
+
+
+def graphics_view_factory():
+    from .qt_graphics_view import QtGraphicsView
+    return QtGraphicsView
+
+
+def graphics_item_factory():
+    from .qt_graphics_view import QtGraphicsItem
+    return QtGraphicsItem
+
+
+def graphics_item_group_factory():
+    from .qt_graphics_view import QtGraphicsItemGroup
+    return QtGraphicsItemGroup
+
+
+def graphics_ellipse_item_factory():
+    from .qt_graphics_view import QtGraphicsEllipseItem
+    return QtGraphicsEllipseItem
+
+
+def graphics_image_item_factory():
+    from .qt_graphics_view import QtGraphicsImageItem
+    return QtGraphicsImageItem
+
+
+def graphics_line_item_factory():
+    from .qt_graphics_view import QtGraphicsLineItem
+    return QtGraphicsLineItem
+
+
+def graphics_path_item_factory():
+    from .qt_graphics_view import QtGraphicsPathItem
+    return QtGraphicsPathItem
+
+
+def graphics_polygon_item_factory():
+    from .qt_graphics_view import QtGraphicsPolygonItem
+    return QtGraphicsPolygonItem
+
+
+def graphics_rect_item_factory():
+    from .qt_graphics_view import QtGraphicsRectItem
+    return QtGraphicsRectItem
+
+
+def graphics_text_item_factory():
+    from .qt_graphics_view import QtGraphicsTextItem
+    return QtGraphicsTextItem
 
 
 def key_event_factory():
@@ -134,9 +184,19 @@ def tree_widget_col_factory():
 
 
 # Inject the factory 
-QT_FACTORIES.update({
+qt_factories.QT_FACTORIES.update({
     'Console': console_factory,
     'DoubleSpinBox': double_spin_box_factory,
+    'GraphicsView': graphics_view_factory,
+    'GraphicsItem': graphics_item_factory,
+    'GraphicsItemGroup': graphics_item_group_factory,
+    'GraphicsEllipseItem': graphics_ellipse_item_factory,
+    'GraphicsLineItem': graphics_line_item_factory,
+    'GraphicsPathItem': graphics_path_item_factory,
+    'GraphicsPolygonItem': graphics_polygon_item_factory,
+    'GraphicsRectItem': graphics_rect_item_factory,
+    'GraphicsTextItem': graphics_text_item_factory,
+    'GraphicsImageItem': graphics_image_item_factory,
     'KeyEvent': key_event_factory,
     'OccViewer': occ_viewer_factory,
     'PlotArea': plot_area_factory,

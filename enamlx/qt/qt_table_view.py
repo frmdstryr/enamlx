@@ -193,7 +193,9 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
 
     def data_changed(self, change):
         """ Notify the model that data has changed in this cell! """
-        self.view.model.dataChanged.emit(self.index, self.index)
+        index = self.index
+        if index:
+            self.view.model.dataChanged.emit(index, index)
                 
         
 class QtTableViewRow(AbstractQtTableViewItemGroup, ProxyTableViewRow):

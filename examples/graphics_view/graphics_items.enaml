@@ -1,0 +1,96 @@
+import math
+import enamlx
+enamlx.install()
+from enaml.core.api import Looper
+from enamlx.widgets.api import (
+    GraphicsView, GraphicsItem, GraphicsTextItem, GraphicsRectItem,
+    GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem, 
+    GraphicsPathItem, GraphicsItemGroup, Pen, Brush
+)
+from enaml.widgets.api import (
+    MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox, 
+    Menu, Action, MenuBar
+)
+from enaml.qt.QtGui import QPainterPath
+from enaml.application import timed_call
+from random import randint
+
+enamldef Main(MainWindow): window:
+    attr blue_pen = Pen(color='blue')
+    attr red_pen = Pen(color='red')
+    attr green_brush = Brush(color='green')
+    MenuBar:
+        Menu:
+            title = "&File"
+            Action:
+                text = "Quit\tCtrl+Q"
+                triggered :: raise SystemExit(0)
+    Container: 
+        padding = 0
+        GraphicsView: canvas:
+            attr size = (960, 960)
+            background = "#fff"
+            Looper:
+                iterable = range(500)
+                GraphicsTextItem:
+                    position = (0, loop_index*20)
+                    rotation = loop_index%30
+                    pen = blue_pen if loop_index & 1 else red_pen
+                    text << "{}".format(position)
+                GraphicsTextItem:
+                    attr delay = 100+10*loop_index  
+                    attr fade_dir = -0.1
+                    activated :: timed_call(delay, fade_in_and_out)
+                    position = (300, loop_index*20, 0)
+                    text << "{} {} {}".format(position.x, position.y, position.z)
+                    func fade_in_and_out():
+                        if self.opacity <= 0 or self.opacity >= 1:
+                            self.fade_dir *= -1
+                        self.opacity -= self.fade_dir
+                        timed_call(delay, fade_in_and_out)
+                GraphicsEllipseItem:
+                    attr delay = randint(500, 1000)
+                    activated :: timed_call(delay, move_around)
+                    func move_around():
+                        self.position += (randint(-10, 10), randint(-10, 10))
+                        timed_call(delay, move_around)
+                    position = (randint(0, 240),
+                                randint(500, 640), 0) 
+                    opacity = 0.3
+                    pen = blue_pen if loop_index & 1 else red_pen
+                    width = 20
+                    height = 30
+                GraphicsRectItem:
+                    brush = green_brush
+                    position = (randint(0, 640),
+                                randint(0, 640), 0) 
+                    opacity = 0.3
+                    width = 10
+                
+            # Grid
+            GraphicsItemGroup:
+                opacity = 0.05
+                Looper:
+                    iterable = range(100)
+                    GraphicsLineItem:
+                        position = (10*loop_index, 0)
+                        point = (10*loop_index, canvas.size[1], 0)
+                    GraphicsLineItem:
+                        position = (0, 10*loop_index)
+                        point = (canvas.size[0], 10*loop_index, 0)
+            GraphicsPolygonItem:
+                scale = 3
+                points = [(i, 100+10*math.sin(i)) for i in range(100)]
+            GraphicsPathItem:
+                pen = Pen(color="purple", width=2)
+                scale = 3
+                path << draw(self.position)
+                func draw(position):
+                    x, y, z = position
+                    p = QPainterPath()
+                    p.moveTo(x, y)
+                    p.lineTo(x+10, y)
+                    w, h = 10, 10
+                    p.addEllipse(x+10, y-w/2, w, h)
+                    p.lineTo(x+10+w+10, y)
+                    return p

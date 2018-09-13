@@ -16,8 +16,18 @@ pip install enamlx
 
 
 
-#### Featuring ####
+#### Widgets ####
 
+1. TableView
+2. TreeView
+3. IPython console (now obsolete)
+4. DoubleSpinBox
+5. PyQtGraph Plot
+6. KeyEvent
+7. GraphicsView
+
+
+#### Examples ####
 
 __TableView__
 
@@ -55,12 +65,21 @@ __OCCViewer__
 
 Widget for viewing models from opencascade 
 
+
+__GraphicsView__
+
+A "canvas" Widget for drawing with Qt's GraphicsView.
+
+
+
 # Usage
 
 ```python
 
-# Before importing enaml
 import enamlx
 enamlx.install()
+
+# Then use like any enaml widget
+from enamlx.widgets.api import TreeView # etc..
 
 ```

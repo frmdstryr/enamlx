@@ -1,0 +1,11 @@
+*.pyc
+*.enamlc
+__pycache__/
+__enamlcache__/
+build/
+dist/
+.*/
+*.egg-info
+*.dist-info
+*.kdev4
+*.kate-swp
