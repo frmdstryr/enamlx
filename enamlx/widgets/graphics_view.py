@@ -5,17 +5,26 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Sept 5, 2018
 """
 from atom.api import (
-    Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List,
+    Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List, IntEnum,
     Instance, Unicode, Value, Event, Property, observe, set_default
 )
 from enaml.colors import ColorMember
 from enaml.core.declarative import d_, d_func
+from enaml.fonts import FontMember
 from enaml.image import Image
 from enaml.layout.constrainable import ConstrainableMixin, PolicyEnum
-from enaml.widgets.widget import Feature, FontMember
+from enaml.widgets.widget import Feature
 from enaml.widgets.control import Control, ProxyControl
 from enaml.widgets.toolkit_object import ToolkitObject, ProxyToolkitObject
 
+
+class GraphicFeature(IntEnum):
+    #: Enables support for wheel events.
+    WheelEvent = 0x16
+    
+    #: Enables support for backgound draw events.
+    BackgroundDrawEvent = 0x32
+    
 
 class Point(Atom):
     #: x position
@@ -135,6 +144,15 @@ class ProxyGraphicsView(ProxyControl):
     #: Reference to the declaration
     declaration = ForwardTyped(lambda: GraphicsView)
     
+    def set_drag_mode(self, mode):
+        raise NotImplementedError
+    
+    def set_antialiasing(self, enabled):
+        raise NotImplementedError
+    
+    def set_renderer(self, renderer):
+        raise NotImplementedError
+    
     def get_item_at(self, point):
         raise NotImplementedError
     
@@ -145,6 +163,15 @@ class ProxyGraphicsView(ProxyControl):
         raise NotImplementedError
     
     def center_on(self, item):
+        raise NotImplementedError
+    
+    def reset_view(self):
+        raise NotImplementedError
+    
+    def scale_view(self, x, y):
+        raise NotImplementedError
+    
+    def rotate_view(self, angle):
         raise NotImplementedError
     
     def map_from_scene(self, point):
@@ -216,6 +243,11 @@ class ProxyGraphicsItem(ProxyToolkitObject):
 class ProxyGraphicsItemGroup(ProxyGraphicsItem):
     #: Reference to the declaration
     declaration = ForwardTyped(lambda: GraphicsItemGroup)
+    
+
+class ProxyGraphicsWidget(ProxyGraphicsItem):
+    #: Reference to the declaration
+    declaration = ForwardTyped(lambda: GraphicsWidget)
     
 
 class ProxyAbstractGraphicsShapeItem(ProxyGraphicsItem):
@@ -342,7 +374,8 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     #: be provided when the widget is instantiated. Runtime changes to
     #: this value are ignored.
     features = d_(Coerced(Feature.Flags))
-    
+    extra_features = d_(Coerced(GraphicFeature.Flags))
+
     #: Update
     request_update = d_(Event())
     
@@ -500,8 +533,25 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
         """
         pass
     
+    @d_func
+    def wheel_event(self, event):
+        """ A method invoked when a wheel event occurs in the widget.
+        This method will not normally be implemented, but it can be
+        useful for supporting zooming and other scolling interactions.
+        
+        ** The WheelEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : WheelEvent
+            The event representing the wheel operation.
+        """
+        pass
+    
 
 class GraphicsView(Control):
+    
     #: Proxy reference
     proxy = Typed(ProxyGraphicsView)
     
@@ -509,12 +559,71 @@ class GraphicsView(Control):
     hug_width = set_default('ignore')
     hug_height = set_default('ignore')
     
-    #: Items currently selected
-    selected_items = List(GraphicsItem)
+    #: Select backend for rendering. OpenGL is used by default if available.
+    renderer = d_(Enum('default', 'opengl', 'qwidget'))
     
-    @observe('selected_items')
+    #: Antialiasing is enabled by default. If performance is an issue, disable
+    #: this.
+    antialiasing = d_(Bool(True))
+    
+    #: Items currently selected
+    selected_items = d_(List(GraphicsItem))
+    
+    #: Defines the behavior when dragging. By default nothing is done. Pan
+    #: will pan the scene around and selection will draw a box to select items.
+    drag_mode = d_(Enum('none', 'scroll', 'selection'))
+    
+    #: Range of allowed zoom factors. This is used to prevent scaling way out
+    #: or way in by accident. 
+    min_zoom = d_(Float(0.007, strict=False))
+    max_zoom = d_(Float(100.0, strict=False))
+    
+    #: Set the extra features to enable for this widget. This value must
+    #: be provided when the widget is instantiated. Runtime changes to
+    #: this value are ignored.
+    extra_features = d_(Coerced(GraphicFeature.Flags))
+    
+    @observe('selected_items', 'renderer', 'antialiasing', 'drag_mode')
     def _update_proxy(self, change):
         super(GraphicsView, self)._update_proxy(change)
+    
+    # --------------------------------------------------------------------------
+    # Widget API
+    # --------------------------------------------------------------------------
+    @d_func
+    def wheel_event(self, event):
+        """ A method invoked when a wheel event occurs in the widget.
+        This method will not normally be implemented, but it can be
+        useful for supporting zooming and other scolling interactions.
+        
+        ** The WheelEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : WheelEvent
+            The event representing the wheel operation.
+        """
+        self.scale_view(pow(2, -event.delta() / 240.0))
+    
+    @d_func
+    def draw_background(self, painter, rect):
+        """ A method invoked when a background draw is requested.
+        
+        This method will not normally be implemented, but it can be
+        useful for implementing custom backgrounds. This drawing is cached.
+        
+        ** The DrawBackgroundEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        painter : Painter
+            A the toolkit dependent handle drawing.
+        rect : Rect
+            A rect showing the area of interest.
+        """
+        pass
     
     # --------------------------------------------------------------------------
     # Graphics Scene API
@@ -530,6 +639,18 @@ class GraphicsView(Control):
     def center_on(self, item):
         """ Center on the given item or point. """
         self.proxy.center_on(item)
+        
+    def scale_view(self, x=1, y=1):
+        """ Scale the view by the given x and y factors. """
+        return self.proxy.scale_view(x, y)
+        
+    def rotate_view(self, angle=0):
+        """ Roteate the view by the given x and y factors. """
+        self.proxy.rotate_view(angle)
+        
+    def reset_view(self):
+        """ Reset all view transformations. """
+        self.proxy.reset_view()
         
     def map_from_scene(self, point):
         """ Returns the scene coordinate point mapped to viewport coordinates. 
@@ -668,3 +789,10 @@ class GraphicsImageItem(GraphicsItem):
     @observe('image')
     def _update_proxy(self, change):
         super(GraphicsImageItem, self)._update_proxy(change)
+        
+        
+class GraphicsWidget(GraphicsItem):
+    """ Use this to embed a widget within a graphics scene """
+    #: Proxy reference
+    proxy = Typed(ProxyGraphicsWidget)
+    

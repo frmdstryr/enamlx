@@ -68,6 +68,11 @@ def graphics_text_item_factory():
     return QtGraphicsTextItem
 
 
+def graphics_widget_factory():
+    from .qt_graphics_view import QtGraphicsWidget
+    return QtGraphicsWidget
+
+
 def key_event_factory():
     from .qt_key_event import QtKeyEvent
     return QtKeyEvent
@@ -197,6 +202,7 @@ qt_factories.QT_FACTORIES.update({
     'GraphicsRectItem': graphics_rect_item_factory,
     'GraphicsTextItem': graphics_text_item_factory,
     'GraphicsImageItem': graphics_image_item_factory,
+    'GraphicsWidget': graphics_widget_factory,
     'KeyEvent': key_event_factory,
     'OccViewer': occ_viewer_factory,
     'PlotArea': plot_area_factory,

@@ -5,32 +5,38 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Sept 4, 2018
 """
+import warnings
 from atom.api import (
     Atom, Typed, Instance, Property, Int, Coerced, atomref
 )
-from enamlx.widgets.graphics_view import (
-    ProxyGraphicsView, ProxyGraphicsItem, ProxyAbstractGraphicsShapeItem,
-    ProxyGraphicsEllipseItem, ProxyGraphicsRectItem, ProxyGraphicsLineItem,
-    ProxyGraphicsTextItem, ProxyGraphicsPolygonItem, ProxyGraphicsPathItem,
-    ProxyGraphicsImageItem, ProxyGraphicsItemGroup, Point, Rect
-)
+
 from enaml.qt.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsItem, QGraphicsEllipseItem,
-    QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, 
+    QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem,
     QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsPixmapItem,
-    QGraphicsItemGroup, QWidgetAction, QApplication
+    QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QApplication
 )
 from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF
-from enaml.qt.QtGui import QColor, QPen, QBrush, QPixmap, QPolygonF
+from enaml.qt.QtGui import (
+    QPainter, QColor, QPen, QBrush, QPixmap, QPolygonF, QTransform
+)
+
 from enaml.qt.q_resource_helpers import (
     get_cached_qcolor, get_cached_qfont, get_cached_qimage
 )
 from enaml.qt.qt_control import QtControl
-from enaml.qt.qt_widget import focus_registry
+from enaml.qt.qt_widget import QtWidget, focus_registry
 from enaml.qt.qt_drag_drop import QtDropEvent
 from enaml.qt.qt_toolkit_object import QtToolkitObject
 from enaml.widgets.widget import Feature
 
+from enamlx.widgets.graphics_view import (
+    ProxyGraphicsView, ProxyGraphicsItem, ProxyAbstractGraphicsShapeItem,
+    ProxyGraphicsEllipseItem, ProxyGraphicsRectItem, ProxyGraphicsLineItem,
+    ProxyGraphicsTextItem, ProxyGraphicsPolygonItem, ProxyGraphicsPathItem,
+    ProxyGraphicsImageItem, ProxyGraphicsItemGroup, ProxyGraphicsWidget,
+    Point, Rect, GraphicFeature
+)
 
 
 PEN_STYLES = {
@@ -77,6 +83,15 @@ BRUSH_STYLES = {
 }
 
 
+DRAG_MODES = {
+    'none': QGraphicsView.NoDrag,
+    'scroll': QGraphicsView.ScrollHandDrag,
+    'selection': QGraphicsView.RubberBandDrag    
+}
+
+#--------------------------------------------------------------------------
+# Qt Resource Helpers
+#--------------------------------------------------------------------------
 def QPen_from_Pen(pen):
     qpen = QPen()
     if pen.color:
@@ -116,7 +131,9 @@ def get_cached_qbrush(brush):
         qbrush = brush._tkdata = QBrush_from_Brush(brush)
     return qbrush
 
-
+#--------------------------------------------------------------------------
+# Mixin classes
+#--------------------------------------------------------------------------
 class FeatureMixin(Atom):
     """ A mixin that provides focus and mouse features.
     
@@ -125,12 +142,13 @@ class FeatureMixin(Atom):
     #: feature cleanup will proceed correctly in the event that user
     #: code modifies the declaration features value at runtime.
     _features = Coerced(Feature.Flags)
+    _extra_features = Coerced(GraphicFeature.Flags)
 
     #: Internal storage for the shared widget action.
     _widget_action = Typed(QWidgetAction)
 
     #: Internal storage for the drag origin position.
-    _drag_origin = Typed(QPoint)
+    _drag_origin = Typed(QPointF)
     
     #--------------------------------------------------------------------------
     # Private API
@@ -150,6 +168,10 @@ class FeatureMixin(Atom):
             self.hook_drag()
         if features & Feature.DropEnabled:
             self.hook_drop()
+            
+        features = self._extra_features
+        if features & GraphicFeature.WheelEvent:
+            self.hook_wheel()
 
     def _teardown_features(self):
         """ Teardowns the advanced widget feature handlers.
@@ -167,6 +189,9 @@ class FeatureMixin(Atom):
         if features & Feature.DropEnabled:
             self.unhook_drop()
 
+        features = self._extra_features
+        if features & GraphicFeature.WheelEvent:
+            self.unhook_wheel()
     #--------------------------------------------------------------------------
     # Protected API
     #--------------------------------------------------------------------------
@@ -397,6 +422,26 @@ class FeatureMixin(Atom):
 
         """
         self.declaration.drop(QtDropEvent(event))
+        
+    def hook_wheel(self):
+        """ Install the hooks for wheel events.
+
+        """
+        widget = self.widget
+        widget.wheelEvent = self.wheelEvent
+        
+    def unhook_wheel(self):
+        """ Removes the hooks for wheel events.
+
+        """
+        widget = self.widget
+        del widget.wheelEvent
+        
+    def wheelEvent(self, event):
+        """ Handle the mouse wheel event for the widget.
+
+        """
+        self.declaration.wheel_event(event)
 
     #--------------------------------------------------------------------------
     # Framework API
@@ -424,13 +469,21 @@ class FeatureMixin(Atom):
             action.setDefaultWidget(self.widget)
         return action
     
-
+#--------------------------------------------------------------------------
+# Toolkit implementations
+#--------------------------------------------------------------------------
 class QtGraphicsView(QtControl, ProxyGraphicsView):
     #: Internal widget
     widget = Typed(QGraphicsView)
     
     #: Internal scene 
     scene = Typed(QGraphicsScene)
+    
+    #: Custom features
+    _extra_features = Coerced(GraphicFeature.Flags)
+    
+    #: Cyclic notification guard. This a bitfield of multiple guards.
+    _guards = Int(0)
 
     def create_widget(self):
         self.scene = QGraphicsScene()
@@ -438,9 +491,19 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         
     def init_widget(self):
         super(QtGraphicsView, self).init_widget()
+        d = self.declaration
         widget = self.widget
+        widget.setCacheMode(QGraphicsView.CacheBackground)
+        widget.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
         widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        widget.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.set_drag_mode(d.drag_mode)
+        self.set_renderer(d.renderer)
+        self.set_antialiasing(d.antialiasing)
+        
+        self.scene.selectionChanged.connect(self.on_selection_changed)
     
     def init_layout(self):
         super(QtGraphicsView, self).init_layout()
@@ -451,12 +514,12 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     def child_added(self, child):
         super(QtGraphicsView, self).child_added(child)
         if isinstance(child, QtGraphicsItem):
-            self.scene.addItem(child.shape)
+            self.scene.addItem(child.widget)
             
     def child_removed(self, child):
         super(QtGraphicsView, self).child_removed(child)
         if isinstance(child, QtGraphicsItem):
-            self.scene.removeItem(child.shape)
+            self.scene.removeItem(child.widget)
             
     def scene_items(self):
         for w in self.children():
@@ -464,12 +527,112 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
                 yield w.widget
     
     #--------------------------------------------------------------------------
+    # GraphicFeature API
+    #--------------------------------------------------------------------------
+    def _setup_features(self):
+        super(QtGraphicsView, self)._setup_features()
+        features = self._extra_features
+        if features & GraphicFeature.WheelEvent:
+            self.hook_wheel()
+            
+    def _teardown_features(self):
+        super(QtGraphicsView, self)._teardown_features()
+        features = self._extra_features
+        if features & GraphicFeature.WheelEvent:
+            self.unhook_wheel()
+            
+    def hook_wheel(self):
+        """ Install the hooks for wheel events.
+
+        """
+        widget = self.widget
+        widget.wheelEvent = self.wheelEvent
+        
+    def unhook_wheel(self):
+        """ Removes the hooks for wheel events.
+
+        """
+        widget = self.widget
+        del widget.wheelEvent
+        
+    def hook_draw(self):
+        """ Install the hooks for background draw events.
+
+        """
+        widget = self.widget
+        widget.drawBackground = self.drawBackground
+        
+    def unhook_draw(self):
+        """ Removes the hooks for background draw events.
+
+        """
+        widget = self.widget
+        del widget.drawBackground
+    
+    #--------------------------------------------------------------------------
+    # QGraphicView API
+    #--------------------------------------------------------------------------
+    def wheelEvent(self, event):
+        """ Handle the wheel event for the widget.
+
+        """
+        self.declaration.wheel_event(event)
+        
+    def drawBackground(self, painter, rect):
+        """ Handle the drawBackground request
+
+        """
+        self.declaration.draw_background(painter, rect)
+        
+    #--------------------------------------------------------------------------
     # ProxyGraphicsView API
     #--------------------------------------------------------------------------
-    def set_selected_items(self, items):
-        #: TODO: How???
-        raise NotImplementedError
+    def set_drag_mode(self, mode):
+        self.widget.setDragMode(DRAG_MODES.get(mode))
+    
+    def set_antialiasing(self, enabled):
+        flags = QPainter.TextAntialiasing
+        if enabled:
+            flags |= QPainter.Antialiasing | QPainter.SmoothPixmapTransform
+        self.widget.setRenderHints(flags)
         
+    def set_renderer(self, renderer):
+        """ Set the viewport widget. 
+        
+        """
+        viewport = None
+        if renderer == 'opengl':
+            from enaml.qt.QtWidgets import QOpenGLWidget
+            viewport = QOpenGLWidget()
+        elif renderer == 'default':
+            try:
+                from enaml.qt.QtWidgets import QOpenGLWidget
+                viewport = QOpenGLWidget()
+            except ImportError as e:
+                warnings.warn(
+                    "QOpenGLWidget could not be imported: {}".format(e))
+        self.widget.setViewport(viewport)
+        
+    def set_selected_items(self, items):
+        if self._guards & 0x01:
+            return
+        self.scene.clearSelection()
+        for item in items:
+            item.selected = True
+    
+    def on_selection_changed(self):
+        """ Callback invoked one the selection has changed.
+        
+        """
+        d = self.declaration
+        selection = self.scene.selectedItems()
+        self._guards |= 0x01
+        try:
+            d.selected_items = [item.ref().declaration for item in selection
+                                if item.ref()]
+        finally:
+            self._guards &= ~0x01
+            
     def set_background(self, background):
         """ Set the background color of the widget.
 
@@ -478,19 +641,19 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         scene.setBackgroundBrush(QColor.fromRgba(background.argb))
 
     def get_item_at(self, point):
-        item = self.widget.getItemAt(point.x, point.y)
-        if item:
-            return item.ref.declaration
+        item = self.scene.getItemAt(point.x, point.y)
+        if item and item.ref():
+            return item.ref().declaration
     
     def get_items_at(self, point):
-        items = self.widget.items(point.x, point.y)
-        return [item.ref.declaration for item in items]
+        items = self.scene.items(point.x, point.y)
+        return [item.ref().declaration for item in items if item.ref()]
     
     def get_items_in(self, top_left, bottom_right):
         qrect = QRectF(QPointF(top_left.x, top_left.y), 
                        QPointF(bottom_right.x, bottom_right.y))
-        items = self.widget.items(qrect)
-        return [item.ref.declaration for item in items]
+        items = self.scene.items(qrect)
+        return [item.ref().declaration for item in items if item.ref()]
         
     def fit_in_view(self, item):
         self.widget.fitInView(item.proxy.widget)
@@ -500,6 +663,24 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             self.widget.centerOn(item.x, item.y)
         else:
             self.widget.centerOn(item.proxy.widget)
+            
+    def reset_view(self):
+        self.widget.setTransform(QTransform())
+    
+    def scale_view(self, x, y):
+        """ Scale the zoom but keep in in the min and max zoom bounds.
+
+        """
+        d = self.declaration
+        factor = self.widget.transform().scale(x, y).mapRect(
+            QRectF(0, 0, 1, 1)).width()
+        if (d.min_zoom > factor > d.max_zoom):
+            return
+        self.widget.scale(x, y)
+        return factor
+    
+    def rotate_view(self, angle):
+        self.widget.rotate(angle)
     
     def map_from_scene(self, point):
         qpoint = self.widget.mapFromScene(point.x, point.y)
@@ -545,6 +726,7 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
             #self.set_minimum_size(d.minimum_size)
         #if -1 not in d.maximum_size:
             #self.set_maximum_size(d.maximum_size)
+        self.widget.setFlag(QGraphicsItem.ItemIsSelectable)
         if d.tool_tip:
             self.set_tool_tip(d.tool_tip)
         if d.status_tip:
@@ -655,6 +837,38 @@ class QtGraphicsItemGroup(QtGraphicsItem, ProxyGraphicsItemGroup):
         super(QtGraphicsItemGroup, self).child_removed(child)
         if isinstance(child, QtGraphicsItem):
             self.widget.removeFromGroup(child.widget)
+
+
+class QtGraphicsWidget(QtGraphicsItem, ProxyGraphicsWidget):
+    #: Internal widget
+    widget = Typed(QGraphicsProxyWidget)
+     
+    def create_widget(self):
+        """ Deferred to the layout pass """
+        pass
+    
+    def init_widget(self):
+        pass
+    
+    def init_layout(self):
+        """ Create the widget in the layout pass after the child widget has
+        been created and intialized. We do this so the child widget does not
+        attempt to use this proxy widget as its parent and because
+        repositioning must be done after the widget is set.
+        """
+        self.widget = QGraphicsProxyWidget(self.parent_widget())
+        widget = self.widget
+        for item in self.child_widgets():
+            widget.setWidget(item)
+            break
+        super(QtGraphicsWidget, self).init_widget()
+        super(QtGraphicsWidget, self).init_layout()
+    
+    def child_added(self, child):
+        super(QtGraphicsItemGroup, self).child_added(child)
+        if isinstance(child, QtWidget):
+            self.widget.setWidget(child.widget)
+            
 
 class QtAbstractGraphicsShapeItem(QtGraphicsItem,
                                   ProxyAbstractGraphicsShapeItem):
