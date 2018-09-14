@@ -6,7 +6,7 @@ Created on Sept 5, 2018
 """
 from atom.api import (
     Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List,
-    FloatRange, Instance, Unicode, Value, Event, Property, observe, set_default
+    Instance, Unicode, Value, Event, Property, observe, set_default
 )
 from enaml.colors import ColorMember
 from enaml.core.declarative import d_, d_func
@@ -321,7 +321,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     # --------------------------------------------------------------------------
     
     #: Item opacity
-    opacity = d_(FloatRange(0.0, 1.0, 1.0, strict=False))
+    opacity = d_(Float(1.0, strict=False))
     
     # Item selected
     selected = d_(Bool())
