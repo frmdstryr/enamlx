@@ -212,6 +212,12 @@ class ProxyGraphicsItem(ProxyToolkitObject):
     def set_enabled(self, enabled):
         raise NotImplementedError
     
+    def set_selectable(self, enabled):
+        raise NotImplementedError
+    
+    def set_movable(self, enabled):
+        raise NotImplementedError
+    
     def set_visible(self, visible):
         raise NotImplementedError
     
@@ -370,6 +376,10 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     #: Status tip
     status_tip = d_(Unicode())
     
+    # --------------------------------------------------------------------------
+    # Item interaction
+    # --------------------------------------------------------------------------
+    
     #: Set the extra features to enable for this widget. This value must
     #: be provided when the widget is instantiated. Runtime changes to
     #: this value are ignored.
@@ -379,9 +389,16 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     #: Update
     request_update = d_(Event())
     
+    #: Set whether this item can be selected.
+    selectable = d_(Bool())
+    
+    #: Set whether this item can be moved.
+    movable = d_(Bool())
+    
     @observe('position', 'position.x', 'position.y', 'position.z', 'scale', 
              'rotation', 'opacity',  'selected', 'enabled', 'visible', 
-             'tool_tip', 'status_tip', 'request_update')
+             'tool_tip', 'status_tip', 'request_update', 'selectable',
+             'movable')
     def _update_proxy(self, change):
         super(GraphicsItem, self)._update_proxy(change)
     

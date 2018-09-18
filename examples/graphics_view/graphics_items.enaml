@@ -89,6 +89,7 @@ enamldef Main(MainWindow): window:
             GraphicsPathItem:
                 pen = Pen(color="purple", width=2)
                 scale = 3
+                movable = True
                 path << draw(self.position)
                 func draw(position):
                     x, y, z = position

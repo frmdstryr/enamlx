@@ -16,9 +16,10 @@ from enaml.qt.QtWidgets import (
     QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsPixmapItem,
     QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QApplication
 )
-from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF
+from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF, __version_info__
 from enaml.qt.QtGui import (
-    QPainter, QColor, QPen, QBrush, QPixmap, QPolygonF, QTransform
+    QPainter, QColor, QPen, QBrush, QPixmap, QPolygonF, QTransform, QDrag,
+    QCursor
 )
 
 from enaml.qt.q_resource_helpers import (
@@ -29,6 +30,7 @@ from enaml.qt.qt_widget import QtWidget, focus_registry
 from enaml.qt.qt_drag_drop import QtDropEvent
 from enaml.qt.qt_toolkit_object import QtToolkitObject
 from enaml.widgets.widget import Feature
+from enaml.drag_drop import DropAction
 
 from enamlx.widgets.graphics_view import (
     ProxyGraphicsView, ProxyGraphicsItem, ProxyAbstractGraphicsShapeItem,
@@ -331,12 +333,12 @@ class FeatureMixin(Atom):
         """ Handle the mouse move event for a drag operation.
 
         """
-        if event.buttons() & Qt.LeftButton and self._drag_origin is not None:
-            dist = (event.pos() - self._drag_origin).manhattanLength()
-            if dist >= QApplication.startDragDistance():
-                self.do_drag()
-                self._drag_origin = None
-                return
+        #if event.buttons() & Qt.LeftButton and self._drag_origin is not None:
+            #dist = (event.pos() - self._drag_origin).manhattanLength()
+            #if dist >= QApplication.startDragDistance():
+                #self.do_drag(event.widget())
+                #self._drag_origin = None
+                #return # Don't returns
         widget = self.widget
         type(widget).mouseMoveEvent(widget, event)
 
@@ -371,24 +373,29 @@ class FeatureMixin(Atom):
         del widget.dragLeaveEvent
         del widget.dropEvent
 
-    def do_drag(self):
+    def do_drag(self, widget):
         """ Perform the drag operation for the widget.
+        
+        Parameters
+        ----------
+        widget: QWidget
+            A reference to the viewport widget.
 
         """
         drag_data = self.declaration.drag_start()
         if drag_data is None:
             return
-        widget = self.widget
+        #widget = self.widget
         qdrag = QDrag(widget)
         qdrag.setMimeData(drag_data.mime_data.q_data())
         if drag_data.image is not None:
             qimg = get_cached_qimage(drag_data.image)
             qdrag.setPixmap(QPixmap.fromImage(qimg))
-        else:
-            if __version_info__ < (5, ):
-                qdrag.setPixmap(QPixmap.grabWidget(widget))
-            else:
-                qdrag.setPixmap(widget.grab())
+        #else:
+            #if __version_info__ < (5, ):
+                #qdrag.setPixmap(QPixmap.grabWidget(self.widget))
+            #else:
+                #qdrag.setPixmap(widget.grab())
         if drag_data.hotspot:
             qdrag.setHotSpot(QPoint(*drag_data.hotspot))
         else:
@@ -716,17 +723,10 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         focus_registry.register(widget, self)
         self._setup_features()
         d = self.declaration
-        #if d.background:
-            #self.set_background(d.background)
-        #if d.foreground:
-            #self.set_foreground(d.foreground)
-        #if d.font:
-            #self.set_font(d.font)
-        #if -1 not in d.minimum_size:
-            #self.set_minimum_size(d.minimum_size)
-        #if -1 not in d.maximum_size:
-            #self.set_maximum_size(d.maximum_size)
-        self.widget.setFlag(QGraphicsItem.ItemIsSelectable)
+        if d.selectable:
+            self.set_selectable(d.selectable)
+        if d.movable:
+            self.set_movable(d.movable)
         if d.tool_tip:
             self.set_tool_tip(d.tool_tip)
         if d.status_tip:
@@ -780,6 +780,12 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         
     def set_enabled(self, enabled):
         self.widget.setEnabled(enabled)
+        
+    def set_selectable(self, enabled):
+        self.widget.setFlag(QGraphicsItem.ItemIsSelectable, enabled)
+        
+    def set_movable(self, enabled):
+        self.widget.setFlag(QGraphicsItem.ItemIsMovable, enabled)
     
     def set_x(self, x):
         self.widget.setX(x)
