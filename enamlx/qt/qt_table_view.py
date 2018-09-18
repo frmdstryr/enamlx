@@ -114,7 +114,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         
     def _refresh_visible_row(self, value):
         self._pending_row_refreshes -= 1
-        if self._pending_row_refreshes == 0:
+        if self._pending_row_refreshes == 0 and (self.declaration is not None):
             d = self.declaration
             rows = self.model.rowCount()-d.visible_rows
             d.visible_row = max(0, min(value, rows))
