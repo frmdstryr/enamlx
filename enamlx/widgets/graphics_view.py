@@ -4,6 +4,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Sept 5, 2018
 """
+import sys
 from atom.api import (
     Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List, IntEnum,
     Instance, Unicode, Value, Event, Property, observe, set_default
@@ -18,13 +19,22 @@ from enaml.widgets.control import Control, ProxyControl
 from enaml.widgets.toolkit_object import ToolkitObject, ProxyToolkitObject
 
 
+NUMERIC = (int, float, long) if sys.version_info.major < 3 else (int, float)
+
+
 class GraphicFeature(IntEnum):
+    #: Enables support for mouse events.
+    MouseEvent = 0x08
+    
     #: Enables support for wheel events.
     WheelEvent = 0x16
     
-    #: Enables support for backgound draw events.
-    BackgroundDrawEvent = 0x32
+    #: Enables support for draw or paint events.
+    DrawEvent = 0x32
     
+    #: Enables support for backgound draw events.
+    BackgroundDrawEvent = 0x64
+        
 
 class Point(Atom):
     #: x position
@@ -43,7 +53,10 @@ class Point(Atom):
         yield self.x
         yield self.y
         yield self.z
-        
+    
+    def __len__(self):
+        return 3
+    
     def __eq__(self, other):
         pos = (self.x, self.y, self.z)
         if isinstance(other, Point):
@@ -54,21 +67,42 @@ class Point(Atom):
         return Point(self.x + other[0],
                      self.y + other[1],
                      self.z + other[2] if len(other) > 2 else self.z)
-
-    def __radd__(self, other):
-        return Point(other[0] + self.x,
-                     other[1] + self.y,
-                     other[2] + self.z if len(other) > 2 else self.z)
+    __radd__ = __add__
 
     def __sub__(self, other):
         return Point(self.x - other[0],
                      self.y - other[1],
                      self.z - other[2] if len(other) > 2 else self.z)
-
+    
     def __rsub__(self, other):
         return Point(other[0] - self.x,
                      other[1] - self.y,
                      other[2] - self.z if len(other) > 2 else self.z)
+    
+    def __mul__(self, other):
+        if isinstance(other, NUMERIC):
+            return Point(self.x*other, self.y*other, self.z*other)
+        return Point(other[0] * self.x,
+                     other[1] * self.y,
+                     other[2] * self.z if len(other) > 2 else self.z)
+    __rmul__ = __mul__
+    
+    def __div__(self, other):
+        if isinstance(other, NUMERIC):
+            return Point(self.x/other, self.y/other, self.z/other)
+        return Point(self.x/other[0],
+                     self.y/other[1],
+                     self.z/other[2] if len(other) > 2 else self.z)
+    
+    def __rdiv__(self, other):
+        if isinstance(other, NUMERIC):
+            return Point(other/self.x, other/self.y, other/self.z)
+        return Point(other[0]/self.x,
+                     other[1]/self.y,
+                     other[2]/self.z if len(other) > 2 else self.z)
+    
+    def __neg__(self):
+        return Point(-self.x, -self.y, -self.z)
 
     def __hash__(self):
         return id(self)
@@ -168,6 +202,9 @@ class ProxyGraphicsView(ProxyControl):
     def reset_view(self):
         raise NotImplementedError
     
+    def translate_view(self, x, y):
+        raise NotImplementedError
+    
     def scale_view(self, x, y):
         raise NotImplementedError
     
@@ -178,6 +215,9 @@ class ProxyGraphicsView(ProxyControl):
         raise NotImplementedError
     
     def map_to_scene(self, point):
+        raise NotImplementedError
+    
+    def pixel_density(self):
         raise NotImplementedError
     
 
@@ -551,6 +591,48 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
         pass
     
     @d_func
+    def mouse_press_event(self, event):
+        """ A method invoked when a mouse press event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
+    
+    @d_func
+    def mouse_move_event(self, event):
+        """ A method invoked when a mouse move event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
+    
+    @d_func
+    def mouse_release_event(self, event):
+        """ A method invoked when a mouse release event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
+    
+    @d_func
     def wheel_event(self, event):
         """ A method invoked when a wheel event occurs in the widget.
         This method will not normally be implemented, but it can be
@@ -563,6 +645,26 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
         ----------
         event : WheelEvent
             The event representing the wheel operation.
+        """
+        pass
+    
+    @d_func
+    def draw(self, painter, options, widget):
+        """ A method invoked when this widget needs to be drawn.
+        This method will not normally be implemented, but it can be
+        useful for creating custom graphics.
+        
+        ** The DrawEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        painter: Object
+            The toolkit dependent painter object.
+        options: Object
+            The toolkit dependent options object.
+        widget: Widget
+            The underlying widget.
         """
         pass
     
@@ -600,6 +702,9 @@ class GraphicsView(Control):
     #: this value are ignored.
     extra_features = d_(Coerced(GraphicFeature.Flags))
     
+    def _default_extra_features(self):
+        return GraphicFeature.WheelEvent | GraphicFeature.MouseEvent
+    
     @observe('selected_items', 'renderer', 'antialiasing', 'drag_mode')
     def _update_proxy(self, change):
         super(GraphicsView, self)._update_proxy(change)
@@ -621,7 +726,49 @@ class GraphicsView(Control):
         event : WheelEvent
             The event representing the wheel operation.
         """
-        self.scale_view(pow(2, -event.delta() / 240.0))
+        pass
+        
+    @d_func
+    def mouse_press_event(self, event):
+        """ A method invoked when a mouse press event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
+    
+    @d_func
+    def mouse_move_event(self, event):
+        """ A method invoked when a mouse move event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
+    
+    @d_func
+    def mouse_release_event(self, event):
+        """ A method invoked when a mouse release event occurs in the widget.
+        
+        ** The MouseEnabled feature must be enabled for the widget in
+        order for this method to be called. **
+        
+        Parameters
+        ----------
+        event : MouseEvent
+            The event representing the press operation.
+        """
+        pass
     
     @d_func
     def draw_background(self, painter, rect):
@@ -655,8 +802,14 @@ class GraphicsView(Control):
         
     def center_on(self, item):
         """ Center on the given item or point. """
+        if not isinstance(item, GraphicsItem):
+            item = coerce_point(item)
         self.proxy.center_on(item)
-        
+    
+    def translate_view(self, x=0, y=0):
+        """ Translate the view by the given x and y pixels. """
+        return self.proxy.translate_view(x, y)
+    
     def scale_view(self, x=1, y=1):
         """ Scale the view by the given x and y factors. """
         return self.proxy.scale_view(x, y)
@@ -678,6 +831,11 @@ class GraphicsView(Control):
         """ Returns the viewport coordinate point mapped to scene coordinates. 
         """
         return self.proxy.map_to_scene(point)
+    
+    def pixel_density(self):
+        """ Returns the size of a pixel in sceen coordinates. 
+        """
+        return self.proxy.pixel_density()
     
     
 class GraphicsItemGroup(GraphicsItem):

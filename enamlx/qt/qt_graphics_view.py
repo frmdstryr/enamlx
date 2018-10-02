@@ -11,7 +11,7 @@ from atom.api import (
 )
 
 from enaml.qt.QtWidgets import (
-    QGraphicsView, QGraphicsScene, QGraphicsItem, QGraphicsEllipseItem,
+    QGraphicsView, QGraphicsScene, QGraphicsObject, QGraphicsEllipseItem,
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem,
     QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsPixmapItem,
     QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QApplication
@@ -174,6 +174,8 @@ class FeatureMixin(Atom):
         features = self._extra_features
         if features & GraphicFeature.WheelEvent:
             self.hook_wheel()
+        if features & GraphicFeature.DrawEvent:
+            self.hook_draw()
 
     def _teardown_features(self):
         """ Teardowns the advanced widget feature handlers.
@@ -194,6 +196,9 @@ class FeatureMixin(Atom):
         features = self._extra_features
         if features & GraphicFeature.WheelEvent:
             self.unhook_wheel()
+        if features & GraphicFeature.DrawEvent:
+            self.unhook_draw()
+            
     #--------------------------------------------------------------------------
     # Protected API
     #--------------------------------------------------------------------------
@@ -449,6 +454,31 @@ class FeatureMixin(Atom):
 
         """
         self.declaration.wheel_event(event)
+    
+    def hook_draw(self):
+        """ Remove the hooks for the draw (paint) event.
+
+        This method may be overridden by subclasses as needed.
+
+        """
+        widget = self.widget
+        widget.paint = self.draw
+        
+        
+    def unhook_draw(self):
+        """ Remove the hooks for the draw (paint) event.
+
+        This method may be overridden by subclasses as needed.
+
+        """
+        widget = self.widget
+        del widget.paint
+        
+    def draw(self, painter, options, widget):
+        """ Handle the draw event for the widget.
+
+        """
+        self.declaration.draw(painter, options, widget)
 
     #--------------------------------------------------------------------------
     # Framework API
@@ -486,6 +516,9 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     #: Internal scene 
     scene = Typed(QGraphicsScene)
     
+    #: View Range
+    view_range = Typed(QRectF, (0, 0, 1, 1))
+    
     #: Custom features
     _extra_features = Coerced(GraphicFeature.Flags)
     
@@ -496,16 +529,21 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         self.scene = QGraphicsScene()
         self.widget = QGraphicsView(self.scene, self.parent_widget())
         
+        
     def init_widget(self):
-        super(QtGraphicsView, self).init_widget()
         d = self.declaration
+        self._extra_features = d.extra_features
+        super(QtGraphicsView, self).init_widget()
+        
         widget = self.widget
         widget.setCacheMode(QGraphicsView.CacheBackground)
         widget.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
         widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
+        widget.setViewportUpdateMode(QGraphicsView.MinimalViewportUpdate)
+        widget.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         widget.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        
         self.set_drag_mode(d.drag_mode)
         self.set_renderer(d.renderer)
         self.set_antialiasing(d.antialiasing)
@@ -519,14 +557,16 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             scene.addItem(item)
             
     def child_added(self, child):
-        super(QtGraphicsView, self).child_added(child)
         if isinstance(child, QtGraphicsItem):
             self.scene.addItem(child.widget)
+        else:
+            super(QtGraphicsView, self).child_added(child)
             
     def child_removed(self, child):
-        super(QtGraphicsView, self).child_removed(child)
         if isinstance(child, QtGraphicsItem):
             self.scene.removeItem(child.widget)
+        else:
+            super(QtGraphicsView, self).child_removed(child)
             
     def scene_items(self):
         for w in self.children():
@@ -539,15 +579,19 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     def _setup_features(self):
         super(QtGraphicsView, self)._setup_features()
         features = self._extra_features
+        if features & GraphicFeature.MouseEvent:
+            self.hook_drag()
         if features & GraphicFeature.WheelEvent:
             self.hook_wheel()
             
     def _teardown_features(self):
         super(QtGraphicsView, self)._teardown_features()
         features = self._extra_features
+        if features & GraphicFeature.MouseEvent:
+            self.unhook_drag()
         if features & GraphicFeature.WheelEvent:
             self.unhook_wheel()
-            
+        
     def hook_wheel(self):
         """ Install the hooks for wheel events.
 
@@ -591,6 +635,28 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         """
         self.declaration.draw_background(painter, rect)
         
+    def mousePressEvent(self, event):
+        """ Handle the mouse press event for a drag operation.
+
+        """
+        self.declaration.mouse_press_event(event)
+        super(QtGraphicsView, self).mousePressEvent(event)
+        
+    def mouseMoveEvent(self, event):
+        """ Handle the mouse move event for a drag operation.
+
+        """
+        self.declaration.mouse_move_event(event)
+        super(QtGraphicsView, self).mouseMoveEvent(event)
+        
+
+    def mouseReleaseEvent(self, event):
+        """ Handle the mouse release event for the drag operation.
+
+        """
+        self.declaration.mouse_release_event(event)
+        super(QtGraphicsView, self).mouseReleaseEvent(event)
+        
     #--------------------------------------------------------------------------
     # ProxyGraphicsView API
     #--------------------------------------------------------------------------
@@ -598,9 +664,11 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         self.widget.setDragMode(DRAG_MODES.get(mode))
     
     def set_antialiasing(self, enabled):
-        flags = QPainter.TextAntialiasing
+        flags = self.widget.renderHints()
         if enabled:
-            flags |= QPainter.Antialiasing | QPainter.SmoothPixmapTransform
+            flags |= QPainter.Antialiasing
+        else:
+            flags &= ~QPainter.Antialiasing
         self.widget.setRenderHints(flags)
         
     def set_renderer(self, renderer):
@@ -674,6 +742,9 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     def reset_view(self):
         self.widget.setTransform(QTransform())
     
+    def translate_view(self, x, y):
+        self.widget.translate(x, y)
+    
     def scale_view(self, x, y):
         """ Scale the zoom but keep in in the min and max zoom bounds.
 
@@ -696,7 +767,12 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     def map_to_scene(self, point):
         qpoint = self.widget.mapToScene(point.x, point.y)
         return Point(qpoint.x(), qpoint.y())
-
+    
+    def pixel_density(self):
+        tr = self.widget.transform().inverted()[0]
+        p = tr.map(QPoint(1, 1))-tr.map(QPoint(0, 0))
+        return Point(p.x(), p.y())
+    
 
 class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     """ QtGraphicsItem is essentially a copy of QtWidget except that
@@ -705,13 +781,13 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     
     """
     #: Internal item
-    widget = Typed(QGraphicsItem)
+    widget = Typed(QGraphicsObject)
     
     #--------------------------------------------------------------------------
     # Initialization API
     #--------------------------------------------------------------------------
     def create_widget(self):
-        self.widget = QGraphicsItem(self.parent_widget())
+        self.widget = QGraphicsObject(self.parent_widget())
         
     def init_widget(self):
         widget = self.widget
@@ -721,8 +797,10 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         widget.ref = atomref(self) 
         
         focus_registry.register(widget, self)
-        self._setup_features()
         d = self.declaration
+        self._extra_features = d.extra_features
+        self._setup_features()
+        
         if d.selectable:
             self.set_selectable(d.selectable)
         if d.movable:
