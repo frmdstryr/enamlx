@@ -20,6 +20,6 @@ from .key_event import KeyEvent
 from .graphics_view import (
     GraphicsView, GraphicsItem, GraphicsRectItem, GraphicsEllipseItem,
     GraphicsPathItem, GraphicsLineItem, GraphicsTextItem, GraphicsImageItem,
-    GraphicsPolygonItem, GraphicsImageItem, GraphicsItemGroup, 
+    GraphicsPolygonItem, GraphicsImageItem, GraphicsItemGroup, GraphicsWidget,
     Pen, Brush, Point, Rect
 )

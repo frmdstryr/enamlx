@@ -1,0 +1,65 @@
+import math
+import enamlx
+enamlx.install()
+from enaml.core.api import Looper
+from enamlx.widgets.api import (
+    GraphicsView, GraphicsItem, GraphicsTextItem, GraphicsRectItem,
+    GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem, 
+    GraphicsPathItem, GraphicsItemGroup, Pen, Brush
+)
+from enaml.widgets.api import (
+    MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox, 
+    Menu, Action, MenuBar, Feature, ObjectCombo, Form, Label
+)
+from enaml.drag_drop import DragData, DropAction
+from enaml.qt.QtGui import QPainterPath
+
+
+def create_drag_data(data):
+    drag = DragData()
+    drag.supported_actions = DropAction.Copy
+    drag.mime_data.set_data('text/plain', data)
+    return drag
+
+
+enamldef Main(MainWindow): window:
+    attr blue_pen = Pen(color='blue')
+    attr red_pen = Pen(color='red')
+    attr green_brush = Brush(color='green')
+    MenuBar:
+        Menu:
+            title = "&File"
+            Action:
+                text = "Quit\tCtrl+Q"
+                triggered :: raise SystemExit(0)
+    Container: 
+        Form:
+            Label:
+                text = "Drag mode:"
+            ObjectCombo:
+                items = list(canvas.get_member('drag_mode').items)
+                selected := canvas.drag_mode
+        GraphicsView: canvas:
+            attr size = (960, 960)
+            background = "#fff"
+            drag_mode = 'selection'
+            selected_items ::
+                old = change['oldvalue']
+                new = change['value']
+                for item in old:
+                    item.pen = blue_pen
+                for item in new:
+                    item.pen = red_pen
+            Looper:
+                iterable = range(500)
+                GraphicsTextItem:
+                    position = (0, loop_index*20)
+                    rotation = loop_index%30
+                    pen = blue_pen
+                    text << "{}".format(position)
+                    features = Feature.DragEnabled
+                    drag_start => ():
+                        return create_drag_data(b"Hello")
+                    drag_end => (drag_data, result):
+                        print(drag_data, result)
+        

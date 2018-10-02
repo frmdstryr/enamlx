@@ -5,7 +5,7 @@ from enaml.core.api import Looper
 from enamlx.widgets.api import (
     GraphicsView, GraphicsItem, GraphicsTextItem, GraphicsRectItem,
     GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem, 
-    GraphicsPathItem, GraphicsItemGroup, Pen, Brush
+    GraphicsPathItem, GraphicsItemGroup, GraphicsWidget, Pen, Brush
 )
 from enaml.widgets.api import (
     MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox, 
@@ -66,7 +66,12 @@ enamldef Main(MainWindow): window:
                                 randint(0, 640), 0) 
                     opacity = 0.3
                     width = 10
-                
+            GraphicsWidget:
+                position = (500, 100)
+                rotation = 90.0
+                PushButton:
+                    text = "Click me!"
+                    clicked :: parent.position += (0, 10)
             # Grid
             GraphicsItemGroup:
                 opacity = 0.05
@@ -84,6 +89,7 @@ enamldef Main(MainWindow): window:
             GraphicsPathItem:
                 pen = Pen(color="purple", width=2)
                 scale = 3
+                movable = True
                 path << draw(self.position)
                 func draw(position):
                     x, y, z = position
