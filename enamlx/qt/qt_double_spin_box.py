@@ -28,3 +28,13 @@ class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
         widget = QDoubleSpinBox(self.parent_widget())
         widget.setKeyboardTracking(False)
         self.widget = widget
+
+    def init_widget(self):
+        super(QtDoubleSpinBox, self).init_widget()
+        self.set_decimals(self.declaration.decimals)
+
+    # -------------------------------------------------------------------------
+    # ProxyDoubleSpinBox API
+    # -------------------------------------------------------------------------
+    def set_decimals(self, prec):
+        self.widget.setDecimals(prec)
