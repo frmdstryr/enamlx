@@ -73,7 +73,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
         for key in keys:
             parts = [k.strip().lower() for k in key.split("+")]
             code = KEYS.get(parts[-1])
-            modifier = 0
+            modifier = Qt.KeyboardModifiers()
             if code is None:
                 raise KeyError("Invalid key code '{}'".format(key))
             if len(parts) > 1:
@@ -91,14 +91,19 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
     # -------------------------------------------------------------------------
     # QWidget Keys API
     # -------------------------------------------------------------------------
+    def is_matching_key(self, code, mods):
+        codes = self.codes.get(code, None)
+        if codes is None:
+            return False
+        return mods in codes
+
     def on_key_press(self, event):
         d = self.declaration
         try:
             code = event.key()
             mods = event.modifiers()
             is_repeat = event.isAutoRepeat()
-            if not self.codes or (code in self.codes and
-                                          mods in self.codes[code]):
+            if not self.codes or self.is_matching_key(code, mods):
                 if not d.repeats and is_repeat:
                     return
                 d.pressed({'code': code,
@@ -115,8 +120,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
             code = event.key()
             mods = event.modifiers()
             is_repeat = event.isAutoRepeat()
-            if not self.codes or (code in self.codes and
-                                          mods in self.codes[code]):
+            if not self.codes or self.is_matching_key(code, mods):
                 if not d.repeats and is_repeat:
                     return
                 d.released({'code': code,
