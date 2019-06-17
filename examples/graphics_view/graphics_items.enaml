@@ -19,6 +19,7 @@ enamldef Main(MainWindow): window:
     attr blue_pen = Pen(color='blue')
     attr red_pen = Pen(color='red')
     attr green_brush = Brush(color='green')
+    initial_size = canvas.size
     MenuBar:
         Menu:
             title = "&File"
@@ -90,8 +91,8 @@ enamldef Main(MainWindow): window:
                 pen = Pen(color="purple", width=2)
                 scale = 3
                 movable = True
-                path << draw(self.position)
-                func draw(position):
+                path << redraw(self.position)
+                func redraw(position):
                     x, y, z = position
                     p = QPainterPath()
                     p.moveTo(x, y)

@@ -5,7 +5,7 @@ from enaml.core.api import Looper
 from enamlx.widgets.api import (
     GraphicsView, GraphicsItem, GraphicsTextItem, GraphicsRectItem,
     GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem, 
-    GraphicsPathItem, GraphicsItemGroup, Pen, Brush
+    GraphicsPathItem, GraphicsItemGroup, Pen, Brush, Point
 )
 from enaml.widgets.api import (
     MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox, 
@@ -13,6 +13,7 @@ from enaml.widgets.api import (
 )
 from enaml.drag_drop import DragData, DropAction
 from enaml.qt.QtGui import QPainterPath
+from enaml.qt.QtCore import Qt
 
 
 def create_drag_data(data):
@@ -43,6 +44,38 @@ enamldef Main(MainWindow): window:
             attr size = (960, 960)
             background = "#fff"
             drag_mode = 'selection'
+            minimum_size = size
+            attr last_point = None
+            
+            Menu:
+                context_menu = True
+                Action:
+                    text = 'Reset'
+                    triggered :: canvas.reset_view()
+            
+            mouse_press_event => (evt): 
+                self.last_point = evt.pos()
+            mouse_move_event => (evt): 
+                if self.last_point is None:
+                    self.last_point = evt.pos()
+                if self.selected_items or self.drag_mode == 'selection':
+                    return
+                dp = evt.pos()-self.last_point
+                delta = Point(dp.x(), dp.y())
+                self.last_point = evt.pos()
+                
+                if evt.buttons() in (Qt.MidButton, Qt.LeftButton):
+                    px = self.pixel_density()
+                    tr = -delta*px
+                    self.translate_view(tr.x, tr.y)
+                
+            wheel_event => (evt): 
+                if hasattr(evt, 'delta'):
+                    d = evt.delta()
+                else:
+                    d = evt.angleDelta().y()
+                s = 1.001 ** d
+                self.scale_view(s, s)
             selected_items ::
                 old = change['oldvalue']
                 new = change['value']
@@ -51,11 +84,12 @@ enamldef Main(MainWindow): window:
                 for item in new:
                     item.pen = red_pen
             Looper:
-                iterable = range(500)
+                iterable = range(100)
                 GraphicsTextItem:
                     position = (0, loop_index*20)
-                    rotation = loop_index%30
                     pen = blue_pen
+                    movable = True
+                    selectable = True
                     text << "{}".format(position)
                     features = Feature.DragEnabled
                     drag_start => ():

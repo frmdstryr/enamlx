@@ -14,7 +14,8 @@ from enaml.qt.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsObject, QGraphicsEllipseItem,
     QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem,
     QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsPixmapItem,
-    QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QApplication
+    QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QGraphicsItem,
+    QApplication, QFrame
 )
 from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF, __version_info__
 from enaml.qt.QtGui import (
@@ -42,10 +43,11 @@ from enamlx.widgets.graphics_view import (
 
 
 PEN_STYLES = {
+    'none': Qt.NoPen,
     'solid': Qt.SolidLine,
-    'dash': Qt.DashLine, 
-    'dot': Qt.DotLine, 
-    'dash_dot': Qt.DashDotLine, 
+    'dash': Qt.DashLine,
+    'dot': Qt.DotLine,
+    'dash_dot': Qt.DashDotLine,
     'dash_dot_dot': Qt.DashDotDotLine,
     'custom': Qt.CustomDashLine
 }
@@ -88,7 +90,7 @@ BRUSH_STYLES = {
 DRAG_MODES = {
     'none': QGraphicsView.NoDrag,
     'scroll': QGraphicsView.ScrollHandDrag,
-    'selection': QGraphicsView.RubberBandDrag    
+    'selection': QGraphicsView.RubberBandDrag
 }
 
 #--------------------------------------------------------------------------
@@ -98,8 +100,7 @@ def QPen_from_Pen(pen):
     qpen = QPen()
     if pen.color:
         qpen.setColor(get_cached_qcolor(pen.color))
-    if pen.width != 1:
-        qpen.setWidth(pen.width)
+    qpen.setWidth(pen.width)
     qpen.setStyle(PEN_STYLES.get(pen.line_style))
     qpen.setCapStyle(CAP_STYLES.get(pen.cap_style))
     qpen.setJoinStyle(JOIN_STYLES.get(pen.join_style))
@@ -138,7 +139,7 @@ def get_cached_qbrush(brush):
 #--------------------------------------------------------------------------
 class FeatureMixin(Atom):
     """ A mixin that provides focus and mouse features.
-    
+
     """
     #: A private copy of the declaration features. This ensures that
     #: feature cleanup will proceed correctly in the event that user
@@ -151,7 +152,7 @@ class FeatureMixin(Atom):
 
     #: Internal storage for the drag origin position.
     _drag_origin = Typed(QPointF)
-    
+
     #--------------------------------------------------------------------------
     # Private API
     #--------------------------------------------------------------------------
@@ -170,7 +171,7 @@ class FeatureMixin(Atom):
             self.hook_drag()
         if features & Feature.DropEnabled:
             self.hook_drop()
-            
+
         features = self._extra_features
         if features & GraphicFeature.WheelEvent:
             self.hook_wheel()
@@ -198,7 +199,7 @@ class FeatureMixin(Atom):
             self.unhook_wheel()
         if features & GraphicFeature.DrawEvent:
             self.unhook_draw()
-            
+
     #--------------------------------------------------------------------------
     # Protected API
     #--------------------------------------------------------------------------
@@ -380,7 +381,7 @@ class FeatureMixin(Atom):
 
     def do_drag(self, widget):
         """ Perform the drag operation for the widget.
-        
+
         Parameters
         ----------
         widget: QWidget
@@ -434,27 +435,27 @@ class FeatureMixin(Atom):
 
         """
         self.declaration.drop(QtDropEvent(event))
-        
+
     def hook_wheel(self):
         """ Install the hooks for wheel events.
 
         """
         widget = self.widget
         widget.wheelEvent = self.wheelEvent
-        
+
     def unhook_wheel(self):
         """ Removes the hooks for wheel events.
 
         """
         widget = self.widget
         del widget.wheelEvent
-        
+
     def wheelEvent(self, event):
         """ Handle the mouse wheel event for the widget.
 
         """
         self.declaration.wheel_event(event)
-    
+
     def hook_draw(self):
         """ Remove the hooks for the draw (paint) event.
 
@@ -463,8 +464,8 @@ class FeatureMixin(Atom):
         """
         widget = self.widget
         widget.paint = self.draw
-        
-        
+
+
     def unhook_draw(self):
         """ Remove the hooks for the draw (paint) event.
 
@@ -473,7 +474,7 @@ class FeatureMixin(Atom):
         """
         widget = self.widget
         del widget.paint
-        
+
     def draw(self, painter, options, widget):
         """ Handle the draw event for the widget.
 
@@ -505,74 +506,77 @@ class FeatureMixin(Atom):
             action = self._widget_action = QWidgetAction(None)
             action.setDefaultWidget(self.widget)
         return action
-    
+
 #--------------------------------------------------------------------------
 # Toolkit implementations
 #--------------------------------------------------------------------------
 class QtGraphicsView(QtControl, ProxyGraphicsView):
     #: Internal widget
     widget = Typed(QGraphicsView)
-    
-    #: Internal scene 
+
+    #: Internal scene
     scene = Typed(QGraphicsScene)
-    
+
     #: View Range
     view_range = Typed(QRectF, (0, 0, 1, 1))
-    
+
     #: Custom features
     _extra_features = Coerced(GraphicFeature.Flags)
-    
+
     #: Cyclic notification guard. This a bitfield of multiple guards.
     _guards = Int(0)
 
     def create_widget(self):
         self.scene = QGraphicsScene()
         self.widget = QGraphicsView(self.scene, self.parent_widget())
-        
-        
+
     def init_widget(self):
         d = self.declaration
         self._extra_features = d.extra_features
         super(QtGraphicsView, self).init_widget()
-        
+
         widget = self.widget
         widget.setCacheMode(QGraphicsView.CacheBackground)
+        widget.setFocusPolicy(Qt.StrongFocus)
+        widget.setFrameShape(QFrame.NoFrame)
         widget.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
         widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         widget.setViewportUpdateMode(QGraphicsView.MinimalViewportUpdate)
         widget.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         widget.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        
+        widget.setMouseTracking(True)
+
         self.set_drag_mode(d.drag_mode)
         self.set_renderer(d.renderer)
         self.set_antialiasing(d.antialiasing)
-        
         self.scene.selectionChanged.connect(self.on_selection_changed)
-    
+
     def init_layout(self):
         super(QtGraphicsView, self).init_layout()
         scene = self.scene
         for item in self.scene_items():
             scene.addItem(item)
-            
+
+        self.set_view_range(self.view_range)
+
     def child_added(self, child):
         if isinstance(child, QtGraphicsItem):
             self.scene.addItem(child.widget)
         else:
             super(QtGraphicsView, self).child_added(child)
-            
+
     def child_removed(self, child):
         if isinstance(child, QtGraphicsItem):
             self.scene.removeItem(child.widget)
         else:
             super(QtGraphicsView, self).child_removed(child)
-            
+
     def scene_items(self):
         for w in self.children():
             if isinstance(w, QtGraphicsItem):
                 yield w.widget
-    
+
     #--------------------------------------------------------------------------
     # GraphicFeature API
     #--------------------------------------------------------------------------
@@ -583,7 +587,8 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             self.hook_drag()
         if features & GraphicFeature.WheelEvent:
             self.hook_wheel()
-            
+        self.hook_resize()
+
     def _teardown_features(self):
         super(QtGraphicsView, self)._teardown_features()
         features = self._extra_features
@@ -591,35 +596,50 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             self.unhook_drag()
         if features & GraphicFeature.WheelEvent:
             self.unhook_wheel()
-        
+        self.unhook_resize()
+
     def hook_wheel(self):
         """ Install the hooks for wheel events.
 
         """
         widget = self.widget
         widget.wheelEvent = self.wheelEvent
-        
+
     def unhook_wheel(self):
         """ Removes the hooks for wheel events.
 
         """
         widget = self.widget
         del widget.wheelEvent
-        
+
     def hook_draw(self):
         """ Install the hooks for background draw events.
 
         """
         widget = self.widget
         widget.drawBackground = self.drawBackground
-        
+
     def unhook_draw(self):
         """ Removes the hooks for background draw events.
 
         """
         widget = self.widget
         del widget.drawBackground
-    
+
+    def hook_resize(self):
+        """ Install the hooks for resize events.
+
+        """
+        widget = self.widget
+        widget.resizeEvent = self.resizeEvent
+
+    def unhook_resize(self):
+        """ Removes the hooks for resize events.
+
+        """
+        widget = self.widget
+        del widget.resizeEvent
+
     #--------------------------------------------------------------------------
     # QGraphicView API
     #--------------------------------------------------------------------------
@@ -628,27 +648,27 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
 
         """
         self.declaration.wheel_event(event)
-        
+
     def drawBackground(self, painter, rect):
         """ Handle the drawBackground request
 
         """
         self.declaration.draw_background(painter, rect)
-        
+
     def mousePressEvent(self, event):
         """ Handle the mouse press event for a drag operation.
 
         """
         self.declaration.mouse_press_event(event)
         super(QtGraphicsView, self).mousePressEvent(event)
-        
+
     def mouseMoveEvent(self, event):
         """ Handle the mouse move event for a drag operation.
 
         """
         self.declaration.mouse_move_event(event)
         super(QtGraphicsView, self).mouseMoveEvent(event)
-        
+
 
     def mouseReleaseEvent(self, event):
         """ Handle the mouse release event for the drag operation.
@@ -656,13 +676,56 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         """
         self.declaration.mouse_release_event(event)
         super(QtGraphicsView, self).mouseReleaseEvent(event)
-        
+
+    def resizeEvent(self, event):
+        """ Resize the view range to match the widget size
+
+        """
+        d = self.declaration
+        widget = self.widget
+
+        if d.auto_range:
+            size = self.widget.size()
+            view_range = QRectF(0, 0, size.width(), size.height())
+            #view_range = self.scene.itemsBoundingRect()
+        else:
+            # Return the boundaries of the view in scene coordinates
+            r = QRectF(widget.rect())
+            view_range = widget.viewportTransform().inverted()[0].mapRect(r)
+        self.set_view_range(view_range)
+
     #--------------------------------------------------------------------------
     # ProxyGraphicsView API
     #--------------------------------------------------------------------------
+    def set_view_range(self, view_range):
+        """ Set the visible scene rect to override the default behavior
+        of limiting panning and viewing to the graphics items view.
+
+        Based on Luke Campagnola's updateMatrix of pyqtgraph's GraphicsView
+
+        """
+        d = self.declaration
+        self.view_range = view_range
+        widget = self.widget
+        widget.setSceneRect(view_range)
+        if d.auto_range:
+            widget.resetTransform()
+        else:
+            if d.lock_aspect_ratio:
+                flags = Qt.KeepAspectRatio
+            else:
+                flags = Qt.IgnoreAspectRatio
+            widget.fitInView(view_range, flags)
+
     def set_drag_mode(self, mode):
         self.widget.setDragMode(DRAG_MODES.get(mode))
-    
+
+    def set_auto_range(self, enabled):
+        self.set_view_range(self.view_range)
+
+    def set_lock_aspect_ratio(self, locked):
+        self.set_view_range(self.view_range)
+
     def set_antialiasing(self, enabled):
         flags = self.widget.renderHints()
         if enabled:
@@ -670,10 +733,10 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         else:
             flags &= ~QPainter.Antialiasing
         self.widget.setRenderHints(flags)
-        
+
     def set_renderer(self, renderer):
-        """ Set the viewport widget. 
-        
+        """ Set the viewport widget.
+
         """
         viewport = None
         if renderer == 'opengl':
@@ -687,17 +750,17 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
                 warnings.warn(
                     "QOpenGLWidget could not be imported: {}".format(e))
         self.widget.setViewport(viewport)
-        
+
     def set_selected_items(self, items):
         if self._guards & 0x01:
             return
         self.scene.clearSelection()
         for item in items:
             item.selected = True
-    
+
     def on_selection_changed(self):
         """ Callback invoked one the selection has changed.
-        
+
         """
         d = self.declaration
         selection = self.scene.selectedItems()
@@ -707,7 +770,7 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
                                 if item.ref()]
         finally:
             self._guards &= ~0x01
-            
+
     def set_background(self, background):
         """ Set the background color of the widget.
 
@@ -719,88 +782,100 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         item = self.scene.getItemAt(point.x, point.y)
         if item and item.ref():
             return item.ref().declaration
-    
+
     def get_items_at(self, point):
         items = self.scene.items(point.x, point.y)
         return [item.ref().declaration for item in items if item.ref()]
-    
+
     def get_items_in(self, top_left, bottom_right):
-        qrect = QRectF(QPointF(top_left.x, top_left.y), 
+        qrect = QRectF(QPointF(top_left.x, top_left.y),
                        QPointF(bottom_right.x, bottom_right.y))
         items = self.scene.items(qrect)
         return [item.ref().declaration for item in items if item.ref()]
-        
+
     def fit_in_view(self, item):
         self.widget.fitInView(item.proxy.widget)
-    
+
     def center_on(self, item):
         if isinstance(item, Point):
             self.widget.centerOn(item.x, item.y)
         else:
             self.widget.centerOn(item.proxy.widget)
-            
+
     def reset_view(self):
-        self.widget.setTransform(QTransform())
-    
+        self.widget.resetTransform()
+
     def translate_view(self, x, y):
-        self.widget.translate(x, y)
-    
+        view_range = self.view_range.adjusted(x, y, x, y)
+        self.set_view_range(view_range)
+        return view_range
+
     def scale_view(self, x, y):
         """ Scale the zoom but keep in in the min and max zoom bounds.
 
         """
         d = self.declaration
-        factor = self.widget.transform().scale(x, y).mapRect(
-            QRectF(0, 0, 1, 1)).width()
-        if (d.min_zoom > factor > d.max_zoom):
-            return
-        self.widget.scale(x, y)
-        return factor
-    
+        sx, sy = float(x), float(y)
+        if d.lock_aspect_ratio:
+            sy = sx
+        view_range = self.view_range
+        center = view_range.center()
+        w, h = view_range.width()/sx, view_range.height()/sy
+        cx, cy = center.x(), center.y()
+        x = cx - (cx - view_range.left())/sx
+        y = cy - (cy - view_range.top())/sy
+        view_range = QRectF(x, y, w, h)
+        self.set_view_range(view_range)
+        return view_range
+
     def rotate_view(self, angle):
         self.widget.rotate(angle)
-    
+
     def map_from_scene(self, point):
         qpoint = self.widget.mapFromScene(point.x, point.y)
         return Point(qpoint.x(), qpoint.y())
-    
+
     def map_to_scene(self, point):
         qpoint = self.widget.mapToScene(point.x, point.y)
         return Point(qpoint.x(), qpoint.y())
-    
+
     def pixel_density(self):
         tr = self.widget.transform().inverted()[0]
         p = tr.map(QPoint(1, 1))-tr.map(QPoint(0, 0))
         return Point(p.x(), p.y())
-    
+
 
 class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     """ QtGraphicsItem is essentially a copy of QtWidget except that
     it uses `self.widget`, `create_widget` and `init_widget` instead of
     widget.
-    
+
     """
     #: Internal item
     widget = Typed(QGraphicsObject)
-    
+
+    #: Cyclic notification guard. This a bitfield of multiple guards.
+    #: 0x01 is position
+    _guards = Int(0)
+
     #--------------------------------------------------------------------------
     # Initialization API
     #--------------------------------------------------------------------------
     def create_widget(self):
         self.widget = QGraphicsObject(self.parent_widget())
-        
+
     def init_widget(self):
         widget = self.widget
-        
-        # Save a reference so we can retrieve the QtGraphicsItem 
+
+        # Save a reference so we can retrieve the QtGraphicsItem
         # from the QGraphicsItem
-        widget.ref = atomref(self) 
-        
+        widget.ref = atomref(self)
+
         focus_registry.register(widget, self)
         d = self.declaration
         self._extra_features = d.extra_features
         self._setup_features()
-        
+
         if d.selectable:
             self.set_selectable(d.selectable)
         if d.movable:
@@ -820,10 +895,11 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         if d.scale != 1:
             self.set_scale(d.scale)
         self.set_position(d.position)
-            
+        self.hook_item_change()
+
     def init_layout(self):
         pass
-        
+
     #--------------------------------------------------------------------------
     # ProxyToolkitObject API
     #--------------------------------------------------------------------------
@@ -843,58 +919,95 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         # superclass destroy() method must run before the reference to
         # the QWidgetAction is dropped.
         del self._widget_action
-    
+
     def parent_widget(self):
         """ Reimplemented to only return GraphicsItems """
         parent = self.parent()
         if parent is not None and isinstance(parent, QtGraphicsItem):
             return parent.widget
-    
+
+    def _teardown_features(self):
+        super(QtGraphicsItem, self)._teardown_features()
+        self.unhook_item_change()
+
+    def hook_item_change(self):
+        widget = self.widget
+        widget.itemChange = self.itemChange
+
+    def unhook_item_change(self):
+        del self.widget.itemChange
+
+    #--------------------------------------------------------------------------
+    # Signals
+    #--------------------------------------------------------------------------
+    def itemChange(self, change, value):
+        widget = self.widget
+        if QGraphicsItem.ItemPositionHasChanged:
+            pos = widget.pos()
+            pos = Point(pos.x(), pos.y(), widget.zValue())
+            self._guards |= 0x01
+            try:
+                self.declaration.position = pos
+            finally:
+                self._guards &= ~0x01
+        elif QGraphicsItem.ItemSelectedChange:
+            self.declaration.selected = widget.isSelected()
+
+        return type(widget).itemChange(widget, change, value)
+
     # --------------------------------------------------------------------------
     # ProxyGraphicsItem API
     # --------------------------------------------------------------------------
     def set_visible(self, visible):
         self.widget.setVisible(visible)
-        
+
     def set_enabled(self, enabled):
         self.widget.setEnabled(enabled)
-        
+
     def set_selectable(self, enabled):
         self.widget.setFlag(QGraphicsItem.ItemIsSelectable, enabled)
-        
+
     def set_movable(self, enabled):
         self.widget.setFlag(QGraphicsItem.ItemIsMovable, enabled)
-    
+
     def set_x(self, x):
+        if self._guards & 0x01:
+            return
         self.widget.setX(x)
-    
+
     def set_y(self, y):
+        if self._guards & 0x01:
+            return
         self.widget.setY(y)
-    
+
     def set_z(self, z):
+        if self._guards & 0x01:
+            return
         self.widget.setZValue(z)
-    
+
     def set_position(self, position):
+        if self._guards & 0x01:
+            return
         pos = self.declaration.position
         w = self.widget
         w.setPos(pos.x, pos.y)
         w.setZValue(pos.z)
-    
+
     def set_rotation(self, rotation):
         self.widget.setRotation(rotation)
-    
+
     def set_scale(self, scale):
         self.widget.setScale(scale)
-    
+
     def set_opacity(self, opacity):
         self.widget.setOpacity(opacity)
-        
+
     def set_selected(self, selected):
         self.widget.setSelected(selected)
-        
+
     def set_tool_tip(self, tool_tip):
         self.widget.setToolTip(tool_tip)
-        
+
     def set_status_tip(self, status_tip):
         self.widget.setToolTip(status_tip)
 
@@ -902,21 +1015,21 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
 class QtGraphicsItemGroup(QtGraphicsItem, ProxyGraphicsItemGroup):
     #: Internal widget
     widget = Typed(QGraphicsItemGroup)
-    
+
     def create_widget(self):
         self.widget = QGraphicsItemGroup(self.parent_widget())
-        
+
     def init_layout(self):
         super(QtGraphicsItemGroup, self).init_layout()
         widget = self.widget
         for item in self.child_widgets():
             widget.addToGroup(item)
-    
+
     def child_added(self, child):
         super(QtGraphicsItemGroup, self).child_added(child)
         if isinstance(child, QtGraphicsItem):
             self.widget.addToGroup(child.widget)
-            
+
     def child_removed(self, child):
         super(QtGraphicsItemGroup, self).child_removed(child)
         if isinstance(child, QtGraphicsItem):
@@ -926,14 +1039,14 @@ class QtGraphicsItemGroup(QtGraphicsItem, ProxyGraphicsItemGroup):
 class QtGraphicsWidget(QtGraphicsItem, ProxyGraphicsWidget):
     #: Internal widget
     widget = Typed(QGraphicsProxyWidget)
-     
+
     def create_widget(self):
         """ Deferred to the layout pass """
         pass
-    
+
     def init_widget(self):
         pass
-    
+
     def init_layout(self):
         """ Create the widget in the layout pass after the child widget has
         been created and intialized. We do this so the child widget does not
@@ -947,16 +1060,16 @@ class QtGraphicsWidget(QtGraphicsItem, ProxyGraphicsWidget):
             break
         super(QtGraphicsWidget, self).init_widget()
         super(QtGraphicsWidget, self).init_layout()
-    
+
     def child_added(self, child):
         super(QtGraphicsItemGroup, self).child_added(child)
         if isinstance(child, QtWidget):
             self.widget.setWidget(child.widget)
-            
+
 
 class QtAbstractGraphicsShapeItem(QtGraphicsItem,
                                   ProxyAbstractGraphicsShapeItem):
-    
+
     def init_widget(self):
         super(QtAbstractGraphicsShapeItem, self).init_widget()
         d = self.declaration
@@ -964,66 +1077,66 @@ class QtAbstractGraphicsShapeItem(QtGraphicsItem,
             self.set_pen(d.pen)
         if d.brush:
             self.set_brush(d.brush)
-        
+
     def set_pen(self, pen):
         if pen:
             self.widget.setPen(get_cached_qpen(pen))
         else:
             self.widget.setPen(QPen())
-    
+
     def set_brush(self, brush):
         if brush:
             self.widget.setBrush(get_cached_qbrush(brush))
         else:
             self.widget.setBrush(QBrush())
-    
+
 
 class QtGraphicsLineItem(QtAbstractGraphicsShapeItem, ProxyGraphicsLineItem):
     #: Internal widget
     widget = Typed(QGraphicsLineItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsLineItem(self.parent_widget())
-        
+
     def set_position(self, position):
         self.set_point(self.declaration.point)
-        
+
     def set_point(self, point):
         pos = self.declaration.position
         self.widget.setLine(pos.x, pos.y, *point[:2])
-        
 
-class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem, 
+
+class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem,
                             ProxyGraphicsEllipseItem):
     #: Internal widget
     widget = Typed(QGraphicsEllipseItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsEllipseItem(self.parent_widget())
-        
+
     def init_widget(self):
         super(QtGraphicsEllipseItem, self).init_widget()
         d = self.declaration
         self.set_start_angle(d.start_angle)
         self.set_span_angle(d.span_angle)
-    
+
     def set_position(self, position):
         self.update_rect()
-        
+
     def set_width(self, width):
         self.update_rect()
-        
+
     def set_height(self, height):
         self.update_rect()
-        
+
     def update_rect(self):
         d = self.declaration
         pos = d.position
         self.widget.setRect(pos.x, pos.y, d.width, d.height)
-    
+
     def set_span_angle(self, angle):
         self.widget.setSpanAngle(angle*16)
-        
+
     def set_start_angle(self, angle):
         self.widget.setStartAngle(angle*16)
 
@@ -1031,32 +1144,32 @@ class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem,
 class QtGraphicsRectItem(QtAbstractGraphicsShapeItem, ProxyGraphicsRectItem):
     #: Internal widget
     widget = Typed(QGraphicsRectItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsRectItem(self.parent_widget())
-        
+
     def set_position(self, position):
         self.update_rect()
-        
+
     def set_width(self, width):
         self.update_rect()
-        
+
     def set_height(self, height):
         self.update_rect()
-        
+
     def update_rect(self):
         d = self.declaration
         pos = d.position
         self.widget.setRect(pos.x, pos.y, d.width, d.height)
-        
-        
+
+
 class QtGraphicsTextItem(QtAbstractGraphicsShapeItem, ProxyGraphicsTextItem):
     #: Internal widget
     widget = Typed(QGraphicsSimpleTextItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsSimpleTextItem(self.parent_widget())
-        
+
     def init_widget(self):
         super(QtGraphicsTextItem, self).init_widget()
         d = self.declaration
@@ -1064,10 +1177,10 @@ class QtGraphicsTextItem(QtAbstractGraphicsShapeItem, ProxyGraphicsTextItem):
             self.set_text(d.text)
         if d.font:
             self.set_font(d.font)
-        
+
     def set_text(self, text):
         self.widget.setText(text)
-        
+
     def set_font(self, font):
         self.widget.setFont(get_cached_qfont(font))
 
@@ -1076,33 +1189,33 @@ class QtGraphicsPolygonItem(QtAbstractGraphicsShapeItem,
                             ProxyGraphicsPolygonItem):
     #: Internal widget
     widget = Typed(QGraphicsPolygonItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsPolygonItem(self.parent_widget())
-        
+
     def init_widget(self):
         super(QtGraphicsPolygonItem, self).init_widget()
         d = self.declaration
         self.set_points(d.points)
-        
+
     def set_points(self, points):
         polygon = QPolygonF([QPointF(*p[:2]) for p in points])
         self.widget.setPolygon(polygon)
-        
-        
+
+
 class QtGraphicsPathItem(QtAbstractGraphicsShapeItem, ProxyGraphicsPathItem):
     #: Internal widget
     widget = Typed(QGraphicsPathItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsPathItem(self.parent_widget())
-        
+
     def init_widget(self):
         super(QtGraphicsPathItem, self).init_widget()
         d = self.declaration
         if d.path:
             self.set_path(d.path)
-        
+
     def set_path(self, path):
         #: TODO: Convert path
         self.widget.setPath(path)
@@ -1111,15 +1224,15 @@ class QtGraphicsPathItem(QtAbstractGraphicsShapeItem, ProxyGraphicsPathItem):
 class QtGraphicsImageItem(QtGraphicsItem, ProxyGraphicsImageItem):
     #: Internal widget
     widget = Typed(QGraphicsPixmapItem)
-    
+
     def create_widget(self):
         self.widget = QGraphicsPixmapItem(self.parent_widget())
-        
+
     def init_widget(self):
         super(QtGraphicsImageItem, self).init_widget()
         d = self.declaration
         if d.image:
             self.set_image(d.image)
-        
+
     def set_image(self, image):
         self.widget.setPixmap(QPixmap.fromImage(get_cached_qimage(image)))

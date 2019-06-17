@@ -34,7 +34,9 @@ class GraphicFeature(IntEnum):
     
     #: Enables support for backgound draw events.
     BackgroundDrawEvent = 0x64
-        
+
+
+
 
 class Point(Atom):
     #: x position
@@ -126,10 +128,10 @@ def coerce_point(p):
     
 
 class PointMember(Coerced):
-    def __init__(self, args=None, kwargs=None, factory=None, coercer=coerce_point):
+    def __init__(self, args=None, kwargs=None, factory=None, 
+                 coercer=coerce_point):
         super(PointMember, self).__init__(
-            Point, args, kwargs, factory, coercer
-        )
+            Point, args, kwargs, factory, coercer)
 
 
 class Pen(Atom):
@@ -141,7 +143,7 @@ class Pen(Atom):
     
     #: Line Style
     line_style = Enum('solid', 'dash', 'dot', 'dash_dot', 'dash_dot_dot',
-                      'custom')
+                      'custom', 'none')
     
     #: Cap Style
     cap_style = Enum('square', 'flat', 'round')
@@ -178,16 +180,22 @@ class ProxyGraphicsView(ProxyControl):
     #: Reference to the declaration
     declaration = ForwardTyped(lambda: GraphicsView)
     
-    def set_drag_mode(self, mode):
+    def set_auto_range(self, enabled):
         raise NotImplementedError
     
     def set_antialiasing(self, enabled):
+        raise NotImplementedError    
+    
+    def set_drag_mode(self, mode):
         raise NotImplementedError
     
     def set_renderer(self, renderer):
         raise NotImplementedError
     
     def get_item_at(self, point):
+        raise NotImplementedError
+    
+    def set_lock_aspect_ratio(self, locked):
         raise NotImplementedError
     
     def set_selected_items(self, items):
@@ -697,6 +705,12 @@ class GraphicsView(Control):
     min_zoom = d_(Float(0.007, strict=False))
     max_zoom = d_(Float(100.0, strict=False))
     
+    #: Automatically resize view to fit the scene contents
+    auto_range = d_(Bool(False)) # TODO: Broken
+    
+    #: Keep the aspect ratio locked when resizing the view range 
+    lock_aspect_ratio = d_(Bool(True))
+    
     #: Set the extra features to enable for this widget. This value must
     #: be provided when the widget is instantiated. Runtime changes to
     #: this value are ignored.
@@ -705,7 +719,8 @@ class GraphicsView(Control):
     def _default_extra_features(self):
         return GraphicFeature.WheelEvent | GraphicFeature.MouseEvent
     
-    @observe('selected_items', 'renderer', 'antialiasing', 'drag_mode')
+    @observe('selected_items', 'renderer', 'antialiasing', 'drag_mode', 
+             'auto_range', 'lock_aspect_ratio')
     def _update_proxy(self, change):
         super(GraphicsView, self)._update_proxy(change)
     
