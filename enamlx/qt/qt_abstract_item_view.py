@@ -41,8 +41,8 @@ class QAbstractAtomItemModel(object):
 
     def setDeclaration(self, declaration):
         """ Set the declaration this model will use for rendering
-        the the headers. 
-        
+        the the headers.
+
         """
         assert isinstance(declaration.proxy, ProxyAbstractItemView), \
             "The model declaration must be a QtAbstractItemView subclass. " \
@@ -83,12 +83,12 @@ class QAbstractAtomItemModel(object):
 
     def itemAt(self, index):
         """ Get the item at the given model index.
-         
+
         Returns
         -------
-            item: 
-                
-        
+            item:
+
+
         """
         raise NotImplementedError
 
@@ -108,7 +108,7 @@ class QAbstractAtomItemModel(object):
 
     def setData(self, index, value, role=Qt.EditRole):
         """ Set the data for the item at the given index to the given value.
-        
+
         """
         item = self.itemAt(index)
         if not item:
@@ -127,12 +127,12 @@ class QAbstractAtomItemModel(object):
         return super(QAbstractAtomItemModel, self).setData(index, value, role)
 
     def headerData(self, index, orientation, role):
-        """ QHeaderView respects the following item data roles: 
-                TextAlignmentRole, 
-                DisplayRole, 
-                FontRole, 
-                DecorationRole, 
-                ForegroundRole, 
+        """ QHeaderView respects the following item data roles:
+                TextAlignmentRole,
+                DisplayRole,
+                FontRole,
+                DecorationRole,
+                ForegroundRole,
                 BackgroundRole.
         """
         d = self.declaration
@@ -273,8 +273,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
     def set_items(self, items):
         """ Defer until later so the view is only updated after all items
-        are added. 
-        
+        are added.
+
         """
         self._pending_view_refreshes +=1
         timed_call(self._pending_timeout, self._refresh_layout)
@@ -288,8 +288,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     def on_horizontal_scrollbar_moved(self, value):
         """ When the scrollbar moves, queue a refresh of the visible
         columns.  This makes it only update the view when needed
-        making scrolling much smoother.   
-        
+        making scrolling much smoother.
+
         """
         self._pending_column_refreshes += 1
         timed_call(0, self._refresh_visible_column, value)
@@ -297,8 +297,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     def on_vertical_scrollbar_moved(self, value):
         """ When the scrollbar moves, queue a refresh of the visible
         rows.  This makes it only update the view when needed
-        making scrolling much smoother.   
-        
+        making scrolling much smoother.
+
         """
         self._pending_row_refreshes += 1
         timed_call(0, self._refresh_visible_row, value)
@@ -349,27 +349,31 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         item.declaration.entered()
 
     def on_selection_changed(self, selected, deselected):
-        selection = []
+        selection = self.declaration.selection[:]
         for index in selected.indexes():
             item = self.item_at(index)
             if not item:
                 continue
             d = item.declaration
             selection.append(d)
-            if d.selected != True:
+            if not d.selected:
                 d.selected = True
                 d.selection_changed(d.selected)
-
-        self.declaration.selection = selection
 
         for index in deselected.indexes():
             item = self.item_at(index)
             if not item:
                 continue
             d = item.declaration
-            if d.selected != False:
+            try:
+                selection.remove(d)
+            except:
+                pass
+            if d.selected:
                 d.selected = False
                 d.selection_changed(d.selected)
+
+        self.declaration.selection = selection
 
     def on_custom_context_menu_requested(self, pos):
         item = self.item_at(self.widget.indexAt(pos))
@@ -391,10 +395,10 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     # -------------------------------------------------------------------------
     def _refresh_layout(self):
         """ This queues and batches model changes so that the layout is only
-        refreshed after the `_pending_timeout` expires. This prevents 
+        refreshed after the `_pending_timeout` expires. This prevents
         the UI from refreshing when inserting or removing a large number of
         items until the operation is complete.
-        
+
         """
         self._pending_view_refreshes -= 1
         if self._pending_view_refreshes == 0:
@@ -417,25 +421,25 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     #                 header.resizeSection(i,item.declaration.width)
 
     def _refresh_visible_row(self, value):
-        """ Subclasses must implement this method to refresh the content in the 
+        """ Subclasses must implement this method to refresh the content in the
         row with the content at the given index.
-        
+
         Parameters
         ----------
             value: int
                 Index of the row that needs to be refreshed
-        
+
         """
         raise NotImplementedError
 
     def _refresh_visible_column(self, value):
-        """ Subclasses must implement this method to refresh the content in the 
+        """ Subclasses must implement this method to refresh the content in the
         column with the content at the given index.
-        
+
         Parameters
         ----------
             value: int
                 Index of the column that needs to be refreshed
-        
+
         """
         raise NotImplementedError
