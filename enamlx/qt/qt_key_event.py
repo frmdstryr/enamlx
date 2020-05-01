@@ -6,9 +6,9 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
 from atom.api import Instance, Callable, Dict
-from enamlx.widgets.key_event import ProxyKeyEvent
 from enaml.qt.qt_control import QtControl
 from enaml.qt import QtCore
+from enamlx.widgets.key_event import ProxyKeyEvent
 
 
 Qt = QtCore.Qt

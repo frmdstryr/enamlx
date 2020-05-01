@@ -942,7 +942,7 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     #--------------------------------------------------------------------------
     def itemChange(self, change, value):
         widget = self.widget
-        if QGraphicsItem.ItemPositionHasChanged:
+        if change == QGraphicsItem.ItemPositionHasChanged:
             pos = widget.pos()
             pos = Point(pos.x(), pos.y(), widget.zValue())
             self._guards |= 0x01
@@ -950,7 +950,7 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
                 self.declaration.position = pos
             finally:
                 self._guards &= ~0x01
-        elif QGraphicsItem.ItemSelectedChange:
+        elif change == QGraphicsItem.ItemSelectedChange:
             self.declaration.selected = widget.isSelected()
 
         return type(widget).itemChange(widget, change, value)

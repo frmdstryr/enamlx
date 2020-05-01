@@ -6,19 +6,18 @@ Looper that only shows visible elements
 
 @author: jrm
 '''
-from atom.api import Instance,ContainerList,List
-from enaml.core.looper import Looper,sortedmap,new_scope,recursive_expand
+from atom.api import Instance, ContainerList, List, observe
+from enaml.core.looper import Looper, sortedmap, new_scope, recursive_expand
 from enaml.core.declarative import d_
-from atom.atom import observe
 from enamlx.widgets.abstract_item_view import AbstractItemView
 
 class ListLooper(Looper):
     """ A looper handles ContainerList updates """
-    
+
     items = ContainerList()
-    
+
     _expanded = List()
-    
+
     def _observe_iterable(self, change):
         if not self.is_initialized:
             return
@@ -37,20 +36,20 @@ class ListLooper(Looper):
                 self.pop_item(change['index'])
             elif change['operation'] in ['reverse','sort']:
                 self.refresh_items()
-    
+
     def remove_items(self,old_items):
         for item in old_items:
             index = self.items.index(item)
             self.pop_item(index)
-            
+
     def pop_item(self,index):
         for iteration in self.items.pop(index):
             for old in iteration:
                 if not old.is_destroyed:
                     old.destroy()
-    
+
     def insert_item(self,loop_index,loop_item):
-        
+
         iteration = []
         self._iter_data[loop_item] = iteration
         for nodes, key, f_locals in self.pattern_nodes:
@@ -63,17 +62,17 @@ class ListLooper(Looper):
                         iteration.extend(child)
                     else:
                         iteration.append(child)
-        
+
         expanded = []
         recursive_expand(sum([iteration], []), expanded)
         # Where do I insert it!
         self.parent.insert_children(self, expanded)
-        
+
         self.items.insert(loop_index,iteration)
-    
+
     def append_item(self,item):
         self.insert_item(len(self.items),item)
-    
+
     def refresh_items(self):
         """ Refresh the items of the pattern.
 
@@ -109,7 +108,7 @@ class ListLooper(Looper):
                                 iteration.extend(child)
                             else:
                                 iteration.append(child)
-        
+
         for iteration in old_items:
             for old in iteration:
                 if not old.is_destroyed:
@@ -125,19 +124,19 @@ class ListLooper(Looper):
         self._iter_data = new_iter_data
 
 class ItemViewLooper(Looper):
-    """ A looper that only creates the objects 
+    """ A looper that only creates the objects
     in the visible window.
-    
+
     """
     item_view = d_(Instance(AbstractItemView))
-    
+
     #--------------------------------------------------------------------------
     # Observers
     #--------------------------------------------------------------------------
     @observe('item_view.iterable')
     def _observe_iterable(self, change):
         super(ItemViewLooper, self)._observe_iterable(change)
-            
+
     def _observe_item_view(self, change):
         """ A private observer for the `window_size` attribute.
 
@@ -146,37 +145,37 @@ class ItemViewLooper(Looper):
 
         """
         self.iterable = self.item_view.iterable
-    
+
     @observe('item_view.iterable_index','item_view.iterable_fetch_size',
              'item_view.iterable_prefetch')
     def _refresh_window(self, change):
         if change['type'] == 'update' and self.is_initialized:
             self.refresh_items()
-    
-    @observe('item_view.visible_rect')    
+
+    @observe('item_view.visible_rect')
     def _prefetch_items(self,change):
         """ When the current_row in the model changes (whether from scrolling) or
         set by the application. Make sure the results are loaded!
-        
+
         """
         if self.is_initialized:
             view = self.item_view
-            
+
             upper_limit = view.iterable_index+view.iterable_fetch_size-view.iterable_prefetch
             lower_limit = max(0,view.iterable_index+view.iterable_prefetch)
             offset = int(view.iterable_fetch_size/2.0)
             upper_visible_row = view.visible_rect[2]
             lower_visible_row = view.visible_rect[0]
             print("Visible rect = %s"%view.visible_rect)
-            
+
             if upper_visible_row >= upper_limit:
                 next_index = max(0,upper_visible_row-offset) # Center on current row
-                # Going up works... 
+                # Going up works...
                 if next_index>view.iterable_index:
                     print("Auto prefetch upper limit %s!"%upper_limit)
                     view.iterable_index = next_index
                     #view.model().reset()
-                    
+
             # But doewn doesnt?
             elif view.iterable_index>0 and lower_visible_row < lower_limit:
                 next_index = max(0,lower_visible_row-offset) # Center on current row
@@ -185,7 +184,7 @@ class ItemViewLooper(Looper):
                     print("Auto prefetch lower limit=%s, iterable=%s, setting next=%s!"%(lower_limit,view.iterable_index,next_index))
                     view.iterable_index = next_index
                     #view.model().reset()
-            
+
     @property
     def windowed_iterable(self):
         """ That returns only the window """
@@ -197,7 +196,7 @@ class ItemViewLooper(Looper):
             elif i>=(effective_offset+self.item_view.iterable_fetch_size):
                 return
             yield item
-    
+
     def refresh_items(self):
         """ Refresh the items of the pattern.
 
@@ -233,10 +232,10 @@ class ItemViewLooper(Looper):
                                 iteration.extend(child)
                             else:
                                 iteration.append(child)
-        
+
         # Add to old items list
         #self.old_items.extend(old_items)
-        
+
         #if self._dirty:
         for iteration in old_items:
             for old in iteration:
