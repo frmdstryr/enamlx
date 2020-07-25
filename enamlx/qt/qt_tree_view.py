@@ -12,7 +12,7 @@ from enamlx.qt.qt_abstract_item_view import (
     QtAbstractItemView, QAbstractAtomItemModel, IS_QT4
 )
 from enamlx.widgets.tree_view import (
-    ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn
+    ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn, AbstractWidgetItem
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
 from enaml.qt.QtWidgets import QTreeView
@@ -44,7 +44,7 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         return len(d._columns) if d and not d.is_destroyed else 0
 
     def index(self, row, column, parent):
-        """ The index should point to the corresponding QtControl in the 
+        """ The index should point to the corresponding QtControl in the
         enaml object hierarchy.
         """
         item = parent.internalPointer()
@@ -65,7 +65,7 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         if not isinstance(item, QtTreeViewItem) or item.is_destroyed:
             return QModelIndex()
         parent = item.parent()
-        if not isinstance(parent, QtTreeViewItem) or item.is_destroyed:
+        if not isinstance(parent, QtTreeViewItem) or parent.is_destroyed:
             return QModelIndex()
         d = parent.declaration
         return self.createIndex(d.row, 0, parent)
@@ -75,14 +75,11 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
             return
         item = index.internalPointer()
         assert isinstance(item, QtTreeViewItem), \
-            "Invalid index: {} at ({},{}) {}".format(index,
-                                                     index.row(),
-                                                     index.column(),
-                                                     item)
+            "Invalid index: {} at ({},{}) {}".format(
+                index, index.row(), index.column(), item)
         d = item.declaration
         try:
-            #print(c, len(d._columns), d, d.text)
-            c = index.column()# - d.visible_column
+            c = index.column()  # - d.visible_column
             return d._columns[c].proxy
         except IndexError:
             return
@@ -194,7 +191,7 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
 
     def _update_delegate(self):
         """ Update the delegate cell widget. This is deferred so it
-        does not get called until the user is done scrolling. 
+        does not get called until the user is done scrolling.
         """
         self._refresh_count -= 1
         if self._refresh_count != 0:

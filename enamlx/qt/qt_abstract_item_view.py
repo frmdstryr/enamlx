@@ -276,8 +276,10 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         are added.
 
         """
-        self._pending_view_refreshes +=1
+        self.model.beginResetModel()
+        self._pending_view_refreshes += 1
         timed_call(self._pending_timeout, self._refresh_layout)
+        self.model.endResetModel()
 
     def set_selection(self, items):
         pass

@@ -4,11 +4,11 @@ enamlx.install()
 from enaml.core.api import Looper
 from enamlx.widgets.api import (
     GraphicsView, GraphicsItem, GraphicsTextItem, GraphicsRectItem,
-    GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem, 
+    GraphicsPolygonItem, GraphicsEllipseItem, GraphicsLineItem,
     GraphicsPathItem, GraphicsItemGroup, Pen, Brush, Point
 )
 from enaml.widgets.api import (
-    MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox, 
+    MainWindow, Container, PushButton, CheckBox, RadioButton, SpinBox,
     Menu, Action, MenuBar, Feature, ObjectCombo, Form, Label
 )
 from enaml.drag_drop import DragData, DropAction
@@ -33,7 +33,7 @@ enamldef Main(MainWindow): window:
             Action:
                 text = "Quit\tCtrl+Q"
                 triggered :: raise SystemExit(0)
-    Container: 
+    Container:
         Form:
             Label:
                 text = "Drag mode:"
@@ -46,16 +46,16 @@ enamldef Main(MainWindow): window:
             drag_mode = 'selection'
             minimum_size = size
             attr last_point = None
-            
+
             Menu:
                 context_menu = True
                 Action:
                     text = 'Reset'
                     triggered :: canvas.reset_view()
-            
-            mouse_press_event => (evt): 
+
+            mouse_press_event => (evt):
                 self.last_point = evt.pos()
-            mouse_move_event => (evt): 
+            mouse_move_event => (evt):
                 if self.last_point is None:
                     self.last_point = evt.pos()
                 if self.selected_items or self.drag_mode == 'selection':
@@ -63,13 +63,13 @@ enamldef Main(MainWindow): window:
                 dp = evt.pos()-self.last_point
                 delta = Point(dp.x(), dp.y())
                 self.last_point = evt.pos()
-                
+
                 if evt.buttons() in (Qt.MidButton, Qt.LeftButton):
                     px = self.pixel_density()
                     tr = -delta*px
                     self.translate_view(tr.x, tr.y)
-                
-            wheel_event => (evt): 
+
+            wheel_event => (evt):
                 if hasattr(evt, 'delta'):
                     d = evt.delta()
                 else:
@@ -96,4 +96,4 @@ enamldef Main(MainWindow): window:
                         return create_drag_data(b"Hello")
                     drag_end => (drag_data, result):
                         print(drag_data, result)
-        
+
