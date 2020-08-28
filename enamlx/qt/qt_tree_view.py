@@ -15,8 +15,8 @@ from enamlx.widgets.tree_view import (
     ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn, AbstractWidgetItem
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
-from enaml.qt.QtWidgets import QTreeView
-from enaml.qt.QtCore import QAbstractItemModel, QModelIndex
+from qtpy.QtWidgets import QTreeView
+from qtpy.QtCore import QAbstractItemModel, QModelIndex
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
 from enaml.application import timed_call

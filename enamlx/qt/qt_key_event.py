@@ -7,7 +7,7 @@ Created on Aug 29, 2015
 """
 from atom.api import Instance, Callable, Dict
 from enaml.qt.qt_control import QtControl
-from enaml.qt import QtCore
+from qtpy import QtCore
 from enamlx.widgets.key_event import ProxyKeyEvent
 
 

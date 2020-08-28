@@ -10,8 +10,8 @@ from enaml.core.pattern import Pattern
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_menu import QtMenu
 from enaml.qt.qt_widget import QtWidget
-from enaml.qt.QtWidgets import QHeaderView
-from enaml.qt.QtCore import Qt, QModelIndex
+from qtpy.QtWidgets import QHeaderView
+from qtpy.QtCore import Qt, QModelIndex
 
 from enamlx.widgets.abstract_item import (
     ProxyAbstractWidgetItem,
@@ -42,7 +42,7 @@ RESIZE_MODES = {
 
 class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
     """ Base class for Table and Tree Views
-    
+
     """
     #: Context menu for this group
     menu = Instance(QtMenu)

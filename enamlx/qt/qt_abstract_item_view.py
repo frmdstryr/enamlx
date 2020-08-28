@@ -8,14 +8,12 @@ Created on Aug 20, 2015
 from atom.api import Instance, Int
 from enaml.application import timed_call
 from enaml.qt.qt_control import QtControl
-
-from enaml.qt.QtWidgets import QAbstractItemView
-from enaml.qt.QtCore import QItemSelectionModel
-from enaml.qt import QT_API, PYSIDE_API, PYQT4_API
-from enaml.qt.QtCore import Qt, QAbstractItemModel, QSize
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 from enamlx.qt.qt_abstract_item import TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
+from qtpy import QT_API, PYSIDE_API, PYQT4_API
+from qtpy.QtCore import Qt, QAbstractItemModel, QSize, QItemSelectionModel
+from qtpy.QtWidgets import QAbstractItemView
 
 
 SELECTION_MODES = {

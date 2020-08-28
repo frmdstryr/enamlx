@@ -8,7 +8,7 @@ Created on Aug 29, 2015
 from atom.api import Typed
 from enamlx.widgets.double_spin_box import ProxyDoubleSpinBox
 from enaml.qt.qt_spin_box import QtSpinBox
-from enaml.qt.QtWidgets import QDoubleSpinBox
+from qtpy.QtWidgets import QDoubleSpinBox
 
 
 class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
@@ -17,7 +17,7 @@ class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
     """
     #: A reference to the widget created by the proxy.
     widget = Typed(QDoubleSpinBox)
-    
+
     # -------------------------------------------------------------------------
     # Initialization API
     # -------------------------------------------------------------------------
