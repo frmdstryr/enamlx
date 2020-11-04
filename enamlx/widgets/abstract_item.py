@@ -6,7 +6,7 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 24, 2015
 """
 from atom.api import (
-    Int, Enum, Bool, Unicode, Typed, 
+    Int, Enum, Bool, Str, Typed, 
     Coerced, Event, Property, ForwardInstance, observe
 )
 from enaml.icon import Icon
@@ -96,7 +96,7 @@ class AbstractWidgetItem(AbstractWidgetItemGroup):
     column = d_(Int(), writable=False)
     
     #: Text to display within the cell
-    text = d_(Unicode())
+    text = d_(Str())
     
     #: Text alignment within the cell
     text_alignment = d_(Enum(*[(h, v)

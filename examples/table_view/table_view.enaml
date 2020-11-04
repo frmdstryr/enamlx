@@ -2,7 +2,7 @@ import os
 import time
 import random
 from threading import Thread
-from atom.api import (Atom, Unicode, Range, ContainerList, Bool)
+from atom.api import (Atom, Str, Range, ContainerList, Bool)
 
 from enamlx.widgets.table_view import (
     TableView, TableViewRow, TableViewItem
@@ -38,9 +38,9 @@ class Person(Atom):
     """ A simple class representing a person object.
 
     """
-    last_name = Unicode()
+    last_name = Str()
 
-    first_name = Unicode()
+    first_name = Str()
 
     age = Range(low=0)
 

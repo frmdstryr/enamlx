@@ -7,7 +7,7 @@ Created on Oct 2, 2016
 """
 
 from atom.api import (
-    Instance, Coerced, Int, Enum, Unicode, Dict, Bool,
+    Instance, Coerced, Int, Enum, Str, Dict, Bool,
     Typed, ForwardTyped, observe
 )
 from enaml.core.api import d_
@@ -47,7 +47,7 @@ class Console(Container):
     proxy = Typed(ProxyConsole)
     
     #: Font family, leave blank for default
-    font_family = d_(Unicode())
+    font_family = d_(Str())
     
     #: Font size, leave 0 for default
     font_size = d_(Int(0))

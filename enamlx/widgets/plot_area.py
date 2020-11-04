@@ -8,7 +8,7 @@ Created on Jun 11, 2015
 import sys
 from atom.atom import set_default
 from atom.api import (Callable, Int, Tuple, Instance, Enum, Float,
-                      ContainerList, Bool, FloatRange, Unicode, Dict, Typed,
+                      ContainerList, Bool, FloatRange, Str, Dict, Typed,
                       ForwardTyped, observe)
 from enaml.core.declarative import d_
 from enaml.widgets.api import Container
@@ -41,10 +41,10 @@ BRUSH_ARGTYPES = (tuple, list, str, dict, int, float)
 
 class PlotItem(Control):
     #: Title of data series
-    title = d_(Unicode())
+    title = d_(Str())
 
     #: Name
-    name = d_(Unicode())
+    name = d_(Str())
 
     #: Row in plot area
     row = d_(Int(0))
@@ -89,10 +89,10 @@ class PlotItem(Control):
     #: Show legend
     show_legend = d_(Bool(False))
 
-    label_left = d_(Unicode())
-    label_right = d_(Unicode())
-    label_top = d_(Unicode())
-    label_bottom = d_(Unicode())
+    label_left = d_(Str())
+    label_right = d_(Str())
+    label_top = d_(Str())
+    label_bottom = d_(Str())
 
     # H, V
     grid = d_(Tuple(bool, default=(False, False)))

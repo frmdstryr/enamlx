@@ -2,7 +2,7 @@
 Demonstrating the examples from pyqtgraph
 """
 
-from atom.api import (Atom, Unicode, Range, List, Bool)
+from atom.api import (Atom, Str, Range, List, Bool)
 
 from enaml.widgets.api import (
     Window, Container, DockArea,DockItem,PushButton, CheckBox, RadioButton

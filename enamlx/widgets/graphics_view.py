@@ -7,7 +7,7 @@ Created on Sept 5, 2018
 import sys
 from atom.api import (
     Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List, IntEnum,
-    Instance, Unicode, Value, Event, Property, observe, set_default
+    Instance, Str, Value, Event, Property, observe, set_default
 )
 from enaml.colors import ColorMember
 from enaml.core.declarative import d_, d_func
@@ -419,10 +419,10 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     visible = d_(Bool(True))
     
     #: Tool tip
-    tool_tip = d_(Unicode())
+    tool_tip = d_(Str())
     
     #: Status tip
-    status_tip = d_(Unicode())
+    status_tip = d_(Str())
     
     # --------------------------------------------------------------------------
     # Item interaction
@@ -919,7 +919,7 @@ class GraphicsTextItem(AbstractGraphicsShapeItem):
     proxy = Typed(ProxyGraphicsTextItem)
     
     #: Text
-    text = d_(Unicode())
+    text = d_(Str())
     
     #: Font
     font = d_(FontMember())

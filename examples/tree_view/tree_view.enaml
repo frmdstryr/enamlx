@@ -1,5 +1,5 @@
 import os
-from atom.api import (Atom, Unicode, Range, List, Bool, ForwardInstance)
+from atom.api import (Atom, Str, Range, List, Bool, ForwardInstance)
 
 from enamlx.widgets.api import (
     TreeView, TreeViewItem, TreeViewColumn, 
@@ -33,9 +33,9 @@ class Person(Atom):
     """ A simple class representing a person object.
 
     """
-    last_name = Unicode()
+    last_name = Str()
 
-    first_name = Unicode()
+    first_name = Str()
     
     children = List(ForwardInstance(lambda:Person))
 

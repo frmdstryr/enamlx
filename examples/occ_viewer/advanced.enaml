@@ -15,7 +15,7 @@ is then used to unroll a list of these controls into the body of a form.
 
 << autodoc-me >>
 """
-from atom.api import Atom, Bool, Enum, Event, Float, Int, Str, Unicode
+from atom.api import Atom, Bool, Enum, Event, Float, Int, Str, Str
 
 from enaml.core.api import DynamicTemplate
 from enaml.stdlib.fields import FloatField
@@ -73,8 +73,8 @@ template FormControl(Attr, MemberType: Str):
         text :: setattr(model, Attr, str(text))
 
 
-template FormControl(Attr, MemberType: Unicode):
-    """ A form control template specialization for Unicode members.
+template FormControl(Attr, MemberType: Str):
+    """ A form control template specialization for Str members.
 
     This control uses a Field to represent the value.
 
@@ -174,7 +174,7 @@ def form_spec(obtype, model):
     
     typemap = {int:Int,
                float:Float,
-               unicode:Unicode,
+               unicode:Str,
                str:Str}
     for name, member in obtype.members().iteritems():
         if (not name.startswith('_') 
@@ -263,14 +263,14 @@ class FooModel(Atom):
     ham = Int(42)
     first = Str('first')
     last = Str('last')
-    owner = Unicode('owner')
+    owner = Str('owner')
     time = Float(42.56)
     click = Bool()
     clack = Bool()
 
 
 class BarModel(Atom):
-    name = Unicode('name')
+    name = Str('name')
     trigger = Event()
     choices = Enum('first', 'second', 'third')
     def _observe_trigger(self, change):
