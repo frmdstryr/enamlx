@@ -148,7 +148,8 @@ class AbstractQtPlotItem(QtControl):
             during initialization or when many values change at once.
         """
         self._pending_refreshes+=1
-        timed_call(100,self._redraw_plot)
+        refresh_time = self.declaration.refresh_time
+        timed_call(refresh_time,self._redraw_plot)
         
     def _redraw_plot(self):
         self._pending_refreshes-=1
