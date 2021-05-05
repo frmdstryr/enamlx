@@ -1,0 +1,19 @@
+import enamlx
+enamlx.install()
+from enaml.widgets.api import Window, Form, Label, Field, SpinBox
+from enaml.layout.api import hbox, vbox
+from enamlx.widgets.api import DoubleSpinBox
+
+enamldef Main(Window):
+    title = 'DoubleSpinBox Example'
+    Form:
+        Label: lbl:
+            text = 'Value'
+        DoubleSpinBox: sbox:
+            maximum = 100
+            minimum = 0
+            decimals = 9
+            value = 1/25.4
+        Field: fld:
+            text << u'Value: {}'.format(sbox.value)
+            read_only = True

@@ -30,8 +30,8 @@ class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
         self.widget = widget
 
     def init_widget(self):
-        super(QtDoubleSpinBox, self).init_widget()
         self.set_decimals(self.declaration.decimals)
+        super(QtDoubleSpinBox, self).init_widget()
 
     # -------------------------------------------------------------------------
     # ProxyDoubleSpinBox API
