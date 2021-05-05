@@ -135,6 +135,9 @@ class PlotItem(Control):
     #: Keep aspect ratio locked when resizing
     aspect_locked = d_(Bool(False))
 
+    #: Time between updates
+    refresh_time = d_(Int(100))
+
     @observe('line_pen', 'symbol', 'symbol_size', 'symbol_pen', 'symbol_brush',
              'fill_brush', 'fill_level', 'multi_axis', 'title',
              'label_left', 'label_right', 'label_top', 'label_bottom',
