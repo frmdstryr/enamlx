@@ -2,11 +2,11 @@
 
 Additional Qt Widgets for Enaml, mainly used for the Tree and Table widgets.
 
-Supports 2.7 and 3.5+ Qt4 and Qt5.
+Supports 3.5+ Qt4 and Qt5.
 
 ## Install
 
-Now on [pypi](https://pypi.org/project/enamlx/). 
+Now on [pypi](https://pypi.org/project/enamlx/).
 
 ```bash
 
@@ -20,11 +20,10 @@ pip install enamlx
 
 1. TableView
 2. TreeView
-3. IPython console (now obsolete)
-4. DoubleSpinBox
+3. DoubleSpinBox
+4. GraphicsView
 5. PyQtGraph Plot
 6. KeyEvent
-7. GraphicsView
 
 
 #### Examples ####
@@ -38,7 +37,7 @@ Table view using enaml syntax. See example for usage.
 1. Text/Icons/Checkboxes
 2. Delegate widgets (any widget can be child of a cell)
 3. Right click menus per item
-4. Tested and working with 1 million+ rows. 
+4. Tested and working with 1 million+ rows.
 
 
 
@@ -52,18 +51,7 @@ __PlotItem__
 Plot widgets using PyQtGraph
 
 
-![plot item](https://lh5.googleusercontent.com/pqa4WZnMzaU72pYnqc75AghnJGC8Z6kCELcsHkR3n_VTQzEmCB9di7reqqQbCIpnfAVXSCEXK6y07_DMyQ51XUCUAOe-xczfKsYKCRROPbUlDHcGMNSFaBmZRGxXP9Clya_q34I) 
-
-__ConsoleWidget__
-
-IPython console widget.
-
-> Note: An IPython console is now included in enaml. 
-
-
-__OCCViewer__
-
-Widget for viewing models from opencascade 
+![plot item](https://lh5.googleusercontent.com/pqa4WZnMzaU72pYnqc75AghnJGC8Z6kCELcsHkR3n_VTQzEmCB9di7reqqQbCIpnfAVXSCEXK6y07_DMyQ51XUCUAOe-xczfKsYKCRROPbUlDHcGMNSFaBmZRGxXP9Clya_q34I)
 
 
 __GraphicsView__
