@@ -144,8 +144,8 @@ class FeatureMixin(Atom):
     #: A private copy of the declaration features. This ensures that
     #: feature cleanup will proceed correctly in the event that user
     #: code modifies the declaration features value at runtime.
-    _features = Coerced(Feature.Flags)
-    _extra_features = Coerced(GraphicFeature.Flags)
+    _features = Coerced(Feature, (0,))
+    _extra_features = Coerced(GraphicFeature, (0,))
 
     #: Internal storage for the shared widget action.
     _widget_action = Typed(QWidgetAction)
@@ -521,7 +521,7 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
     view_range = Typed(QRectF, (0, 0, 1, 1))
 
     #: Custom features
-    _extra_features = Coerced(GraphicFeature.Flags)
+    _extra_features = Coerced(GraphicFeature, (0,))
 
     #: Cyclic notification guard. This a bitfield of multiple guards.
     _guards = Int(0)
