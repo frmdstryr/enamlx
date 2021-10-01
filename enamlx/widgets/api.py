@@ -16,9 +16,7 @@ from .plot_area import (
     PlotItemDict,
     PlotItemList,
 )
-from .occ_viewer import OccViewer
 from .double_spin_box import DoubleSpinBox
-from .console import Console
 from .key_event import KeyEvent
 from .graphics_view import (
     GraphicsView,

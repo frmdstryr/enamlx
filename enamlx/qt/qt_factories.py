@@ -8,12 +8,6 @@ Created on Aug 23, 2015
 from enaml.qt import qt_factories
 
 
-def console_factory():
-    from .qt_console import QtConsole
-
-    return QtConsole
-
-
 def double_spin_box_factory():
     from .qt_double_spin_box import QtDoubleSpinBox
 
@@ -90,12 +84,6 @@ def key_event_factory():
     from .qt_key_event import QtKeyEvent
 
     return QtKeyEvent
-
-
-def occ_viewer_factory():
-    from .qt_occ_viewer import QtOccViewer
-
-    return QtOccViewer
 
 
 def plot_area_factory():
@@ -227,7 +215,6 @@ def tree_widget_col_factory():
 # Inject the factory
 qt_factories.QT_FACTORIES.update(
     {
-        "Console": console_factory,
         "DoubleSpinBox": double_spin_box_factory,
         "GraphicsView": graphics_view_factory,
         "GraphicsItem": graphics_item_factory,
@@ -241,7 +228,6 @@ qt_factories.QT_FACTORIES.update(
         "GraphicsImageItem": graphics_image_item_factory,
         "GraphicsWidget": graphics_widget_factory,
         "KeyEvent": key_event_factory,
-        "OccViewer": occ_viewer_factory,
         "PlotArea": plot_area_factory,
         "PlotItem2D": plot_item_2d_factory,
         "PlotItem3D": plot_item_3d_factory,
