@@ -46,8 +46,7 @@ class KeyEvent(Control):
     #: Released event
     released = d_(Event(dict), writable=False)
 
-    @observe('enabled', 'keys')
+    @observe("enabled", "keys")
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         super(KeyEvent, self)._update_proxy(change)

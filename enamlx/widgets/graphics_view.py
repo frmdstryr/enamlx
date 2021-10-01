@@ -7,8 +7,22 @@ Created on Sept 5, 2018
 import sys
 from enum import IntFlag
 from atom.api import (
-    Atom, Float, Int, Typed, Bool, Coerced, ForwardTyped, Enum, List,
-    Instance, Str, Value, Event, Property, observe, set_default
+    Atom,
+    Float,
+    Int,
+    Typed,
+    Bool,
+    Coerced,
+    ForwardTyped,
+    Enum,
+    List,
+    Instance,
+    Str,
+    Value,
+    Event,
+    Property,
+    observe,
+    set_default,
 )
 from enaml.colors import ColorMember
 from enaml.core.declarative import d_, d_func
@@ -35,8 +49,6 @@ class GraphicFeature(IntFlag):
 
     #: Enables support for backgound draw events.
     BackgroundDrawEvent = 0x64
-
-
 
 
 class Point(Atom):
@@ -67,42 +79,56 @@ class Point(Atom):
         return pos == other
 
     def __add__(self, other):
-        return Point(self.x + other[0],
-                     self.y + other[1],
-                     self.z + other[2] if len(other) > 2 else self.z)
+        return Point(
+            self.x + other[0],
+            self.y + other[1],
+            self.z + other[2] if len(other) > 2 else self.z,
+        )
+
     __radd__ = __add__
 
     def __sub__(self, other):
-        return Point(self.x - other[0],
-                     self.y - other[1],
-                     self.z - other[2] if len(other) > 2 else self.z)
+        return Point(
+            self.x - other[0],
+            self.y - other[1],
+            self.z - other[2] if len(other) > 2 else self.z,
+        )
 
     def __rsub__(self, other):
-        return Point(other[0] - self.x,
-                     other[1] - self.y,
-                     other[2] - self.z if len(other) > 2 else self.z)
+        return Point(
+            other[0] - self.x,
+            other[1] - self.y,
+            other[2] - self.z if len(other) > 2 else self.z,
+        )
 
     def __mul__(self, other):
         if isinstance(other, NUMERIC):
-            return Point(self.x*other, self.y*other, self.z*other)
-        return Point(other[0] * self.x,
-                     other[1] * self.y,
-                     other[2] * self.z if len(other) > 2 else self.z)
+            return Point(self.x * other, self.y * other, self.z * other)
+        return Point(
+            other[0] * self.x,
+            other[1] * self.y,
+            other[2] * self.z if len(other) > 2 else self.z,
+        )
+
     __rmul__ = __mul__
 
     def __div__(self, other):
         if isinstance(other, NUMERIC):
-            return Point(self.x/other, self.y/other, self.z/other)
-        return Point(self.x/other[0],
-                     self.y/other[1],
-                     self.z/other[2] if len(other) > 2 else self.z)
+            return Point(self.x / other, self.y / other, self.z / other)
+        return Point(
+            self.x / other[0],
+            self.y / other[1],
+            self.z / other[2] if len(other) > 2 else self.z,
+        )
 
     def __rdiv__(self, other):
         if isinstance(other, NUMERIC):
-            return Point(other/self.x, other/self.y, other/self.z)
-        return Point(other[0]/self.x,
-                     other[1]/self.y,
-                     other[2]/self.z if len(other) > 2 else self.z)
+            return Point(other / self.x, other / self.y, other / self.z)
+        return Point(
+            other[0] / self.x,
+            other[1] / self.y,
+            other[2] / self.z if len(other) > 2 else self.z,
+        )
 
     def __neg__(self):
         return Point(-self.x, -self.y, -self.z)
@@ -114,7 +140,7 @@ class Point(Atom):
         return (self.x, self.y, self.z)[key]
 
     def __repr__(self):
-        return "Point(%d, %d, %d)"%(self.x, self.y, self.z)
+        return "Point(%d, %d, %d)" % (self.x, self.y, self.z)
 
 
 class Rect(Atom):
@@ -129,10 +155,10 @@ def coerce_point(p):
 
 
 class PointMember(Coerced):
-    def __init__(self, args=None, kwargs=None, factory=None,
-                 coercer=coerce_point):
+    def __init__(self, args=None, kwargs=None, factory=None, coercer=coerce_point):
         super(PointMember, self).__init__(
-            Point, args, kwargs, factory=factory, coercer=coercer)
+            Point, args, kwargs, factory=factory, coercer=coercer
+        )
 
 
 class Pen(Atom):
@@ -143,14 +169,15 @@ class Pen(Atom):
     width = Float(1.0, strict=False)
 
     #: Line Style
-    line_style = Enum('solid', 'dash', 'dot', 'dash_dot', 'dash_dot_dot',
-                      'custom', 'none')
+    line_style = Enum(
+        "solid", "dash", "dot", "dash_dot", "dash_dot_dot", "custom", "none"
+    )
 
     #: Cap Style
-    cap_style = Enum('square', 'flat', 'round')
+    cap_style = Enum("square", "flat", "round")
 
     #: Join Style
-    join_style = Enum('bevel', 'miter', 'round')
+    join_style = Enum("bevel", "miter", "round")
 
     #: Dash pattern used when line_style is 'custom'
     dash_pattern = List(Float(strict=False))
@@ -160,7 +187,8 @@ class Pen(Atom):
 
 
 class Brush(Atom):
-    """ Defines the fill pattern """
+    """Defines the fill pattern"""
+
     #: Color
     color = ColorMember()
 
@@ -168,10 +196,27 @@ class Brush(Atom):
     image = Instance(Image)
 
     #: Style
-    style = Enum('solid', 'dense1', 'dense2', 'dense3', 'dense4', 'dense5',
-                 'dense6', 'dense7', 'horizontal', 'vertical', 'cross',
-                 'diag', 'bdiag', 'fdiag', 'linear', 'radial', 'conical',
-                 'texture', 'none')
+    style = Enum(
+        "solid",
+        "dense1",
+        "dense2",
+        "dense3",
+        "dense4",
+        "dense5",
+        "dense6",
+        "dense7",
+        "horizontal",
+        "vertical",
+        "cross",
+        "diag",
+        "bdiag",
+        "fdiag",
+        "linear",
+        "radial",
+        "conical",
+        "texture",
+        "none",
+    )
 
     #: Internal data
     _tkdata = Value()
@@ -444,10 +489,23 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     #: Set whether this item can be moved.
     movable = d_(Bool())
 
-    @observe('position', 'position.x', 'position.y', 'position.z', 'scale',
-             'rotation', 'opacity',  'selected', 'enabled', 'visible',
-             'tool_tip', 'status_tip', 'request_update', 'selectable',
-             'movable')
+    @observe(
+        "position",
+        "position.x",
+        "position.y",
+        "position.z",
+        "scale",
+        "rotation",
+        "opacity",
+        "selected",
+        "enabled",
+        "visible",
+        "tool_tip",
+        "status_tip",
+        "request_update",
+        "selectable",
+        "movable",
+    )
     def _update_proxy(self, change):
         super(GraphicsItem, self)._update_proxy(change)
 
@@ -455,7 +513,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
     # Widget API
     # --------------------------------------------------------------------------
     def show(self):
-        """ Ensure the widget is shown.
+        """Ensure the widget is shown.
         Calling this method will also set the widget visibility to True.
         """
         self.visible = True
@@ -463,7 +521,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
             self.proxy.ensure_visible()
 
     def hide(self):
-        """ Ensure the widget is hidden.
+        """Ensure the widget is hidden.
         Calling this method will also set the widget visibility to False.
         """
         self.visible = False
@@ -471,21 +529,21 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
             self.proxy.ensure_hidden()
 
     def set_focus(self):
-        """ Set the keyboard input focus to this widget.
+        """Set the keyboard input focus to this widget.
         FOR ADVANCED USE CASES ONLY: DO NOT ABUSE THIS!
         """
         if self.proxy_is_active:
             self.proxy.set_focus()
 
     def clear_focus(self):
-        """ Clear the keyboard input focus from this widget.
+        """Clear the keyboard input focus from this widget.
         FOR ADVANCED USE CASES ONLY: DO NOT ABUSE THIS!
         """
         if self.proxy_is_active:
             self.proxy.clear_focus()
 
     def has_focus(self):
-        """ Test whether this widget has input focus.
+        """Test whether this widget has input focus.
         FOR ADVANCED USE CASES ONLY: DO NOT ABUSE THIS!
         Returns
         -------
@@ -498,7 +556,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def focus_gained(self):
-        """ A method invoked when the widget gains input focus.
+        """A method invoked when the widget gains input focus.
         ** The FocusEvents feature must be enabled for the widget in
         order for this method to be called. **
         """
@@ -506,7 +564,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def focus_lost(self):
-        """ A method invoked when the widget loses input focus.
+        """A method invoked when the widget loses input focus.
         ** The FocusEvents feature must be enabled for the widget in
         order for this method to be called. **
         """
@@ -514,7 +572,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drag_start(self):
-        """ A method called at the start of a drag-drop operation.
+        """A method called at the start of a drag-drop operation.
         This method is called when the user starts a drag operation
         by dragging the widget with the left mouse button. It returns
         the drag data for the drag operation.
@@ -530,7 +588,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drag_end(self, drag_data, result):
-        """ A method called at the end of a drag-drop operation.
+        """A method called at the end of a drag-drop operation.
         This method is called after the user has completed the drop
         operation by releasing the left mouse button. It is passed
         the original drag data object along with the resulting drop
@@ -548,7 +606,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drag_enter(self, event):
-        """ A method invoked when a drag operation enters the widget.
+        """A method invoked when a drag operation enters the widget.
         The widget should inspect the mime data of the event and
         accept the event if it can handle the drop action. The event
         must be accepted in order to receive further drag-drop events.
@@ -563,7 +621,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drag_move(self, event):
-        """ A method invoked when a drag operation moves in the widget.
+        """A method invoked when a drag operation moves in the widget.
         This method will not normally be implemented, but it can be
         useful for supporting advanced drag-drop interactions.
         ** The DropEnabled feature must be enabled for the widget in
@@ -577,7 +635,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drag_leave(self):
-        """ A method invoked when a drag operation leaves the widget.
+        """A method invoked when a drag operation leaves the widget.
         ** The DropEnabled feature must be enabled for the widget in
         order for this method to be called. **
         """
@@ -585,7 +643,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def drop(self, event):
-        """ A method invoked when the user drops the data on the widget.
+        """A method invoked when the user drops the data on the widget.
         The widget should either accept the proposed action, or set
         the drop action to an appropriate action before accepting the
         event, or set the drop action to DropAction.Ignore and then
@@ -601,7 +659,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def mouse_press_event(self, event):
-        """ A method invoked when a mouse press event occurs in the widget.
+        """A method invoked when a mouse press event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -615,7 +673,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def mouse_move_event(self, event):
-        """ A method invoked when a mouse move event occurs in the widget.
+        """A method invoked when a mouse move event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -629,7 +687,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def mouse_release_event(self, event):
-        """ A method invoked when a mouse release event occurs in the widget.
+        """A method invoked when a mouse release event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -643,7 +701,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def wheel_event(self, event):
-        """ A method invoked when a wheel event occurs in the widget.
+        """A method invoked when a wheel event occurs in the widget.
         This method will not normally be implemented, but it can be
         useful for supporting zooming and other scolling interactions.
 
@@ -659,7 +717,7 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
     @d_func
     def draw(self, painter, options, widget):
-        """ A method invoked when this widget needs to be drawn.
+        """A method invoked when this widget needs to be drawn.
         This method will not normally be implemented, but it can be
         useful for creating custom graphics.
 
@@ -684,11 +742,11 @@ class GraphicsView(Control):
     proxy = Typed(ProxyGraphicsView)
 
     #: An graphicsview widget expands freely in height and width by default.
-    hug_width = set_default('ignore')
-    hug_height = set_default('ignore')
+    hug_width = set_default("ignore")
+    hug_height = set_default("ignore")
 
     #: Select backend for rendering. OpenGL is used by default if available.
-    renderer = d_(Enum('default', 'opengl', 'qwidget'))
+    renderer = d_(Enum("default", "opengl", "qwidget"))
 
     #: Antialiasing is enabled by default. If performance is an issue, disable
     #: this.
@@ -699,7 +757,7 @@ class GraphicsView(Control):
 
     #: Defines the behavior when dragging. By default nothing is done. Pan
     #: will pan the scene around and selection will draw a box to select items.
-    drag_mode = d_(Enum('none', 'scroll', 'selection'))
+    drag_mode = d_(Enum("none", "scroll", "selection"))
 
     #: Range of allowed zoom factors. This is used to prevent scaling way out
     #: or way in by accident.
@@ -707,7 +765,7 @@ class GraphicsView(Control):
     max_zoom = d_(Float(100.0, strict=False))
 
     #: Automatically resize view to fit the scene contents
-    auto_range = d_(Bool(False)) # TODO: Broken
+    auto_range = d_(Bool(False))  # TODO: Broken
 
     #: Keep the aspect ratio locked when resizing the view range
     lock_aspect_ratio = d_(Bool(True))
@@ -720,8 +778,14 @@ class GraphicsView(Control):
     def _default_extra_features(self):
         return GraphicFeature.WheelEvent | GraphicFeature.MouseEvent
 
-    @observe('selected_items', 'renderer', 'antialiasing', 'drag_mode',
-             'auto_range', 'lock_aspect_ratio')
+    @observe(
+        "selected_items",
+        "renderer",
+        "antialiasing",
+        "drag_mode",
+        "auto_range",
+        "lock_aspect_ratio",
+    )
     def _update_proxy(self, change):
         super(GraphicsView, self)._update_proxy(change)
 
@@ -730,7 +794,7 @@ class GraphicsView(Control):
     # --------------------------------------------------------------------------
     @d_func
     def wheel_event(self, event):
-        """ A method invoked when a wheel event occurs in the widget.
+        """A method invoked when a wheel event occurs in the widget.
         This method will not normally be implemented, but it can be
         useful for supporting zooming and other scolling interactions.
 
@@ -746,7 +810,7 @@ class GraphicsView(Control):
 
     @d_func
     def mouse_press_event(self, event):
-        """ A method invoked when a mouse press event occurs in the widget.
+        """A method invoked when a mouse press event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -760,7 +824,7 @@ class GraphicsView(Control):
 
     @d_func
     def mouse_move_event(self, event):
-        """ A method invoked when a mouse move event occurs in the widget.
+        """A method invoked when a mouse move event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -774,7 +838,7 @@ class GraphicsView(Control):
 
     @d_func
     def mouse_release_event(self, event):
-        """ A method invoked when a mouse release event occurs in the widget.
+        """A method invoked when a mouse release event occurs in the widget.
 
         ** The MouseEnabled feature must be enabled for the widget in
         order for this method to be called. **
@@ -788,7 +852,7 @@ class GraphicsView(Control):
 
     @d_func
     def draw_background(self, painter, rect):
-        """ A method invoked when a background draw is requested.
+        """A method invoked when a background draw is requested.
 
         This method will not normally be implemented, but it can be
         useful for implementing custom backgrounds. This drawing is cached.
@@ -809,48 +873,45 @@ class GraphicsView(Control):
     # Graphics Scene API
     # --------------------------------------------------------------------------
     def get_item_at(self, *args, **kwargs):
-        """ Return the items at the given position """
+        """Return the items at the given position"""
         return self.proxy.get_item_at(coerce_point(*args, **kwargs))
 
     def fit_in_view(self, item):
-        """ Fit this item into the view """
+        """Fit this item into the view"""
         self.proxy.fit_in_view(item)
 
     def center_on(self, item):
-        """ Center on the given item or point. """
+        """Center on the given item or point."""
         if not isinstance(item, GraphicsItem):
             item = coerce_point(item)
         self.proxy.center_on(item)
 
     def translate_view(self, x=0, y=0):
-        """ Translate the view by the given x and y pixels. """
+        """Translate the view by the given x and y pixels."""
         return self.proxy.translate_view(x, y)
 
     def scale_view(self, x=1, y=1):
-        """ Scale the view by the given x and y factors. """
+        """Scale the view by the given x and y factors."""
         return self.proxy.scale_view(x, y)
 
     def rotate_view(self, angle=0):
-        """ Roteate the view by the given x and y factors. """
+        """Roteate the view by the given x and y factors."""
         self.proxy.rotate_view(angle)
 
     def reset_view(self):
-        """ Reset all view transformations. """
+        """Reset all view transformations."""
         self.proxy.reset_view()
 
     def map_from_scene(self, point):
-        """ Returns the scene coordinate point mapped to viewport coordinates.
-        """
+        """Returns the scene coordinate point mapped to viewport coordinates."""
         return self.proxy.map_from_scene(point)
 
     def map_to_scene(self, point):
-        """ Returns the viewport coordinate point mapped to scene coordinates.
-        """
+        """Returns the viewport coordinate point mapped to scene coordinates."""
         return self.proxy.map_to_scene(point)
 
     def pixel_density(self):
-        """ Returns the size of a pixel in sceen coordinates.
-        """
+        """Returns the size of a pixel in sceen coordinates."""
         return self.proxy.pixel_density()
 
 
@@ -860,9 +921,8 @@ class GraphicsItemGroup(GraphicsItem):
 
 
 class AbstractGraphicsShapeItem(GraphicsItem):
-    """ A common base for all path items.
+    """A common base for all path items."""
 
-    """
     #: Proxy reference
     proxy = Typed(ProxyAbstractGraphicsShapeItem)
 
@@ -872,7 +932,7 @@ class AbstractGraphicsShapeItem(GraphicsItem):
     #: Set the brush or "fill" style.
     brush = d_(Instance(Brush))
 
-    @observe('pen', 'brush')
+    @observe("pen", "brush")
     def _update_proxy(self, change):
         super(AbstractGraphicsShapeItem, self)._update_proxy(change)
 
@@ -887,7 +947,7 @@ class GraphicsRectItem(AbstractGraphicsShapeItem):
     #: Height
     height = d_(Float(10.0, strict=False))
 
-    @observe('width', 'height')
+    @observe("width", "height")
     def _update_proxy(self, change):
         super(GraphicsRectItem, self)._update_proxy(change)
 
@@ -910,7 +970,7 @@ class GraphicsEllipseItem(AbstractGraphicsShapeItem):
     #: This is rounded to the nearest 16ths of a degree.
     start_angle = d_(Float(0.0, strict=False))
 
-    @observe('width', 'height', 'span_angle', 'start_angle')
+    @observe("width", "height", "span_angle", "start_angle")
     def _update_proxy(self, change):
         super(GraphicsEllipseItem, self)._update_proxy(change)
 
@@ -925,26 +985,28 @@ class GraphicsTextItem(AbstractGraphicsShapeItem):
     #: Font
     font = d_(FontMember())
 
-    @observe('text', 'font')
+    @observe("text", "font")
     def _update_proxy(self, change):
         super(GraphicsTextItem, self)._update_proxy(change)
 
 
 class GraphicsLineItem(AbstractGraphicsShapeItem):
-    """ Creates a line from the position x,y to the given point """
+    """Creates a line from the position x,y to the given point"""
+
     #: Proxy reference
     proxy = Typed(ProxyGraphicsLineItem)
 
     #: An x,y or x,y,z point
     point = d_(PointMember())
 
-    @observe('point')
+    @observe("point")
     def _update_proxy(self, change):
         super(GraphicsLineItem, self)._update_proxy(change)
 
 
 class GraphicsPolygonItem(AbstractGraphicsShapeItem):
-    """ Creates a line from the position x,y to the given point """
+    """Creates a line from the position x,y to the given point"""
+
     #: Proxy reference
     proxy = Typed(ProxyGraphicsPolygonItem)
 
@@ -952,7 +1014,7 @@ class GraphicsPolygonItem(AbstractGraphicsShapeItem):
     #: TODO: Support np array
     points = d_(List(PointMember()))
 
-    @observe('points')
+    @observe("points")
     def _update_proxy(self, change):
         super(GraphicsPolygonItem, self)._update_proxy(change)
 
@@ -965,7 +1027,7 @@ class GraphicsPathItem(AbstractGraphicsShapeItem):
     #: path value and format is accepted.
     path = d_(Value())
 
-    @observe('path')
+    @observe("path")
     def _update_proxy(self, change):
         super(GraphicsPathItem, self)._update_proxy(change)
 
@@ -977,13 +1039,13 @@ class GraphicsImageItem(GraphicsItem):
     #: Image
     image = d_(Instance(Image))
 
-    @observe('image')
+    @observe("image")
     def _update_proxy(self, change):
         super(GraphicsImageItem, self)._update_proxy(change)
 
 
 class GraphicsWidget(GraphicsItem):
-    """ Use this to embed a widget within a graphics scene """
+    """Use this to embed a widget within a graphics scene"""
+
     #: Proxy reference
     proxy = Typed(ProxyGraphicsWidget)
-

@@ -5,14 +5,17 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 28, 2015
 """
-from atom.api import (
-    Typed, Instance, Property, Int
-)
+from atom.api import Typed, Instance, Property, Int
 from enamlx.qt.qt_abstract_item_view import (
-    QtAbstractItemView, QAbstractAtomItemModel, IS_QT4
+    QtAbstractItemView,
+    QAbstractAtomItemModel,
+    IS_QT4,
 )
 from enamlx.widgets.tree_view import (
-    ProxyTreeViewItem, ProxyTreeView, ProxyTreeViewColumn, AbstractWidgetItem
+    ProxyTreeViewItem,
+    ProxyTreeView,
+    ProxyTreeViewColumn,
+    AbstractWidgetItem,
 )
 from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
 from qtpy.QtWidgets import QTreeView
@@ -22,9 +25,7 @@ from enaml.qt.qt_widget import QtWidget
 from enaml.application import timed_call
 
 
-
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
-
     def rowCount(self, parent):
         d = self.declaration
         if d.vertical_headers:
@@ -44,7 +45,7 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         return len(d._columns) if d and not d.is_destroyed else 0
 
     def index(self, row, column, parent):
-        """ The index should point to the corresponding QtControl in the
+        """The index should point to the corresponding QtControl in the
         enaml object hierarchy.
         """
         item = parent.internalPointer()
@@ -52,8 +53,7 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         d = self.declaration if item is None else item.declaration
         if row < len(d._items):
             proxy = d._items[row].proxy
-            assert isinstance(proxy, QtTreeViewItem), \
-                "Invalid item {}".format(proxy)
+            assert isinstance(proxy, QtTreeViewItem), "Invalid item {}".format(proxy)
         else:
             proxy = d.proxy
         return self.createIndex(row, column, proxy)
@@ -74,9 +74,11 @@ class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):
         if not index or not index.isValid():
             return
         item = index.internalPointer()
-        assert isinstance(item, QtTreeViewItem), \
-            "Invalid index: {} at ({},{}) {}".format(
-                index, index.row(), index.column(), item)
+        assert isinstance(
+            item, QtTreeViewItem
+        ), "Invalid index: {} at ({},{}) {}".format(
+            index, index.row(), index.column(), item
+        )
         d = item.declaration
         try:
             c = index.column()  # - d.visible_column
@@ -110,8 +112,7 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         self.widget.setRootIsDecorated(show)
 
     def set_cell_padding(self, padding):
-        self.widget.setStyleSheet(
-            "QTreeView::item { padding: %ipx }" % padding)
+        self.widget.setStyleSheet("QTreeView::item { padding: %ipx }" % padding)
 
     def set_horizontal_minimum_section_size(self, size):
         self.widget.header().setMinimumSectionSize(size)
@@ -141,7 +142,7 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
             d = self.declaration
             # TODO: What about parents???
             try:
-                cols = self.model.columnCount(self.index)-d.visible_columns
+                cols = self.model.columnCount(self.index) - d.visible_columns
                 d.visible_column = max(0, min(value, cols))
             except RuntimeError:
                 #: Since refreshing is deferred several ms later
@@ -152,14 +153,14 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         if self._pending_row_refreshes == 0:
             d = self.declaration
             try:
-                rows = self.model.rowCount(self.index)-d.visible_rows
+                rows = self.model.rowCount(self.index) - d.visible_rows
                 d.visible_row = max(0, min(value, rows))
             except RuntimeError:
                 pass
 
 
 class AbstractQtTreeViewItem(AbstractQtWidgetItem):
-    """ Base TreeViewItem class """
+    """Base TreeViewItem class"""
 
     #: Pending refreshes when loading widgets
     _refresh_count = Int(0)
@@ -186,11 +187,11 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
     def _update_index(self):
         self.index = self._default_index()
         if self.delegate:
-            self._refresh_count +=1
+            self._refresh_count += 1
             timed_call(self._loading_interval, self._update_delegate)
 
     def _update_delegate(self):
-        """ Update the delegate cell widget. This is deferred so it
+        """Update the delegate cell widget. This is deferred so it
         does not get called until the user is done scrolling.
         """
         self._refresh_count -= 1
@@ -218,16 +219,15 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
         return self.index.isValid()
 
     def data_changed(self, change):
-        """ Notify the model that data has changed in this cell! """
+        """Notify the model that data has changed in this cell!"""
         self.view.model.dataChanged.emit(self.index, self.index)
 
 
 class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
-
     def _default_view(self):
-        """ If this is the root item, return the parent
-            which must be a TreeView, otherwise return the
-            parent Item's view.
+        """If this is the root item, return the parent
+        which must be a TreeView, otherwise return the
+        parent Item's view.
         """
         parent = self.parent()
         if isinstance(parent, QtTreeView):
@@ -236,10 +236,9 @@ class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
 
 
 class QtTreeViewColumn(AbstractQtTreeViewItem, ProxyTreeViewColumn):
-
     def _default_view(self):
-        """ Since the TreeViewColumn must be a child of a TreeViewItem,
-            simply return the Item's view.
+        """Since the TreeViewColumn must be a child of a TreeViewItem,
+        simply return the Item's view.
         """
         return self.parent().view
 

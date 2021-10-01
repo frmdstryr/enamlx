@@ -26,16 +26,28 @@ from OCC.BRepBuilderAPI import BRepBuilderAPI_MakeShape
 
 log = logging.getLogger(__name__)
 
+
 class Display(OCCViewer.Viewer3d):
-    def DisplayShape(self, shapes, material=None, texture=None, color=None, transparency=None, update=False, fit=False):
-        ''' '''
+    def DisplayShape(
+        self,
+        shapes,
+        material=None,
+        texture=None,
+        color=None,
+        transparency=None,
+        update=False,
+        fit=False,
+    ):
+        """ """
         # if a gp_Pnt is passed, first convert to vertex
         if issubclass(shapes.__class__, OCCViewer.gp_Pnt):
             vertex = OCCViewer.BRepBuilderAPI_MakeVertex(shapes)
             shapes = [vertex.Shape()]
             SOLO = True
         elif isinstance(shapes, OCCViewer.gp_Pnt2d):
-            vertex = OCCViewer.BRepBuilderAPI_MakeVertex(OCCViewer.gp_Pnt(shapes.X(), shapes.Y(), 0))
+            vertex = OCCViewer.BRepBuilderAPI_MakeVertex(
+                OCCViewer.gp_Pnt(shapes.X(), shapes.Y(), 0)
+            )
             shapes = [vertex.Shape()]
             SOLO = True
         # if a Geom_Curve is passed
@@ -86,8 +98,18 @@ class Display(OCCViewer.Viewer3d):
                 if texture:
                     self.View.SetSurfaceDetail(OCCViewer.OCC.V3d.V3d_TEX_ALL)
                     shape_to_display = OCCViewer.OCC.AIS.AIS_TexturedShape(shape)
-                    filename, toScaleU, toScaleV, toRepeatU, toRepeatV, originU, originV = texture.GetProperties()
-                    shape_to_display.SetTextureFileName(OCCViewer.TCollection_AsciiString(filename))
+                    (
+                        filename,
+                        toScaleU,
+                        toScaleV,
+                        toRepeatU,
+                        toRepeatV,
+                        originU,
+                        originV,
+                    ) = texture.GetProperties()
+                    shape_to_display.SetTextureFileName(
+                        OCCViewer.TCollection_AsciiString(filename)
+                    )
                     shape_to_display.SetTextureMapOn()
                     shape_to_display.SetTextureScale(True, toScaleU, toScaleV)
                     shape_to_display.SetTextureRepeat(True, toRepeatU, toRepeatV)
@@ -113,8 +135,8 @@ class Display(OCCViewer.Viewer3d):
 
         # set the graphic properties
         if material is None:
-            #The default material is too shiny to show the object
-            #color well, so I set it to something less reflective
+            # The default material is too shiny to show the object
+            # color well, so I set it to something less reflective
             shape_to_display.SetMaterial(OCCViewer.Graphic3d_NOM_NEON_GNC)
         if color:
             if isinstance(color, str):
@@ -138,9 +160,9 @@ class Display(OCCViewer.Viewer3d):
         else:
             return shape_to_display
 
+
 class QtBaseViewer(QtOpenGL.QGLWidget):
-    ''' The base Qt Widget for an OCC viewer
-    '''
+    """The base Qt Widget for an OCC viewer"""
 
     def __init__(self, parent=None):
         QtOpenGL.QGLWidget.__init__(self, parent)
@@ -158,23 +180,23 @@ class QtBaseViewer(QtOpenGL.QGLWidget):
         self.setAutoFillBackground(False)
 
     def GetHandle(self):
-        ''' returns an the identifier of the GUI widget.
+        """returns an the identifier of the GUI widget.
         It must be an integer
-        '''
+        """
         win_id = self.winId()  # this returns either an int or voitptr
 
-        if "%s"%type(win_id) == "<type 'PyCObject'>":  # PySide
+        if "%s" % type(win_id) == "<type 'PyCObject'>":  # PySide
             ### with PySide, self.winId() does not return an integer
             if sys.platform == "win32":
                 ## Be careful, this hack is py27 specific
                 ## does not work with python31 or higher
                 ## since the PyCObject api was changed
                 import ctypes
+
                 ctypes.pythonapi.PyCObject_AsVoidPtr.restype = ctypes.c_void_p
-                ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [
-                    ctypes.py_object]
+                ctypes.pythonapi.PyCObject_AsVoidPtr.argtypes = [ctypes.py_object]
                 win_id = ctypes.pythonapi.PyCObject_AsVoidPtr(win_id)
-        elif type(win_id) is not int:  #PyQt4 or 5
+        elif type(win_id) is not int:  # PyQt4 or 5
             ## below integer cast may be required because self.winId() can
             ## returns a sip.voitptr according to the PyQt version used
             ## as well as the python version
@@ -187,7 +209,7 @@ class QtBaseViewer(QtOpenGL.QGLWidget):
 
 
 class QtViewer3d(QtBaseViewer):
-    def __init__(self, *args,**kwargs):
+    def __init__(self, *args, **kwargs):
         super(QtViewer3d, self).__init__(*args, **kwargs)
         self._drawbox = False
         self._zoom_area = False
@@ -199,44 +221,47 @@ class QtViewer3d(QtBaseViewer):
         self._selection = None
         self._drawtext = True
         self._callbacks = {
-            'key_press':[],
-            'drag':[],
-            'mouse_wheel':[],
-            'mouse_move':[],
-            'mouse_press':[],
-            'mouse_release':[],
+            "key_press": [],
+            "drag": [],
+            "mouse_wheel": [],
+            "mouse_move": [],
+            "mouse_press": [],
+            "mouse_release": [],
         }
-#
-#     def initDriver(self):
-#         self._display = OCCViewer.Viewer3d(self.GetHandle())
-#         self._display.Create()
-#         # background gradient
-#         self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
-#         # background gradient
-#         self._display.display_trihedron()
-#         self._display.SetModeShaded()
-#         self._display.EnableAntiAliasing()
-#         self._inited = True
-#         # dict mapping keys to functions
-#         self._SetupKeyMap()
-#         #
-#         self._display.thisown = False
+
+    #
+    #     def initDriver(self):
+    #         self._display = OCCViewer.Viewer3d(self.GetHandle())
+    #         self._display.Create()
+    #         # background gradient
+    #         self._display.set_bg_gradient_color(206, 215, 222, 128, 128, 128)
+    #         # background gradient
+    #         self._display.display_trihedron()
+    #         self._display.SetModeShaded()
+    #         self._display.EnableAntiAliasing()
+    #         self._inited = True
+    #         # dict mapping keys to functions
+    #         self._SetupKeyMap()
+    #         #
+    #         self._display.thisown = False
 
     def _SetupKeyMap(self):
         def set_shade_mode():
             self._display.DisableAntiAliasing()
             self._display.SetModeShaded()
 
-        self._key_map = {ord('W'): self._display.SetModeWireFrame,
-                         ord('S'): set_shade_mode,
-                         ord('A'): self._display.EnableAntiAliasing,
-                         ord('B'): self._display.DisableAntiAliasing,
-                         ord('H'): self._display.SetModeHLR,
-                         ord('F'): self._display.FitAll,
-                         ord('G'): self._display.SetSelectionMode}
+        self._key_map = {
+            ord("W"): self._display.SetModeWireFrame,
+            ord("S"): set_shade_mode,
+            ord("A"): self._display.EnableAntiAliasing,
+            ord("B"): self._display.DisableAntiAliasing,
+            ord("H"): self._display.SetModeHLR,
+            ord("F"): self._display.FitAll,
+            ord("G"): self._display.SetSelectionMode,
+        }
 
     def keyPressEvent(self, event):
-        if self._fireEventCallback('key_press',event):
+        if self._fireEventCallback("key_press", event):
             return
         code = event.key()
         if code in self._key_map:
@@ -280,7 +305,7 @@ class QtViewer3d(QtBaseViewer):
         self._display.FitAll()
 
     def wheelEvent(self, event):
-        if self._fireEventCallback('mouse_wheel',event):
+        if self._fireEventCallback("mouse_wheel", event):
             return
         try:  # PyQt4/PySide
             delta = event.delta()
@@ -294,32 +319,32 @@ class QtViewer3d(QtBaseViewer):
         self._display.ZoomFactor(zoom_factor)
 
     def dragMoveEvent(self, event):
-        if self._fireEventCallback('drag',event):
+        if self._fireEventCallback("drag", event):
             return
         pass
 
-    def _fireEventCallback(self,name,event):
+    def _fireEventCallback(self, name, event):
         handled = False
-        for cb in self._callbacks.get(name,[]):
+        for cb in self._callbacks.get(name, []):
             #: Raise StopIteration to ignore the default handlers
             try:
-                cb((self._display,event))
+                cb((self._display, event))
             except StopIteration:
                 handled = True
             except:
                 traceback.print_exc()
-                #log.error(traceback.format_exc())
+                # log.error(traceback.format_exc())
         return handled
 
     def mousePressEvent(self, event):
         self.setFocus()
         self.dragStartPos = event.pos()
-        if self._fireEventCallback('mouse_press',event):
+        if self._fireEventCallback("mouse_press", event):
             return
         self._display.StartRotation(self.dragStartPos.x(), self.dragStartPos.y())
 
     def mouseReleaseEvent(self, event):
-        if self._fireEventCallback('mouse_release',event):
+        if self._fireEventCallback("mouse_release", event):
             return
         pt = event.pos()
         modifiers = event.modifiers()
@@ -355,25 +380,26 @@ class QtViewer3d(QtBaseViewer):
         self.update()
 
     def mouseMoveEvent(self, event):
-        if self._fireEventCallback('mouse_move',event):
+        if self._fireEventCallback("mouse_move", event):
             return
         pt = event.pos()
         buttons = int(event.buttons())
         modifiers = event.modifiers()
         # ROTATE
-        if (buttons == Qt.LeftButton and
-                not modifiers == Qt.ShiftModifier):
+        if buttons == Qt.LeftButton and not modifiers == Qt.ShiftModifier:
             dx = pt.x() - self.dragStartPos.x()
             dy = pt.y() - self.dragStartPos.y()
             self._display.Rotation(pt.x(), pt.y())
             self._drawbox = False
         # DYNAMIC ZOOM
-        elif (buttons == Qt.RightButton and
-              not modifiers == Qt.ShiftModifier):
+        elif buttons == Qt.RightButton and not modifiers == Qt.ShiftModifier:
             self._display.Repaint()
-            self._display.DynamicZoom(abs(self.dragStartPos.x()),
-                                      abs(self.dragStartPos.y()), abs(pt.x()),
-                                      abs(pt.y()))
+            self._display.DynamicZoom(
+                abs(self.dragStartPos.x()),
+                abs(self.dragStartPos.y()),
+                abs(pt.x()),
+                abs(pt.y()),
+            )
             self.dragStartPos = pt
             self._drawbox = False
         # PAN
@@ -385,20 +411,19 @@ class QtViewer3d(QtBaseViewer):
             self._drawbox = False
         # DRAW BOX
         # ZOOM WINDOW
-        elif (buttons == Qt.RightButton and
-              modifiers == Qt.ShiftModifier):
+        elif buttons == Qt.RightButton and modifiers == Qt.ShiftModifier:
             self._zoom_area = True
             self.DrawBox(event)
         # SELECT AREA
-        elif (buttons == Qt.LeftButton and
-              modifiers == Qt.ShiftModifier):
+        elif buttons == Qt.LeftButton and modifiers == Qt.ShiftModifier:
             self._select_area = True
             self.DrawBox(event)
         else:
             self._drawbox = False
             self._display.MoveTo(pt.x(), pt.y())
 
-class QtOccViewer(QtControl,ProxyOccViewer):
+
+class QtOccViewer(QtControl, ProxyOccViewer):
     #: Viewer widget
     widget = Typed(QtViewer3d)
 
@@ -409,14 +434,14 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     _displayed_shapes = Dict()
 
     #: Shapes
-    shapes = Property(lambda self:self.get_shapes(),cached=True)
+    shapes = Property(lambda self: self.get_shapes(), cached=True)
 
     @property
     def display(self):
         return self.widget._display
 
     def get_shapes(self):
-        return [c for c in self.children() if not isinstance(c,QtToolkitObject)]
+        return [c for c in self.children() if not isinstance(c, QtToolkitObject)]
 
     def create_widget(self):
         self.widget = QtViewer3d(parent=self.parent_widget())
@@ -444,8 +469,8 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         display.register_select_callback(self.update_selection)
         self.update_selection()
 
-        widget._inited = True # dict mapping keys to functions
-        widget._SetupKeyMap() #
+        widget._inited = True  # dict mapping keys to functions
+        widget._SetupKeyMap()  #
         display.thisown = False
         self.init_signals()
 
@@ -453,12 +478,10 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         d = self.declaration
         widget = self.widget
         for name in widget._callbacks.keys():
-            event_name = 'on_{}'.format(name)
+            event_name = "on_{}".format(name)
             if hasattr(d, event_name):
-                cb = getattr(d,event_name)
+                cb = getattr(d, event_name)
                 widget._callbacks[name].append(cb)
-
-
 
     def init_layout(self):
         for child in self.children():
@@ -467,17 +490,16 @@ class QtOccViewer(QtControl,ProxyOccViewer):
 
     def child_added(self, child):
         super(QtOccViewer, self).child_added(child)
-        if not isinstance(child,QtToolkitObject):
-            self.get_member('shapes').reset(self)
-            child.observe('shape',self.update_display)
+        if not isinstance(child, QtToolkitObject):
+            self.get_member("shapes").reset(self)
+            child.observe("shape", self.update_display)
             self.update_display()
-
 
     def child_removed(self, child):
         super(QtOccViewer, self).child_removed(child)
-        if not isinstance(child,QtToolkitObject):
-            self.get_member('shapes').reset(self)
-            child.unobserve('shape',self.update_display)
+        if not isinstance(child, QtToolkitObject):
+            self.get_member("shapes").reset(self)
+            child.unobserve("shape", self.update_display)
 
     def set_antialiasing(self, enabled):
         if enabled:
@@ -494,7 +516,7 @@ class QtOccViewer(QtControl,ProxyOccViewer):
     def _update_raytracing_mode(self):
         d = self.declaration
         display = self.display
-        if not hasattr(display.View,'SetRaytracingMode'):
+        if not hasattr(display.View, "SetRaytracingMode"):
             return
         if d.shadows or d.reflections:
             display.View.SetRaytracingMode()
@@ -508,9 +530,9 @@ class QtOccViewer(QtControl,ProxyOccViewer):
             display.View.DisableRaytracingMode()
 
     def set_double_buffer(self, enabled):
-        return # Enabled by default
-        #self.display.SetDoubleBuffer(enabled)
-        #self.widget.a
+        return  # Enabled by default
+        # self.display.SetDoubleBuffer(enabled)
+        # self.widget.a
 
     def set_background_gradient(self, gradient):
         self.display.set_bg_gradient_color(*gradient)
@@ -519,63 +541,63 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         self.display.display_trihedron()
 
     def set_selection_mode(self, mode):
-        if mode=='shape':
+        if mode == "shape":
             self.display.SetSelectionModeShape()
-        elif mode=='neutral':
+        elif mode == "neutral":
             self.display.SetSelectionModeNeutral()
-        elif mode=='face':
+        elif mode == "face":
             self.display.SetSelectionModeFace()
-        elif mode=='edge':
+        elif mode == "edge":
             self.display.SetSelectionModeEdge()
-        elif mode=='vertex':
+        elif mode == "vertex":
             self.display.SetSelectionModeVertex()
 
     def set_display_mode(self, mode):
-        if mode=='shaded':
+        if mode == "shaded":
             self.display.SetModeShaded()
-        elif mode=='hlr':
+        elif mode == "hlr":
             self.display.SetModeHLR()
-        elif mode=='wireframe':
+        elif mode == "wireframe":
             self.display.SetModeWireFrame()
 
     def set_view_mode(self, mode):
-        if mode=='iso':
+        if mode == "iso":
             self.display.View_Iso()
-        elif mode=='top':
+        elif mode == "top":
             self.display.View_Top()
-        elif mode=='bottom':
+        elif mode == "bottom":
             self.display.View_Bottom()
-        elif mode=='left':
+        elif mode == "left":
             self.display.View_Left()
-        elif mode=='right':
+        elif mode == "right":
             self.display.View_Right()
         self.display.FitAll()
 
-    def update_selection(self,*args,**kwargs):
+    def update_selection(self, *args, **kwargs):
         d = self.declaration
         selection = []
         for shape in self.display.selected_shapes:
             if shape in self._displayed_shapes:
                 selection.append(self._displayed_shapes[shape].declaration)
             else:
-                log.warning("shape {} not in {}".format(shape,self._displayed_shapes))
+                log.warning("shape {} not in {}".format(shape, self._displayed_shapes))
         d.selection = selection
 
-#     def _queue_update(self,change):
-#         self._update_count +=1
-#         timed_call(0,self._check_update,change)
-#
-#     def _dequeue_update(self,change):
-#         # Only update when all changes are done
-#         self._update_count -=1
-#         if self._update_count !=0:
-#             return
-#         self.update_shape(change)
+    #     def _queue_update(self,change):
+    #         self._update_count +=1
+    #         timed_call(0,self._check_update,change)
+    #
+    #     def _dequeue_update(self,change):
+    #         # Only update when all changes are done
+    #         self._update_count -=1
+    #         if self._update_count !=0:
+    #             return
+    #         self.update_shape(change)
 
     def update_display(self, change=None):
-        self._update_count +=1
-        #log.debug('update_display')
-        timed_call(0,self._do_update)
+        self._update_count += 1
+        # log.debug('update_display')
+        timed_call(0, self._do_update)
 
     def clear_display(self):
         display = self.display
@@ -583,15 +605,16 @@ class QtOccViewer(QtControl,ProxyOccViewer):
         display.Context.PurgeDisplay()
         display.Context.RemoveAll()
 
-    def _expand_shapes(self,shapes):
+    def _expand_shapes(self, shapes):
         expansion = []
         for s in shapes:
             for c in s.children():
                 #: HAck...
                 from occ.occ_part import OccPart
-                if isinstance(c,OccPart):
+
+                if isinstance(c, OccPart):
                     expansion.extend(self._expand_shapes(c.shapes))
-            if hasattr(s,'shapes'):
+            if hasattr(s, "shapes"):
                 expansion.extend(self._expand_shapes(s.shapes))
             else:
                 expansion.append(s)
@@ -599,18 +622,18 @@ class QtOccViewer(QtControl,ProxyOccViewer):
 
     def _do_update(self):
         # Only update when all changes are done
-        self._update_count -=1
-        if self._update_count !=0:
+        self._update_count -= 1
+        if self._update_count != 0:
             return
         #: TO
         try:
             display = self.display
             self.clear_display()
             displayed_shapes = {}
-            #log.error( "_do_update {}")
+            # log.error( "_do_update {}")
             shapes = self._expand_shapes(self.shapes[:])
             for shape in shapes:
-                update = shape==shapes[-1]
+                update = shape == shapes[-1]
                 d = shape.declaration
                 if not shape.shape:
                     log.error("{} has no shape property!".format(shape))
@@ -621,20 +644,22 @@ class QtOccViewer(QtControl,ProxyOccViewer):
                     else:
                         s = shape.shape
                 except:
-                    log.error("{} failed to create shape: {}".format(shape,traceback.format_exc()))
+                    log.error(
+                        "{} failed to create shape: {}".format(
+                            shape, traceback.format_exc()
+                        )
+                    )
                     continue
 
                 displayed_shapes[s] = shape
-                ais_shape = display.DisplayShape(s,
-                                     color=d.color,
-                                     transparency=d.transparency,
-                                     update=update,
-                                     fit=not self._displayed_shapes)
-
+                ais_shape = display.DisplayShape(
+                    s,
+                    color=d.color,
+                    transparency=d.transparency,
+                    update=update,
+                    fit=not self._displayed_shapes,
+                )
 
             self._displayed_shapes = displayed_shapes
         except:
             log.error("Failed to display shapes: {}".format(traceback.format_exc()))
-
-
-

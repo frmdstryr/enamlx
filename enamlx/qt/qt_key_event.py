@@ -13,17 +13,20 @@ from enamlx.widgets.key_event import ProxyKeyEvent
 
 Qt = QtCore.Qt
 MODIFIERS = {
-    '': Qt.NoModifier,
-    'shift': Qt.ShiftModifier,
-    'ctrl': Qt.ControlModifier,
-    'alt': Qt.AltModifier,
-    'meta': Qt.MetaModifier,
-    'keypad': Qt.KeypadModifier,
-    'group': Qt.GroupSwitchModifier,
+    "": Qt.NoModifier,
+    "shift": Qt.ShiftModifier,
+    "ctrl": Qt.ControlModifier,
+    "alt": Qt.AltModifier,
+    "meta": Qt.MetaModifier,
+    "keypad": Qt.KeypadModifier,
+    "group": Qt.GroupSwitchModifier,
 }
 
-KEYS = {k.split("Key_")[-1].lower(): getattr(Qt, k)
-        for k in Qt.__dict__ if k.startswith("Key_")}
+KEYS = {
+    k.split("Key_")[-1].lower(): getattr(Qt, k)
+    for k in Qt.__dict__
+    if k.startswith("Key_")
+}
 
 
 class QtKeyEvent(QtControl, ProxyKeyEvent):
@@ -41,11 +44,11 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
     codes = Dict()
 
     def create_widget(self):
-        """ The KeyEvent uses the parent_widget as it's widget """
+        """The KeyEvent uses the parent_widget as it's widget"""
         self.widget = self.parent_widget()
 
     def init_widget(self):
-        """ The KeyEvent uses the parent_widget as it's widget """
+        """The KeyEvent uses the parent_widget as it's widget"""
         super(QtKeyEvent, self).init_widget()
         d = self.declaration
         widget = self.widget
@@ -68,7 +71,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
             widget.keyReleaseEvent = self._keyReleaseEvent
 
     def set_keys(self, keys):
-        """ Parse all the key codes and save them """
+        """Parse all the key codes and save them"""
         codes = {}
         for key in keys:
             parts = [k.strip().lower() for k in key.split("+")]
@@ -80,8 +83,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
                 for mod in parts[:-1]:
                     mod_code = MODIFIERS.get(mod)
                     if mod_code is None:
-                        raise KeyError("Invalid key modifier '{}'"
-                                       .format(mod_code))
+                        raise KeyError("Invalid key modifier '{}'".format(mod_code))
                     modifier |= mod_code
             if code not in codes:
                 codes[code] = []
@@ -106,10 +108,14 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
             if not self.codes or self.is_matching_key(code, mods):
                 if not d.repeats and is_repeat:
                     return
-                d.pressed({'code': code,
-                           'modifiers': mods,
-                           'key': event.text(),
-                           'repeated': is_repeat})
+                d.pressed(
+                    {
+                        "code": code,
+                        "modifiers": mods,
+                        "key": event.text(),
+                        "repeated": is_repeat,
+                    }
+                )
 
         finally:
             self._keyPressEvent(event)
@@ -123,9 +129,13 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
             if not self.codes or self.is_matching_key(code, mods):
                 if not d.repeats and is_repeat:
                     return
-                d.released({'code': code,
-                            'key': event.text(),
-                            'modifiers': mods,
-                            'repeated': is_repeat})
+                d.released(
+                    {
+                        "code": code,
+                        "key": event.text(),
+                        "modifiers": mods,
+                        "repeated": is_repeat,
+                    }
+                )
         finally:
             self._keyReleaseEvent(event)

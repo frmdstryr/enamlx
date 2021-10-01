@@ -15,35 +15,34 @@ from qtpy.QtCore import Qt, QModelIndex
 
 from enamlx.widgets.abstract_item import (
     ProxyAbstractWidgetItem,
-    ProxyAbstractWidgetItemGroup
+    ProxyAbstractWidgetItemGroup,
 )
 
 TEXT_H_ALIGNMENTS = {
-    'left': Qt.AlignLeft,
-    'right': Qt.AlignRight,
-    'center': Qt.AlignHCenter,
-    'justify': Qt.AlignJustify,
+    "left": Qt.AlignLeft,
+    "right": Qt.AlignRight,
+    "center": Qt.AlignHCenter,
+    "justify": Qt.AlignJustify,
 }
 
 TEXT_V_ALIGNMENTS = {
-    'top': Qt.AlignTop,
-    'bottom': Qt.AlignBottom,
-    'center': Qt.AlignVCenter,
+    "top": Qt.AlignTop,
+    "bottom": Qt.AlignBottom,
+    "center": Qt.AlignVCenter,
 }
 
 RESIZE_MODES = {
-    'interactive': QHeaderView.Interactive,
-    'fixed': QHeaderView.Fixed,
-    'stretch': QHeaderView.Stretch,
-    'resize_to_contents': QHeaderView.ResizeToContents,
-    'custom': QHeaderView.Custom
+    "interactive": QHeaderView.Interactive,
+    "fixed": QHeaderView.Fixed,
+    "stretch": QHeaderView.Stretch,
+    "resize_to_contents": QHeaderView.ResizeToContents,
+    "custom": QHeaderView.Custom,
 }
 
 
 class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
-    """ Base class for Table and Tree Views
+    """Base class for Table and Tree Views"""
 
-    """
     #: Context menu for this group
     menu = Instance(QtMenu)
 
@@ -58,6 +57,7 @@ class AbstractQtWidgetItemGroup(QtControl, ProxyAbstractWidgetItemGroup):
 
 def _abstract_item_view():
     from .qt_abstract_item_view import QtAbstractItemView
+
     return QtAbstractItemView
 
 
@@ -89,10 +89,10 @@ class AbstractQtWidgetItem(AbstractQtWidgetItemGroup, ProxyAbstractWidgetItem):
         self._update_index()
 
     def _update_index(self):
-        """ Update where this item is within the model"""
+        """Update where this item is within the model"""
         raise NotImplementedError
 
     def destroy(self):
-        """ Set the flag so we know when this item is destroyed """
+        """Set the flag so we know when this item is destroyed"""
         self.is_destroyed = True
         super(AbstractQtWidgetItem, self).destroy()

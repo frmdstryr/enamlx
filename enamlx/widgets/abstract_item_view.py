@@ -5,8 +5,16 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 23, 2015
 """
-from atom.api import (ContainerList, Int, Enum, Bool, Property,
-                      ForwardInstance, observe, set_default)
+from atom.api import (
+    ContainerList,
+    Int,
+    Enum,
+    Bool,
+    Property,
+    ForwardInstance,
+    observe,
+    set_default,
+)
 from enaml.core.declarative import d_
 from enaml.widgets.control import Control, ProxyControl
 
@@ -84,20 +92,19 @@ class ProxyAbstractItemView(ProxyControl):
 class AbstractItemView(Control):
 
     #: Table should expand by default
-    hug_width = set_default('ignore')
+    hug_width = set_default("ignore")
 
     #: Table should expand by default
-    hug_height = set_default('ignore')
+    hug_height = set_default("ignore")
 
     #: The items to display in the view
     items = d_(ContainerList(default=[]))
 
     #: Selection mode of the view
-    selection_mode = d_(Enum('extended', 'none', 'multi', 'single',
-                             'contiguous'))
+    selection_mode = d_(Enum("extended", "none", "multi", "single", "contiguous"))
 
     #: Selection behavior of the view
-    selection_behavior = d_(Enum('items', 'rows', 'columns'))
+    selection_behavior = d_(Enum("items", "rows", "columns"))
 
     #: Selection
     selection = d_(ContainerList(default=[]))
@@ -115,8 +122,9 @@ class AbstractItemView(Control):
     auto_resize = d_(Bool(True))
 
     #: Resize mode of columns and rows
-    resize_mode = d_(Enum('interactive', 'fixed', 'stretch',
-                          'resize_to_contents', 'custom'))
+    resize_mode = d_(
+        Enum("interactive", "fixed", "stretch", "resize_to_contents", "custom")
+    )
 
     #: Word wrap
     word_wrap = d_(Bool(False))
@@ -167,31 +175,42 @@ class AbstractItemView(Control):
     visible_columns = d_(Int(1))
 
     def _get_items(self):
-        return [c for c in self.children
-                if isinstance(c, AbstractWidgetItemGroup)]
+        return [c for c in self.children if isinstance(c, AbstractWidgetItemGroup)]
 
     #: Cached property listing the row or columns of the table
     _items = Property(_get_items, cached=True)
 
-    @observe('items', 'scroll_to_bottom', 'alternating_row_colors',
-             'selection_mode', 'selection_behavior', 'selection',
-             'cell_padding', 'auto_resize', 'resize_mode', 'word_wrap',
-             'show_horizontal_header', 'horizontal_headers',
-             'horizontal_stretch',
-             'show_vertical_header', 'vertical_header', 'vertical_stretch',
-             'visible_row', 'visible_column')
+    @observe(
+        "items",
+        "scroll_to_bottom",
+        "alternating_row_colors",
+        "selection_mode",
+        "selection_behavior",
+        "selection",
+        "cell_padding",
+        "auto_resize",
+        "resize_mode",
+        "word_wrap",
+        "show_horizontal_header",
+        "horizontal_headers",
+        "horizontal_stretch",
+        "show_vertical_header",
+        "vertical_header",
+        "vertical_stretch",
+        "visible_row",
+        "visible_column",
+    )
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(AbstractItemView, self)._update_proxy(change)
 
     def child_added(self, child):
-        """ Reset the item cache when a child is added """
+        """Reset the item cache when a child is added"""
         super(AbstractItemView, self).child_added(child)
-        self.get_member('_items').reset(self)
+        self.get_member("_items").reset(self)
 
     def child_removed(self, child):
-        """ Reset the item cache when a child is removed """
+        """Reset the item cache when a child is removed"""
         super(AbstractItemView, self).child_removed(child)
-        self.get_member('_items').reset(self)
+        self.get_member("_items").reset(self)

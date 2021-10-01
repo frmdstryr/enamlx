@@ -11,18 +11,25 @@ from qtpy.QtWidgets import QTableView
 from qtpy.QtCore import QAbstractTableModel, QModelIndex
 
 from enamlx.qt.qt_abstract_item_view import (
-    QtAbstractItemView, QAbstractAtomItemModel, IS_QT4
+    QtAbstractItemView,
+    QAbstractAtomItemModel,
+    IS_QT4,
 )
 from enamlx.widgets.table_view import (
-    ProxyTableViewItem, ProxyTableView, ProxyTableViewColumn, ProxyTableViewRow
+    ProxyTableViewItem,
+    ProxyTableView,
+    ProxyTableViewColumn,
+    ProxyTableViewRow,
 )
 from enamlx.qt.qt_abstract_item import (
-    AbstractQtWidgetItem, AbstractQtWidgetItemGroup, RESIZE_MODES
+    AbstractQtWidgetItem,
+    AbstractQtWidgetItemGroup,
+    RESIZE_MODES,
 )
 
 
 class QAtomTableModel(QAbstractAtomItemModel, QAbstractTableModel):
-    """ Model that pulls it's data from the TableViewItems
+    """Model that pulls it's data from the TableViewItems
     declaration.
     """
 
@@ -66,12 +73,11 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
     # -------------------------------------------------------------------------
     # Widget settters
     # -------------------------------------------------------------------------
-    def set_show_grid(self,show):
+    def set_show_grid(self, show):
         self.widget.setShowGrid(show)
 
     def set_cell_padding(self, padding):
-        self.widget.setStyleSheet(
-            "QTableView::item { padding: %ipx }" % padding)
+        self.widget.setStyleSheet("QTableView::item { padding: %ipx }" % padding)
 
     def set_vertical_minimum_section_size(self, size):
         self.widget.verticalHeader().setMinimumSectionSize(size)
@@ -91,7 +97,7 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
             header.setResizeMode(RESIZE_MODES[mode])
         else:
             # Custom is obsolete, use fixed instead.
-            mode = 'fixed' if mode == 'custom' else mode
+            mode = "fixed" if mode == "custom" else mode
             header.setSectionResizeMode(RESIZE_MODES[mode])
 
     def set_show_horizontal_header(self, show):
@@ -109,31 +115,30 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
         self._pending_column_refreshes -= 1
         if self._pending_column_refreshes == 0:
             d = self.declaration
-            cols = self.model.columnCount()-d.visible_columns
+            cols = self.model.columnCount() - d.visible_columns
             d.visible_column = max(0, min(value, cols))
 
     def _refresh_visible_row(self, value):
         self._pending_row_refreshes -= 1
         if self._pending_row_refreshes == 0 and (self.declaration is not None):
             d = self.declaration
-            rows = self.model.rowCount()-d.visible_rows
+            rows = self.model.rowCount() - d.visible_rows
             d.visible_row = max(0, min(value, rows))
 
     def _refresh_visible_rows(self):
         return
         top = self.widget.rowAt(self.widget.rect().top())
         bottom = self.widget.rowAt(self.widget.rect().bottom())
-        self.declaration.visible_rows = max(1, (bottom-top))*2  # 2x for safety
+        self.declaration.visible_rows = max(1, (bottom - top)) * 2  # 2x for safety
 
     def _refresh_visible_columns(self):
         return
         left = self.widget.rowAt(self.widget.rect().left())
         right = self.widget.rowAt(self.widget.rect().right())
-        self.declaration.visible_columns = max(1, (right-left))*2
+        self.declaration.visible_columns = max(1, (right - left)) * 2
 
 
 class AbstractQtTableViewItemGroup(AbstractQtWidgetItemGroup):
-
     def create_widget(self):
         pass
 
@@ -159,7 +164,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
         self._update_index()
 
     def _update_index(self):
-        """ Update the reference to the index within the table """
+        """Update the reference to the index within the table"""
         d = self.declaration
         self.index = self.view.model.index(d.row, d.column)
         if self.delegate:
@@ -167,7 +172,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
             timed_call(self._loading_interval, self._update_delegate)
 
     def _update_delegate(self):
-        """ Update the delegate cell widget. This is deferred so it
+        """Update the delegate cell widget. This is deferred so it
         does not get called until the user is done scrolling.
         """
         self._refresh_count -= 1
@@ -185,14 +190,14 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
             #  Set the index widget
             self.view.widget.setIndexWidget(self.index, delegate.widget)
         except RuntimeError:
-            pass # Since this is deferred, the table could be deleted already
+            pass  # Since this is deferred, the table could be deleted already
 
     def is_visible(self):
-        """ Check if this index is currently visible """
+        """Check if this index is currently visible"""
         return True
 
     def data_changed(self, change):
-        """ Notify the model that data has changed in this cell! """
+        """Notify the model that data has changed in this cell!"""
         index = self.index
         if index:
             self.view.model.dataChanged.emit(index, index)

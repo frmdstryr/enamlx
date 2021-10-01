@@ -13,7 +13,7 @@ _token_stream_processors = []
 
 
 def _custom_token_stream(self):
-    """ A wrapper for the BaseEnamlLexer's make_token_stream which allows
+    """A wrapper for the BaseEnamlLexer's make_token_stream which allows
     the stream to be customized by adding "token_stream_processors".
 
     A token_stream_processor is a generator function which takes the
@@ -28,7 +28,7 @@ def _custom_token_stream(self):
 
 
 def add_token_stream_processor(processor):
-    """ Add a token stream processor and install the custom token stream
+    """Add a token stream processor and install the custom token stream
     method if it is not already installed.
 
     """
@@ -37,7 +37,7 @@ def add_token_stream_processor(processor):
 
 
 def remote_token_stream_processor(processor):
-    """ Removes the given token stream processor and uninstalls the custom
+    """Removes the given token stream processor and uninstalls the custom
     token stream if it is no longer needed.
 
     """
@@ -47,23 +47,19 @@ def remote_token_stream_processor(processor):
 
 
 def install():
-    """ Install the custom token stream processor.
-
-    """
+    """Install the custom token stream processor."""
     if BaseEnamlLexer.make_token_stream != _custom_token_stream:
         BaseEnamlLexer.make_token_stream = _custom_token_stream
 
 
 def uninstall():
-    """ Install the custom token stream processor.
-
-    """
+    """Install the custom token stream processor."""
     if BaseEnamlLexer.make_token_stream == _custom_token_stream:
         BaseEnamlLexer.make_token_stream = default_make_token_stream
 
 
 def convert_enamldef_def_to_func(token_stream):
-    """ A token stream processor which processes all enaml declarative functions
+    """A token stream processor which processes all enaml declarative functions
     to allow using `def` instead of `func`. It does this by transforming DEF
     tokens to NAME within enamldef blocks and then changing the token value to
     `func`.
@@ -78,17 +74,17 @@ def convert_enamldef_def_to_func(token_stream):
     in_enamldef = False
     depth = 0
     for tok in token_stream:
-        if tok.type == 'ENAMLDEF':
+        if tok.type == "ENAMLDEF":
             in_enamldef = True
-        elif tok.type == 'INDENT':
+        elif tok.type == "INDENT":
             depth += 1
-        elif in_enamldef and tok.type == 'DEF':
+        elif in_enamldef and tok.type == "DEF":
             # Since functions are not allowed on the RHS we can
             # transform the token type to a NAME so it's picked up by the
             # parser as a decl_funcdef instead of funcdef
-            tok.type = 'NAME'
-            tok.value = 'func'
-        elif tok.type == 'DEDENT':
+            tok.type = "NAME"
+            tok.value = "func"
+        elif tok.type == "DEDENT":
             depth -= 1
             if depth == 0:
                 in_enamldef = False

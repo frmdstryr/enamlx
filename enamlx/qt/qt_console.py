@@ -16,8 +16,7 @@ from enaml.qt.qt_control import QtControl
 
 def console_factory():
     try:
-        from qtconsole.rich_jupyter_widget import RichJupyterWidget \
-            as RichIPythonWidget
+        from qtconsole.rich_jupyter_widget import RichJupyterWidget as RichIPythonWidget
     except ImportError:
         from IPython.qt.console.rich_ipython_widget import RichIPythonWidget
 
@@ -47,9 +46,9 @@ class QtConsole(QtControl, ProxyConsole):
         d = self.declaration
         WidgetClass = console_factory()
         self.widget = WidgetClass(
-            parent = self.parent_widget(),
-            gui_completion = d.completion,
-            display_banner = d.display_banner
+            parent=self.parent_widget(),
+            gui_completion=d.completion,
+            display_banner=d.display_banner,
         )
 
     def init_widget(self):
@@ -73,7 +72,7 @@ class QtConsole(QtControl, ProxyConsole):
         kernel_manager = KernelManager()
         kernel_manager.start_kernel(show_banner=False)
         kernel = kernel_manager.kernel
-        kernel.gui = 'qt4'
+        kernel.gui = "qt4"
         self.kernel = kernel
         kernel_client = kernel_manager.client()
         kernel_client.start_channels()

@@ -12,9 +12,8 @@ from qtpy.QtWidgets import QDoubleSpinBox
 
 
 class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
-    """ A Qt implementation of an Enaml SpinBox.
+    """A Qt implementation of an Enaml SpinBox."""
 
-    """
     #: A reference to the widget created by the proxy.
     widget = Typed(QDoubleSpinBox)
 
@@ -22,9 +21,7 @@ class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):
     # Initialization API
     # -------------------------------------------------------------------------
     def create_widget(self):
-        """ Create the underlying QDoubleSpinBox widget.
-
-        """
+        """Create the underlying QDoubleSpinBox widget."""
         widget = QDoubleSpinBox(self.parent_widget())
         widget.setKeyboardTracking(False)
         self.widget = widget

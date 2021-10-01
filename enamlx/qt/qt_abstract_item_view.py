@@ -17,40 +17,41 @@ from qtpy.QtWidgets import QAbstractItemView
 
 
 SELECTION_MODES = {
-    'extended': QAbstractItemView.ExtendedSelection,
-    'single': QAbstractItemView.SingleSelection,
-    'contiguous': QAbstractItemView.ContiguousSelection,
-    'multi': QAbstractItemView.MultiSelection,
-    'none': QAbstractItemView.NoSelection,
+    "extended": QAbstractItemView.ExtendedSelection,
+    "single": QAbstractItemView.SingleSelection,
+    "contiguous": QAbstractItemView.ContiguousSelection,
+    "multi": QAbstractItemView.MultiSelection,
+    "none": QAbstractItemView.NoSelection,
 }
 
 SELECTION_BEHAVIORS = {
-    'items': QAbstractItemView.SelectItems,
-    'rows': QAbstractItemView.SelectRows,
-    'columns': QAbstractItemView.SelectColumns,
+    "items": QAbstractItemView.SelectItems,
+    "rows": QAbstractItemView.SelectRows,
+    "columns": QAbstractItemView.SelectColumns,
 }
 
 IS_QT4 = QT_API in PYSIDE_API + PYQT4_API
 
 
 class QAbstractAtomItemModel(object):
-    """ A mixin for an ItemModel """
+    """A mixin for an ItemModel"""
+
     declaration = None
 
     def setDeclaration(self, declaration):
-        """ Set the declaration this model will use for rendering
+        """Set the declaration this model will use for rendering
         the the headers.
 
         """
-        assert isinstance(declaration.proxy, ProxyAbstractItemView), \
-            "The model declaration must be a QtAbstractItemView subclass. " \
+        assert isinstance(declaration.proxy, ProxyAbstractItemView), (
+            "The model declaration must be a QtAbstractItemView subclass. "
             "Got {]".format(declaration)
+        )
 
         self.declaration = declaration
 
     def data(self, index, role):
-        """ Retrieve the data for the item at the given index
-        """
+        """Retrieve the data for the item at the given index"""
         item = self.itemAt(index)
         if not item:
             return None
@@ -74,13 +75,13 @@ class QAbstractAtomItemModel(object):
             return get_cached_qcolor(d.foreground)
         elif role == Qt.BackgroundRole and d.background:
             return get_cached_qcolor(d.background)
-        #elif role == Qt.SizeHintRole and d.minimum_size:
+        # elif role == Qt.SizeHintRole and d.minimum_size:
         #    return d.minimum_size
 
         return None
 
     def itemAt(self, index):
-        """ Get the item at the given model index.
+        """Get the item at the given model index.
 
         Returns
         -------
@@ -105,9 +106,7 @@ class QAbstractAtomItemModel(object):
         return flags
 
     def setData(self, index, value, role=Qt.EditRole):
-        """ Set the data for the item at the given index to the given value.
-
-        """
+        """Set the data for the item at the given index to the given value."""
         item = self.itemAt(index)
         if not item:
             return False
@@ -125,25 +124,23 @@ class QAbstractAtomItemModel(object):
         return super(QAbstractAtomItemModel, self).setData(index, value, role)
 
     def headerData(self, index, orientation, role):
-        """ QHeaderView respects the following item data roles:
-                TextAlignmentRole,
-                DisplayRole,
-                FontRole,
-                DecorationRole,
-                ForegroundRole,
-                BackgroundRole.
+        """QHeaderView respects the following item data roles:
+        TextAlignmentRole,
+        DisplayRole,
+        FontRole,
+        DecorationRole,
+        ForegroundRole,
+        BackgroundRole.
         """
         d = self.declaration
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             try:
-                return d.horizontal_headers[index] \
-                    if d.horizontal_headers else index
+                return d.horizontal_headers[index] if d.horizontal_headers else index
             except IndexError:
                 return index
         elif orientation == Qt.Vertical and role == Qt.DisplayRole:
             try:
-                return d.vertical_headers[index] \
-                    if d.vertical_headers else index
+                return d.vertical_headers[index] if d.vertical_headers else index
             except IndexError:
                 return index
         return None
@@ -195,11 +192,9 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         if d.cell_padding:
             self.set_cell_padding(d.cell_padding)
         if d.vertical_minimum_section_size:
-            self.set_vertical_minimum_section_size(
-                d.vertical_minimum_section_size)
+            self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
         if d.horizontal_minimum_section_size:
-            self.set_horizontal_minimum_section_size(
-                d.horizontal_minimum_section_size)
+            self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
 
         self.init_signals()
 
@@ -207,27 +202,29 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         raise NotImplementedError
 
     def init_signals(self):
-        """ Connect signals """
+        """Connect signals"""
         self.widget.activated.connect(self.on_item_activated)
         self.widget.clicked.connect(self.on_item_clicked)
         self.widget.doubleClicked.connect(self.on_item_double_clicked)
         self.widget.entered.connect(self.on_item_entered)
         self.widget.pressed.connect(self.on_item_pressed)
         self.widget.customContextMenuRequested.connect(
-            self.on_custom_context_menu_requested)
+            self.on_custom_context_menu_requested
+        )
         self.selection_model = self.widget.selectionModel()
-        self.selection_model.selectionChanged.connect(
-            self.on_selection_changed)
+        self.selection_model.selectionChanged.connect(self.on_selection_changed)
         self.widget.horizontalScrollBar().valueChanged.connect(
-            self.on_horizontal_scrollbar_moved)
+            self.on_horizontal_scrollbar_moved
+        )
         self.widget.verticalScrollBar().valueChanged.connect(
-            self.on_vertical_scrollbar_moved)
+            self.on_vertical_scrollbar_moved
+        )
 
     def item_at(self, index):
         return self.model.itemAt(index)
 
     def destroy(self):
-        """ Make sure all the table widgets are destroyed first."""
+        """Make sure all the table widgets are destroyed first."""
         self.model.clear()
         super(QtAbstractItemView, self).destroy()
 
@@ -270,7 +267,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self.model = self.widget.model()
 
     def set_items(self, items):
-        """ Defer until later so the view is only updated after all items
+        """Defer until later so the view is only updated after all items
         are added.
 
         """
@@ -286,7 +283,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     # Widget Events
     # -------------------------------------------------------------------------
     def on_horizontal_scrollbar_moved(self, value):
-        """ When the scrollbar moves, queue a refresh of the visible
+        """When the scrollbar moves, queue a refresh of the visible
         columns.  This makes it only update the view when needed
         making scrolling much smoother.
 
@@ -295,7 +292,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         timed_call(0, self._refresh_visible_column, value)
 
     def on_vertical_scrollbar_moved(self, value):
-        """ When the scrollbar moves, queue a refresh of the visible
+        """When the scrollbar moves, queue a refresh of the visible
         rows.  This makes it only update the view when needed
         making scrolling much smoother.
 
@@ -384,7 +381,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             item.menu.popup()
             return
         parent = item.parent()
-        if parent and hasattr(parent, 'menu') and parent.menu:
+        if parent and hasattr(parent, "menu") and parent.menu:
             parent.menu.popup()
 
     def on_layout_refreshed(self):
@@ -394,7 +391,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     # View refresh handlers
     # -------------------------------------------------------------------------
     def _refresh_layout(self):
-        """ This queues and batches model changes so that the layout is only
+        """This queues and batches model changes so that the layout is only
         refreshed after the `_pending_timeout` expires. This prevents
         the UI from refreshing when inserting or removing a large number of
         items until the operation is complete.
@@ -411,8 +408,9 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             self._refresh_sizes()
 
     def _refresh_sizes(self):
-        """ Refresh column sizes when the data changes. """
+        """Refresh column sizes when the data changes."""
         pass
+
     #         header = self.widget.horizontalHeader()
     #
     #         for i,item in enumerate(self.items[0]):
@@ -421,7 +419,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
     #                 header.resizeSection(i,item.declaration.width)
 
     def _refresh_visible_row(self, value):
-        """ Subclasses must implement this method to refresh the content in the
+        """Subclasses must implement this method to refresh the content in the
         row with the content at the given index.
 
         Parameters
@@ -433,7 +431,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         raise NotImplementedError
 
     def _refresh_visible_column(self, value):
-        """ Subclasses must implement this method to refresh the content in the
+        """Subclasses must implement this method to refresh the content in the
         column with the content at the given index.
 
         Parameters

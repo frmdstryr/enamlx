@@ -6,25 +6,43 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Sept 4, 2018
 """
 import warnings
-from atom.api import (
-    Atom, Typed, Instance, Property, Int, Coerced, atomref
-)
+from atom.api import Atom, Typed, Instance, Property, Int, Coerced, atomref
 
 from enaml.qt.QtWidgets import (
-    QGraphicsView, QGraphicsScene, QGraphicsObject, QGraphicsEllipseItem,
-    QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem,
-    QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsPixmapItem,
-    QGraphicsItemGroup, QGraphicsProxyWidget, QWidgetAction, QGraphicsItem,
-    QApplication, QFrame
+    QGraphicsView,
+    QGraphicsScene,
+    QGraphicsObject,
+    QGraphicsEllipseItem,
+    QGraphicsRectItem,
+    QGraphicsLineItem,
+    QGraphicsSimpleTextItem,
+    QGraphicsPathItem,
+    QGraphicsPolygonItem,
+    QGraphicsPixmapItem,
+    QGraphicsItemGroup,
+    QGraphicsProxyWidget,
+    QWidgetAction,
+    QGraphicsItem,
+    QApplication,
+    QFrame,
 )
 from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF, __version_info__
 from enaml.qt.QtGui import (
-    QPainter, QColor, QPen, QBrush, QPixmap, QPolygonF, QTransform, QDrag,
-    QCursor
+    QPainter,
+    QColor,
+    QPen,
+    QBrush,
+    QPixmap,
+    QPolygonF,
+    QTransform,
+    QDrag,
+    QCursor,
 )
 
 from enaml.qt.q_resource_helpers import (
-    get_cached_qcolor, get_cached_qfont, get_cached_qimage
+    get_cached_qcolor,
+    get_cached_qfont,
+    get_cached_qimage,
 )
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_widget import QtWidget, focus_registry
@@ -34,68 +52,78 @@ from enaml.widgets.widget import Feature
 from enaml.drag_drop import DropAction
 
 from enamlx.widgets.graphics_view import (
-    ProxyGraphicsView, ProxyGraphicsItem, ProxyAbstractGraphicsShapeItem,
-    ProxyGraphicsEllipseItem, ProxyGraphicsRectItem, ProxyGraphicsLineItem,
-    ProxyGraphicsTextItem, ProxyGraphicsPolygonItem, ProxyGraphicsPathItem,
-    ProxyGraphicsImageItem, ProxyGraphicsItemGroup, ProxyGraphicsWidget,
-    Point, Rect, GraphicFeature
+    ProxyGraphicsView,
+    ProxyGraphicsItem,
+    ProxyAbstractGraphicsShapeItem,
+    ProxyGraphicsEllipseItem,
+    ProxyGraphicsRectItem,
+    ProxyGraphicsLineItem,
+    ProxyGraphicsTextItem,
+    ProxyGraphicsPolygonItem,
+    ProxyGraphicsPathItem,
+    ProxyGraphicsImageItem,
+    ProxyGraphicsItemGroup,
+    ProxyGraphicsWidget,
+    Point,
+    Rect,
+    GraphicFeature,
 )
 
 
 PEN_STYLES = {
-    'none': Qt.NoPen,
-    'solid': Qt.SolidLine,
-    'dash': Qt.DashLine,
-    'dot': Qt.DotLine,
-    'dash_dot': Qt.DashDotLine,
-    'dash_dot_dot': Qt.DashDotDotLine,
-    'custom': Qt.CustomDashLine
+    "none": Qt.NoPen,
+    "solid": Qt.SolidLine,
+    "dash": Qt.DashLine,
+    "dot": Qt.DotLine,
+    "dash_dot": Qt.DashDotLine,
+    "dash_dot_dot": Qt.DashDotDotLine,
+    "custom": Qt.CustomDashLine,
 }
 
 CAP_STYLES = {
-    'square': Qt.SquareCap,
-    'flat': Qt.FlatCap,
-    'round': Qt.RoundCap,
+    "square": Qt.SquareCap,
+    "flat": Qt.FlatCap,
+    "round": Qt.RoundCap,
 }
 
 JOIN_STYLES = {
-    'bevel': Qt.BevelJoin,
-    'miter': Qt.MiterJoin,
-    'round': Qt.RoundJoin,
+    "bevel": Qt.BevelJoin,
+    "miter": Qt.MiterJoin,
+    "round": Qt.RoundJoin,
 }
 
 BRUSH_STYLES = {
-    'solid': Qt.SolidPattern,
-    'dense1': Qt.Dense1Pattern,
-    'dense2': Qt.Dense2Pattern,
-    'dense3': Qt.Dense3Pattern,
-    'dense4': Qt.Dense4Pattern,
-    'dense5': Qt.Dense5Pattern,
-    'dense6': Qt.Dense6Pattern,
-    'dense7': Qt.Dense7Pattern,
-    'horizontal': Qt.HorPattern,
-    'vertical': Qt.VerPattern,
-    'cross': Qt.CrossPattern,
-    'bdiag': Qt.BDiagPattern,
-    'fdiag': Qt.FDiagPattern,
-    'diag': Qt.DiagCrossPattern,
-    'linear': Qt.LinearGradientPattern,
-    'radial': Qt.RadialGradientPattern,
-    'conical': Qt.ConicalGradientPattern,
-    'texture': Qt.TexturePattern,
-    'none': Qt.NoBrush
+    "solid": Qt.SolidPattern,
+    "dense1": Qt.Dense1Pattern,
+    "dense2": Qt.Dense2Pattern,
+    "dense3": Qt.Dense3Pattern,
+    "dense4": Qt.Dense4Pattern,
+    "dense5": Qt.Dense5Pattern,
+    "dense6": Qt.Dense6Pattern,
+    "dense7": Qt.Dense7Pattern,
+    "horizontal": Qt.HorPattern,
+    "vertical": Qt.VerPattern,
+    "cross": Qt.CrossPattern,
+    "bdiag": Qt.BDiagPattern,
+    "fdiag": Qt.FDiagPattern,
+    "diag": Qt.DiagCrossPattern,
+    "linear": Qt.LinearGradientPattern,
+    "radial": Qt.RadialGradientPattern,
+    "conical": Qt.ConicalGradientPattern,
+    "texture": Qt.TexturePattern,
+    "none": Qt.NoBrush,
 }
 
 
 DRAG_MODES = {
-    'none': QGraphicsView.NoDrag,
-    'scroll': QGraphicsView.ScrollHandDrag,
-    'selection': QGraphicsView.RubberBandDrag
+    "none": QGraphicsView.NoDrag,
+    "scroll": QGraphicsView.ScrollHandDrag,
+    "selection": QGraphicsView.RubberBandDrag,
 }
 
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Qt Resource Helpers
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def QPen_from_Pen(pen):
     qpen = QPen()
     if pen.color:
@@ -104,7 +132,7 @@ def QPen_from_Pen(pen):
     qpen.setStyle(PEN_STYLES.get(pen.line_style))
     qpen.setCapStyle(CAP_STYLES.get(pen.cap_style))
     qpen.setJoinStyle(JOIN_STYLES.get(pen.join_style))
-    if pen.line_style == 'custom':
+    if pen.line_style == "custom":
         qpen.setDashPattern(*pen.dash_pattern)
     return qpen
 
@@ -134,13 +162,13 @@ def get_cached_qbrush(brush):
         qbrush = brush._tkdata = QBrush_from_Brush(brush)
     return qbrush
 
-#--------------------------------------------------------------------------
-# Mixin classes
-#--------------------------------------------------------------------------
-class FeatureMixin(Atom):
-    """ A mixin that provides focus and mouse features.
 
-    """
+# --------------------------------------------------------------------------
+# Mixin classes
+# --------------------------------------------------------------------------
+class FeatureMixin(Atom):
+    """A mixin that provides focus and mouse features."""
+
     #: A private copy of the declaration features. This ensures that
     #: feature cleanup will proceed correctly in the event that user
     #: code modifies the declaration features value at runtime.
@@ -153,13 +181,11 @@ class FeatureMixin(Atom):
     #: Internal storage for the drag origin position.
     _drag_origin = Typed(QPointF)
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Private API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def _setup_features(self):
-        """ Setup the advanced widget feature handlers.
-
-        """
+        """Setup the advanced widget feature handlers."""
         features = self._features = self.declaration.features
         if not features:
             return
@@ -179,9 +205,7 @@ class FeatureMixin(Atom):
             self.hook_draw()
 
     def _teardown_features(self):
-        """ Teardowns the advanced widget feature handlers.
-
-        """
+        """Teardowns the advanced widget feature handlers."""
         features = self._features
         if not features:
             return
@@ -200,11 +224,11 @@ class FeatureMixin(Atom):
         if features & GraphicFeature.DrawEvent:
             self.unhook_draw()
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Protected API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def tab_focus_request(self, reason):
-        """ Handle a custom tab focus request.
+        """Handle a custom tab focus request.
 
         This method is called when focus is being set on the proxy
         as a result of a user-implemented focus traversal handler.
@@ -232,7 +256,7 @@ class FeatureMixin(Atom):
         return False
 
     def focus_target(self):
-        """ Return the current focus target for a focus request.
+        """Return the current focus target for a focus request.
 
         This can be reimplemented by subclasses as needed. The default
         implementation of this method returns the current proxy widget.
@@ -241,7 +265,7 @@ class FeatureMixin(Atom):
         return self.widget
 
     def hook_focus_traversal(self):
-        """ Install the hooks for focus traversal.
+        """Install the hooks for focus traversal.
 
         This method may be overridden by subclasses as needed.
 
@@ -249,7 +273,7 @@ class FeatureMixin(Atom):
         self.widget.focusNextPrevChild = self.focusNextPrevChild
 
     def unhook_focus_traversal(self):
-        """ Remove the hooks for the next/prev child focusing.
+        """Remove the hooks for the next/prev child focusing.
 
         This method may be overridden by subclasses as needed.
 
@@ -257,7 +281,7 @@ class FeatureMixin(Atom):
         del self.widget.focusNextPrevChild
 
     def hook_focus_events(self):
-        """ Install the hooks for focus events.
+        """Install the hooks for focus events.
 
         This method may be overridden by subclasses as needed.
 
@@ -267,7 +291,7 @@ class FeatureMixin(Atom):
         widget.focusOutEvent = self.focusOutEvent
 
     def unhook_focus_events(self):
-        """ Remove the hooks for the focus events.
+        """Remove the hooks for the focus events.
 
         This method may be overridden by subclasses as needed.
 
@@ -277,9 +301,7 @@ class FeatureMixin(Atom):
         del widget.focusOutEvent
 
     def focusNextPrevChild(self, next_child):
-        """ The default 'focusNextPrevChild' implementation.
-
-        """
+        """The default 'focusNextPrevChild' implementation."""
         fd = focus_registry.focused_declaration()
         if next_child:
             child = self.declaration.next_focus_child(fd)
@@ -293,74 +315,58 @@ class FeatureMixin(Atom):
         return type(widget).focusNextPrevChild(widget, next_child)
 
     def focusInEvent(self, event):
-        """ The default 'focusInEvent' implementation.
-
-        """
+        """The default 'focusInEvent' implementation."""
         widget = self.widget
         type(widget).focusInEvent(widget, event)
         self.declaration.focus_gained()
 
     def focusOutEvent(self, event):
-        """ The default 'focusOutEvent' implementation.
-
-        """
+        """The default 'focusOutEvent' implementation."""
         widget = self.widget
         type(widget).focusOutEvent(widget, event)
         self.declaration.focus_lost()
 
     def hook_drag(self):
-        """ Install the hooks for drag operations.
-
-        """
+        """Install the hooks for drag operations."""
         widget = self.widget
         widget.mousePressEvent = self.mousePressEvent
         widget.mouseMoveEvent = self.mouseMoveEvent
         widget.mouseReleaseEvent = self.mouseReleaseEvent
 
     def unhook_drag(self):
-        """ Remove the hooks for drag operations.
-
-        """
+        """Remove the hooks for drag operations."""
         widget = self.widget
         del widget.mousePressEvent
         del widget.mouseMoveEvent
         del widget.mouseReleaseEvent
 
     def mousePressEvent(self, event):
-        """ Handle the mouse press event for a drag operation.
-
-        """
+        """Handle the mouse press event for a drag operation."""
         if event.button() == Qt.LeftButton:
             self._drag_origin = event.pos()
         widget = self.widget
         type(widget).mousePressEvent(widget, event)
 
     def mouseMoveEvent(self, event):
-        """ Handle the mouse move event for a drag operation.
-
-        """
-        #if event.buttons() & Qt.LeftButton and self._drag_origin is not None:
-            #dist = (event.pos() - self._drag_origin).manhattanLength()
-            #if dist >= QApplication.startDragDistance():
-                #self.do_drag(event.widget())
-                #self._drag_origin = None
-                #return # Don't returns
+        """Handle the mouse move event for a drag operation."""
+        # if event.buttons() & Qt.LeftButton and self._drag_origin is not None:
+        # dist = (event.pos() - self._drag_origin).manhattanLength()
+        # if dist >= QApplication.startDragDistance():
+        # self.do_drag(event.widget())
+        # self._drag_origin = None
+        # return # Don't returns
         widget = self.widget
         type(widget).mouseMoveEvent(widget, event)
 
     def mouseReleaseEvent(self, event):
-        """ Handle the mouse release event for the drag operation.
-
-        """
+        """Handle the mouse release event for the drag operation."""
         if event.button() == Qt.LeftButton:
             self._drag_origin = None
         widget = self.widget
         type(widget).mouseReleaseEvent(widget, event)
 
     def hook_drop(self):
-        """ Install hooks for drop operations.
-
-        """
+        """Install hooks for drop operations."""
         widget = self.widget
         widget.setAcceptDrops(True)
         widget.dragEnterEvent = self.dragEnterEvent
@@ -369,9 +375,7 @@ class FeatureMixin(Atom):
         widget.dropEvent = self.dropEvent
 
     def unhook_drop(self):
-        """ Remove hooks for drop operations.
-
-        """
+        """Remove hooks for drop operations."""
         widget = self.widget
         widget.setAcceptDrops(False)
         del widget.dragEnterEvent
@@ -380,7 +384,7 @@ class FeatureMixin(Atom):
         del widget.dropEvent
 
     def do_drag(self, widget):
-        """ Perform the drag operation for the widget.
+        """Perform the drag operation for the widget.
 
         Parameters
         ----------
@@ -391,17 +395,17 @@ class FeatureMixin(Atom):
         drag_data = self.declaration.drag_start()
         if drag_data is None:
             return
-        #widget = self.widget
+        # widget = self.widget
         qdrag = QDrag(widget)
         qdrag.setMimeData(drag_data.mime_data.q_data())
         if drag_data.image is not None:
             qimg = get_cached_qimage(drag_data.image)
             qdrag.setPixmap(QPixmap.fromImage(qimg))
-        #else:
-            #if __version_info__ < (5, ):
-                #qdrag.setPixmap(QPixmap.grabWidget(self.widget))
-            #else:
-                #qdrag.setPixmap(widget.grab())
+        # else:
+        # if __version_info__ < (5, ):
+        # qdrag.setPixmap(QPixmap.grabWidget(self.widget))
+        # else:
+        # qdrag.setPixmap(widget.grab())
         if drag_data.hotspot:
             qdrag.setHotSpot(QPoint(*drag_data.hotspot))
         else:
@@ -413,51 +417,37 @@ class FeatureMixin(Atom):
         self.declaration.drag_end(drag_data, DropAction(int(qresult)))
 
     def dragEnterEvent(self, event):
-        """ Handle the drag enter event for the widget.
-
-        """
+        """Handle the drag enter event for the widget."""
         self.declaration.drag_enter(QtDropEvent(event))
 
     def dragMoveEvent(self, event):
-        """ Handle the drag move event for the widget.
-
-        """
+        """Handle the drag move event for the widget."""
         self.declaration.drag_move(QtDropEvent(event))
 
     def dragLeaveEvent(self, event):
-        """ Handle the drag leave event for the widget.
-
-        """
+        """Handle the drag leave event for the widget."""
         self.declaration.drag_leave()
 
     def dropEvent(self, event):
-        """ Handle the drop event for the widget.
-
-        """
+        """Handle the drop event for the widget."""
         self.declaration.drop(QtDropEvent(event))
 
     def hook_wheel(self):
-        """ Install the hooks for wheel events.
-
-        """
+        """Install the hooks for wheel events."""
         widget = self.widget
         widget.wheelEvent = self.wheelEvent
 
     def unhook_wheel(self):
-        """ Removes the hooks for wheel events.
-
-        """
+        """Removes the hooks for wheel events."""
         widget = self.widget
         del widget.wheelEvent
 
     def wheelEvent(self, event):
-        """ Handle the mouse wheel event for the widget.
-
-        """
+        """Handle the mouse wheel event for the widget."""
         self.declaration.wheel_event(event)
 
     def hook_draw(self):
-        """ Remove the hooks for the draw (paint) event.
+        """Remove the hooks for the draw (paint) event.
 
         This method may be overridden by subclasses as needed.
 
@@ -465,9 +455,8 @@ class FeatureMixin(Atom):
         widget = self.widget
         widget.paint = self.draw
 
-
     def unhook_draw(self):
-        """ Remove the hooks for the draw (paint) event.
+        """Remove the hooks for the draw (paint) event.
 
         This method may be overridden by subclasses as needed.
 
@@ -476,16 +465,14 @@ class FeatureMixin(Atom):
         del widget.paint
 
     def draw(self, painter, options, widget):
-        """ Handle the draw event for the widget.
-
-        """
+        """Handle the draw event for the widget."""
         self.declaration.draw(painter, options, widget)
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Framework API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def get_action(self, create=False):
-        """ Get the shared widget action for this widget.
+        """Get the shared widget action for this widget.
 
         This API is used to support widgets in tool bars and menus.
 
@@ -507,9 +494,10 @@ class FeatureMixin(Atom):
             action.setDefaultWidget(self.widget)
         return action
 
-#--------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
 # Toolkit implementations
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 class QtGraphicsView(QtControl, ProxyGraphicsView):
     #: Internal widget
     widget = Typed(QGraphicsView)
@@ -577,9 +565,9 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             if isinstance(w, QtGraphicsItem):
                 yield w.widget
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # GraphicFeature API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def _setup_features(self):
         super(QtGraphicsView, self)._setup_features()
         features = self._extra_features
@@ -599,106 +587,81 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         self.unhook_resize()
 
     def hook_wheel(self):
-        """ Install the hooks for wheel events.
-
-        """
+        """Install the hooks for wheel events."""
         widget = self.widget
         widget.wheelEvent = self.wheelEvent
 
     def unhook_wheel(self):
-        """ Removes the hooks for wheel events.
-
-        """
+        """Removes the hooks for wheel events."""
         widget = self.widget
         del widget.wheelEvent
 
     def hook_draw(self):
-        """ Install the hooks for background draw events.
-
-        """
+        """Install the hooks for background draw events."""
         widget = self.widget
         widget.drawBackground = self.drawBackground
 
     def unhook_draw(self):
-        """ Removes the hooks for background draw events.
-
-        """
+        """Removes the hooks for background draw events."""
         widget = self.widget
         del widget.drawBackground
 
     def hook_resize(self):
-        """ Install the hooks for resize events.
-
-        """
+        """Install the hooks for resize events."""
         widget = self.widget
         widget.resizeEvent = self.resizeEvent
 
     def unhook_resize(self):
-        """ Removes the hooks for resize events.
-
-        """
+        """Removes the hooks for resize events."""
         widget = self.widget
         del widget.resizeEvent
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # QGraphicView API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def wheelEvent(self, event):
-        """ Handle the wheel event for the widget.
-
-        """
+        """Handle the wheel event for the widget."""
         self.declaration.wheel_event(event)
 
     def drawBackground(self, painter, rect):
-        """ Handle the drawBackground request
-
-        """
+        """Handle the drawBackground request"""
         self.declaration.draw_background(painter, rect)
 
     def mousePressEvent(self, event):
-        """ Handle the mouse press event for a drag operation.
-
-        """
+        """Handle the mouse press event for a drag operation."""
         self.declaration.mouse_press_event(event)
         super(QtGraphicsView, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        """ Handle the mouse move event for a drag operation.
-
-        """
+        """Handle the mouse move event for a drag operation."""
         self.declaration.mouse_move_event(event)
         super(QtGraphicsView, self).mouseMoveEvent(event)
 
-
     def mouseReleaseEvent(self, event):
-        """ Handle the mouse release event for the drag operation.
-
-        """
+        """Handle the mouse release event for the drag operation."""
         self.declaration.mouse_release_event(event)
         super(QtGraphicsView, self).mouseReleaseEvent(event)
 
     def resizeEvent(self, event):
-        """ Resize the view range to match the widget size
-
-        """
+        """Resize the view range to match the widget size"""
         d = self.declaration
         widget = self.widget
 
         if d.auto_range:
             size = self.widget.size()
             view_range = QRectF(0, 0, size.width(), size.height())
-            #view_range = self.scene.itemsBoundingRect()
+            # view_range = self.scene.itemsBoundingRect()
         else:
             # Return the boundaries of the view in scene coordinates
             r = QRectF(widget.rect())
             view_range = widget.viewportTransform().inverted()[0].mapRect(r)
         self.set_view_range(view_range)
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # ProxyGraphicsView API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def set_view_range(self, view_range):
-        """ Set the visible scene rect to override the default behavior
+        """Set the visible scene rect to override the default behavior
         of limiting panning and viewing to the graphics items view.
 
         Based on Luke Campagnola's updateMatrix of pyqtgraph's GraphicsView
@@ -735,20 +698,19 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         self.widget.setRenderHints(flags)
 
     def set_renderer(self, renderer):
-        """ Set the viewport widget.
-
-        """
+        """Set the viewport widget."""
         viewport = None
-        if renderer == 'opengl':
+        if renderer == "opengl":
             from enaml.qt.QtWidgets import QOpenGLWidget
+
             viewport = QOpenGLWidget()
-        elif renderer == 'default':
+        elif renderer == "default":
             try:
                 from enaml.qt.QtWidgets import QOpenGLWidget
+
                 viewport = QOpenGLWidget()
             except ImportError as e:
-                warnings.warn(
-                    "QOpenGLWidget could not be imported: {}".format(e))
+                warnings.warn("QOpenGLWidget could not be imported: {}".format(e))
         self.widget.setViewport(viewport)
 
     def set_selected_items(self, items):
@@ -759,22 +721,19 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
             item.selected = True
 
     def on_selection_changed(self):
-        """ Callback invoked one the selection has changed.
-
-        """
+        """Callback invoked one the selection has changed."""
         d = self.declaration
         selection = self.scene.selectedItems()
         self._guards |= 0x01
         try:
-            d.selected_items = [item.ref().declaration for item in selection
-                                if item.ref()]
+            d.selected_items = [
+                item.ref().declaration for item in selection if item.ref()
+            ]
         finally:
             self._guards &= ~0x01
 
     def set_background(self, background):
-        """ Set the background color of the widget.
-
-        """
+        """Set the background color of the widget."""
         scene = self.scene
         scene.setBackgroundBrush(QColor.fromRgba(background.argb))
 
@@ -788,8 +747,9 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         return [item.ref().declaration for item in items if item.ref()]
 
     def get_items_in(self, top_left, bottom_right):
-        qrect = QRectF(QPointF(top_left.x, top_left.y),
-                       QPointF(bottom_right.x, bottom_right.y))
+        qrect = QRectF(
+            QPointF(top_left.x, top_left.y), QPointF(bottom_right.x, bottom_right.y)
+        )
         items = self.scene.items(qrect)
         return [item.ref().declaration for item in items if item.ref()]
 
@@ -811,19 +771,17 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
         return view_range
 
     def scale_view(self, x, y):
-        """ Scale the zoom but keep in in the min and max zoom bounds.
-
-        """
+        """Scale the zoom but keep in in the min and max zoom bounds."""
         d = self.declaration
         sx, sy = float(x), float(y)
         if d.lock_aspect_ratio:
             sy = sx
         view_range = self.view_range
         center = view_range.center()
-        w, h = view_range.width()/sx, view_range.height()/sy
+        w, h = view_range.width() / sx, view_range.height() / sy
         cx, cy = center.x(), center.y()
-        x = cx - (cx - view_range.left())/sx
-        y = cy - (cy - view_range.top())/sy
+        x = cx - (cx - view_range.left()) / sx
+        y = cy - (cy - view_range.top()) / sy
         view_range = QRectF(x, y, w, h)
         self.set_view_range(view_range)
         return view_range
@@ -841,16 +799,17 @@ class QtGraphicsView(QtControl, ProxyGraphicsView):
 
     def pixel_density(self):
         tr = self.widget.transform().inverted()[0]
-        p = tr.map(QPoint(1, 1))-tr.map(QPoint(0, 0))
+        p = tr.map(QPoint(1, 1)) - tr.map(QPoint(0, 0))
         return Point(p.x(), p.y())
 
 
 class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
-    """ QtGraphicsItem is essentially a copy of QtWidget except that
+    """QtGraphicsItem is essentially a copy of QtWidget except that
     it uses `self.widget`, `create_widget` and `init_widget` instead of
     widget.
 
     """
+
     #: Internal item
     widget = Typed(QGraphicsObject)
 
@@ -858,9 +817,9 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     #: 0x01 is position
     _guards = Int(0)
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Initialization API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def create_widget(self):
         self.widget = QGraphicsObject(self.parent_widget())
 
@@ -900,13 +859,11 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     def init_layout(self):
         pass
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # ProxyToolkitObject API
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def destroy(self):
-        """ Destroy the underlying QWidget object.
-
-        """
+        """Destroy the underlying QWidget object."""
         self._teardown_features()
         focus_registry.unregister(self.widget)
         widget = self.widget
@@ -921,7 +878,7 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
         del self._widget_action
 
     def parent_widget(self):
-        """ Reimplemented to only return GraphicsItems """
+        """Reimplemented to only return GraphicsItems"""
         parent = self.parent()
         if parent is not None and isinstance(parent, QtGraphicsItem):
             return parent.widget
@@ -937,9 +894,9 @@ class QtGraphicsItem(QtToolkitObject, ProxyGraphicsItem, FeatureMixin):
     def unhook_item_change(self):
         del self.widget.itemChange
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Signals
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def itemChange(self, change, value):
         widget = self.widget
         if change == QGraphicsItem.ItemPositionHasChanged:
@@ -1041,14 +998,14 @@ class QtGraphicsWidget(QtGraphicsItem, ProxyGraphicsWidget):
     widget = Typed(QGraphicsProxyWidget)
 
     def create_widget(self):
-        """ Deferred to the layout pass """
+        """Deferred to the layout pass"""
         pass
 
     def init_widget(self):
         pass
 
     def init_layout(self):
-        """ Create the widget in the layout pass after the child widget has
+        """Create the widget in the layout pass after the child widget has
         been created and intialized. We do this so the child widget does not
         attempt to use this proxy widget as its parent and because
         repositioning must be done after the widget is set.
@@ -1067,9 +1024,7 @@ class QtGraphicsWidget(QtGraphicsItem, ProxyGraphicsWidget):
             self.widget.setWidget(child.widget)
 
 
-class QtAbstractGraphicsShapeItem(QtGraphicsItem,
-                                  ProxyAbstractGraphicsShapeItem):
-
+class QtAbstractGraphicsShapeItem(QtGraphicsItem, ProxyAbstractGraphicsShapeItem):
     def init_widget(self):
         super(QtAbstractGraphicsShapeItem, self).init_widget()
         d = self.declaration
@@ -1106,8 +1061,7 @@ class QtGraphicsLineItem(QtAbstractGraphicsShapeItem, ProxyGraphicsLineItem):
         self.widget.setLine(pos.x, pos.y, *point[:2])
 
 
-class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem,
-                            ProxyGraphicsEllipseItem):
+class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem, ProxyGraphicsEllipseItem):
     #: Internal widget
     widget = Typed(QGraphicsEllipseItem)
 
@@ -1135,10 +1089,10 @@ class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem,
         self.widget.setRect(pos.x, pos.y, d.width, d.height)
 
     def set_span_angle(self, angle):
-        self.widget.setSpanAngle(angle*16)
+        self.widget.setSpanAngle(angle * 16)
 
     def set_start_angle(self, angle):
-        self.widget.setStartAngle(angle*16)
+        self.widget.setStartAngle(angle * 16)
 
 
 class QtGraphicsRectItem(QtAbstractGraphicsShapeItem, ProxyGraphicsRectItem):
@@ -1185,8 +1139,7 @@ class QtGraphicsTextItem(QtAbstractGraphicsShapeItem, ProxyGraphicsTextItem):
         self.widget.setFont(get_cached_qfont(font))
 
 
-class QtGraphicsPolygonItem(QtAbstractGraphicsShapeItem,
-                            ProxyGraphicsPolygonItem):
+class QtGraphicsPolygonItem(QtAbstractGraphicsShapeItem, ProxyGraphicsPolygonItem):
     #: Internal widget
     widget = Typed(QGraphicsPolygonItem)
 

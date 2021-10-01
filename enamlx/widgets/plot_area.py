@@ -7,9 +7,22 @@ Created on Jun 11, 2015
 """
 import sys
 from atom.atom import set_default
-from atom.api import (Callable, Int, Tuple, Instance, Enum, Float,
-                      ContainerList, Bool, FloatRange, Str, Dict, Typed,
-                      ForwardTyped, observe)
+from atom.api import (
+    Callable,
+    Int,
+    Tuple,
+    Instance,
+    Enum,
+    Float,
+    ContainerList,
+    Bool,
+    FloatRange,
+    Str,
+    Dict,
+    Typed,
+    ForwardTyped,
+    observe,
+)
 from enaml.core.declarative import d_
 from enaml.widgets.api import Container
 from enaml.widgets.control import Control, ProxyControl
@@ -21,6 +34,7 @@ if sys.version_info.major < 3:
 
 def numpy_ndarray():
     import numpy
+
     return numpy.ndarray
 
 
@@ -29,8 +43,8 @@ class ProxyPlotArea(ProxyControl):
 
 
 class PlotArea(Container):
-    hug_width = set_default('ignore')
-    hug_height = set_default('ignore')
+    hug_width = set_default("ignore")
+    hug_height = set_default("ignore")
     proxy = Typed(ProxyPlotArea)
     setup = d_(Callable(lambda graph: None))
 
@@ -75,7 +89,7 @@ class PlotItem(Control):
     fill_brush = d_(Instance(BRUSH_ARGTYPES))
 
     #: Symbol to use for points
-    symbol = d_(Enum(None, 'o', 's', 't', 'd', '+'))
+    symbol = d_(Enum(None, "o", "s", "t", "d", "+"))
 
     #: Symbol sizes for points
     symbol_size = d_(Float(10, strict=False))
@@ -111,11 +125,9 @@ class PlotItem(Control):
     antialias = d_(Bool(False))
 
     #: Set auto range for each axis
-    auto_range = d_(Enum(True, False,
-                         (True, True),
-                         (True, False),
-                         (False, True),
-                         (False, False)))
+    auto_range = d_(
+        Enum(True, False, (True, True), (True, False), (False, True), (False, False))
+    )
 
     # x-range to use if auto_range is disabled
     range_x = d_(ContainerList(default=[0, 100]))
@@ -138,23 +150,44 @@ class PlotItem(Control):
     #: Time between updates
     refresh_time = d_(Int(100))
 
-    @observe('line_pen', 'symbol', 'symbol_size', 'symbol_pen', 'symbol_brush',
-             'fill_brush', 'fill_level', 'multi_axis', 'title',
-             'label_left', 'label_right', 'label_top', 'label_bottom',
-             'grid', 'grid_alpha', 'log_mode', 'antialias', 'auto_range',
-             'auto_downsample', 'clip_to_view', 'step_mode', 'aspect_locked',
-             'axis_left_ticks', 'axis_bottom_ticks', 'show_legend',
-             'row', 'column')
+    @observe(
+        "line_pen",
+        "symbol",
+        "symbol_size",
+        "symbol_pen",
+        "symbol_brush",
+        "fill_brush",
+        "fill_level",
+        "multi_axis",
+        "title",
+        "label_left",
+        "label_right",
+        "label_top",
+        "label_bottom",
+        "grid",
+        "grid_alpha",
+        "log_mode",
+        "antialias",
+        "auto_range",
+        "auto_downsample",
+        "clip_to_view",
+        "step_mode",
+        "aspect_locked",
+        "axis_left_ticks",
+        "axis_bottom_ticks",
+        "show_legend",
+        "row",
+        "column",
+    )
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(PlotItem, self)._update_proxy(change)
 
-    @observe('range_x', 'range_y')
+    @observe("range_x", "range_y")
     def _update_range(self, change):
-        """ Handle updates and changes """
-        getattr(self.proxy, 'set_%s'% change['name'])(change['value'])
+        """Handle updates and changes"""
+        getattr(self.proxy, "set_%s" % change["name"])(change["value"])
 
 
 class PlotItem2D(PlotItem):
@@ -165,10 +198,9 @@ class PlotItem2D(PlotItem):
     #: y-axis values, as a list
     y = d_(ContainerList())
 
-    @observe('x', 'y')
+    @observe("x", "y")
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(PlotItem2D, self)._update_proxy(change)
 
@@ -178,16 +210,15 @@ class PlotItem3D(PlotItem2D):
     #: z-axis values, as a list
     z = d_(ContainerList())
 
-    @observe('z')
+    @observe("z")
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(PlotItem3D, self)._update_proxy(change)
 
 
 class PlotItemArray(PlotItem2D):
-    """ Numpy array item """
+    """Numpy array item"""
 
     #: x-axis values, as a numpy array
     x = d_(ForwardInstance(numpy_ndarray))
@@ -197,9 +228,10 @@ class PlotItemArray(PlotItem2D):
 
 
 class PlotItemArray3D(PlotItem3D):
-    """ Numpy array item """
+    """Numpy array item"""
+
     #: Plot type
-    type = Enum('line')
+    type = Enum("line")
 
     #: x-axis values, as a numpy array
     x = d_(ForwardInstance(numpy_ndarray))
@@ -212,10 +244,9 @@ class PlotItemArray3D(PlotItem3D):
 
 
 class AbstractDataPlotItem(PlotItem):
-    @observe('data')
+    @observe("data")
     def _update_proxy(self, change):
-        """ An observer which sends state change to the proxy.
-        """
+        """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(AbstractDataPlotItem, self)._update_proxy(change)
 
@@ -225,4 +256,4 @@ class PlotItemList(AbstractDataPlotItem):
 
 
 class PlotItemDict(AbstractDataPlotItem):
-    data = d_(Dict(default={'x': [], 'y': []}))
+    data = d_(Dict(default={"x": [], "y": []}))
