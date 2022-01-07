@@ -13,7 +13,6 @@ from qtpy.QtCore import QAbstractTableModel, QModelIndex
 from enamlx.qt.qt_abstract_item_view import (
     QtAbstractItemView,
     QAbstractAtomItemModel,
-    IS_QT4,
 )
 from enamlx.widgets.table_view import (
     ProxyTableViewItem,
@@ -93,12 +92,9 @@ class QtTableView(QtAbstractItemView, ProxyTableView):
 
     def set_resize_mode(self, mode):
         header = self.widget.horizontalHeader()
-        if IS_QT4:
-            header.setResizeMode(RESIZE_MODES[mode])
-        else:
-            # Custom is obsolete, use fixed instead.
-            mode = "fixed" if mode == "custom" else mode
-            header.setSectionResizeMode(RESIZE_MODES[mode])
+        # Custom is obsolete, use fixed instead.
+        mode = "fixed" if mode == "custom" else mode
+        header.setSectionResizeMode(RESIZE_MODES[mode])
 
     def set_show_horizontal_header(self, show):
         header = self.widget.horizontalHeader()

@@ -9,7 +9,6 @@ from atom.api import Typed, Instance, Property, Int
 from enamlx.qt.qt_abstract_item_view import (
     QtAbstractItemView,
     QAbstractAtomItemModel,
-    IS_QT4,
 )
 from enamlx.widgets.tree_view import (
     ProxyTreeViewItem,
@@ -124,10 +123,7 @@ class QtTreeView(QtAbstractItemView, ProxyTreeView):
         self.widget.header().model().layoutChanged.emit()
 
     def set_resize_mode(self, mode):
-        if IS_QT4:
-            self.widget.header().setResizeMode(RESIZE_MODES[mode])
-        else:
-            self.widget.header().setSectionResizeMode(RESIZE_MODES[mode])
+        self.widget.header().setSectionResizeMode(RESIZE_MODES[mode])
 
     def set_show_horizontal_header(self, show):
         header = self.widget.header()

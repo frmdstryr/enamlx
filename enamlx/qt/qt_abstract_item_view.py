@@ -11,7 +11,6 @@ from enaml.qt.qt_control import QtControl
 from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
 from enamlx.qt.qt_abstract_item import TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
 from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
-from qtpy import QT_API, PYSIDE_API, PYQT4_API
 from qtpy.QtCore import Qt, QAbstractItemModel, QSize, QItemSelectionModel
 from qtpy.QtWidgets import QAbstractItemView
 
@@ -29,8 +28,6 @@ SELECTION_BEHAVIORS = {
     "rows": QAbstractItemView.SelectRows,
     "columns": QAbstractItemView.SelectColumns,
 }
-
-IS_QT4 = QT_API in PYSIDE_API + PYQT4_API
 
 
 class QAbstractAtomItemModel(object):
