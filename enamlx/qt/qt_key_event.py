@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2015-2019, Jairus Martin.
+Copyright (c) 2015-2022, Jairus Martin.
 Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
@@ -9,7 +9,6 @@ from atom.api import Instance, Callable, Dict
 from enaml.qt.qt_control import QtControl
 from qtpy import QtCore
 from enamlx.widgets.key_event import ProxyKeyEvent
-
 
 Qt = QtCore.Qt
 MODIFIERS = {
@@ -76,7 +75,7 @@ class QtKeyEvent(QtControl, ProxyKeyEvent):
         for key in keys:
             parts = [k.strip().lower() for k in key.split("+")]
             code = KEYS.get(parts[-1])
-            modifier = Qt.KeyboardModifiers()
+            modifier = Qt.KeyboardModifier(0)
             if code is None:
                 raise KeyError("Invalid key code '{}'".format(key))
             if len(parts) > 1:
