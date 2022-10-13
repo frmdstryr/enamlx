@@ -5,13 +5,13 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 24, 2015
 """
-from atom.api import Instance, ForwardInstance, Bool
+from atom.api import Bool, ForwardInstance, Instance
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_control import QtControl
 from enaml.qt.qt_menu import QtMenu
 from enaml.qt.qt_widget import QtWidget
+from qtpy.QtCore import QModelIndex, Qt
 from qtpy.QtWidgets import QHeaderView
-from qtpy.QtCore import Qt, QModelIndex
 
 from enamlx.widgets.abstract_item import (
     ProxyAbstractWidgetItem,

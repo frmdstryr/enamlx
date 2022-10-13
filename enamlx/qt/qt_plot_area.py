@@ -6,14 +6,15 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 31, 2015
 """
 import types
-from atom.api import Bool, Int, ForwardInstance, Instance, Typed
+
+import pyqtgraph as pg
+from atom.api import Bool, ForwardInstance, Instance, Int, Typed
+from enaml.application import timed_call
+from enaml.qt.q_resource_helpers import get_cached_qcolor
+from enaml.qt.qt_control import QtControl
+from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
 
 from enamlx.widgets.plot_area import ProxyPlotArea
-from enaml.qt.qt_control import QtControl
-from enaml.qt.q_resource_helpers import get_cached_qcolor
-import pyqtgraph as pg
-from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
-from enaml.application import timed_call
 
 
 def gl_view_widget():
@@ -488,7 +489,7 @@ class QtPlotItemArray3D(QtPlotItem3D):
         y = self.declaration.y
         for i in range(n):
             yi = np.array([y[i]] * 100)
-            d = (x ** 2 + yi ** 2) ** 0.5
+            d = (x**2 + yi**2) ** 0.5
             z = 10 * np.cos(d) / (d + 1)
             pts = np.vstack([x, yi, z]).transpose()
             plt = gl.GLLinePlotItem(

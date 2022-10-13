@@ -6,30 +6,32 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Jun 11, 2015
 """
 import sys
-from atom.atom import set_default
+
 from atom.api import (
+    Bool,
     Callable,
-    Int,
-    Tuple,
-    Instance,
+    ContainerList,
+    Dict,
     Enum,
     Float,
-    ContainerList,
-    Bool,
     FloatRange,
-    Str,
-    Dict,
-    Typed,
+    ForwardInstance,
     ForwardTyped,
+    Instance,
+    Int,
+    Str,
+    Tuple,
+    Typed,
+    Value,
     observe,
 )
+from atom.atom import set_default
 from enaml.core.declarative import d_
 from enaml.widgets.api import Container
 from enaml.widgets.control import Control, ProxyControl
-from atom.instance import ForwardInstance
 
 if sys.version_info.major < 3:
-    str = basestring
+    str = basestring  # noqa: F821
 
 
 def numpy_ndarray():
@@ -244,6 +246,8 @@ class PlotItemArray3D(PlotItem3D):
 
 
 class AbstractDataPlotItem(PlotItem):
+    data = d_(Value())
+
     @observe("data")
     def _update_proxy(self, change):
         """An observer which sends state change to the proxy."""

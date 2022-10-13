@@ -7,13 +7,13 @@ Created on Aug 20, 2015
 """
 from atom.api import Instance, Int
 from enaml.application import timed_call
+from enaml.qt.q_resource_helpers import get_cached_qcolor, get_cached_qicon
 from enaml.qt.qt_control import QtControl
-from enaml.qt.q_resource_helpers import get_cached_qicon, get_cached_qcolor
-from enamlx.qt.qt_abstract_item import TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
-from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
-from qtpy.QtCore import Qt, QAbstractItemModel, QSize, QItemSelectionModel
+from qtpy.QtCore import QAbstractItemModel, QItemSelectionModel, Qt
 from qtpy.QtWidgets import QAbstractItemView
 
+from enamlx.qt.qt_abstract_item import TEXT_H_ALIGNMENTS, TEXT_V_ALIGNMENTS
+from enamlx.widgets.abstract_item_view import ProxyAbstractItemView
 
 SELECTION_MODES = {
     "extended": QAbstractItemView.ExtendedSelection,
@@ -42,7 +42,7 @@ class QAbstractAtomItemModel(object):
         """
         assert isinstance(declaration.proxy, ProxyAbstractItemView), (
             "The model declaration must be a QtAbstractItemView subclass. "
-            "Got {]".format(declaration)
+            "Got {}".format(declaration)
         )
 
         self.declaration = declaration
@@ -361,7 +361,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             d = item.declaration
             try:
                 selection.remove(d)
-            except:
+            except ValueError:
                 pass
             if d.selected:
                 d.selected = False

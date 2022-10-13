@@ -6,9 +6,10 @@ Looper that only shows visible elements
 
 @author: jrm
 """
-from atom.api import Instance, ContainerList, List, observe
-from enaml.core.looper import Looper, sortedmap, new_scope, recursive_expand
+from atom.api import ContainerList, Instance, List, observe
 from enaml.core.declarative import d_
+from enaml.core.looper import Looper, new_scope, recursive_expand, sortedmap
+
 from enamlx.widgets.abstract_item_view import AbstractItemView
 
 

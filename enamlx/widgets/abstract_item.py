@@ -6,21 +6,21 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 24, 2015
 """
 from atom.api import (
-    Int,
-    Enum,
     Bool,
+    Coerced,
+    Enum,
+    Event,
+    ForwardInstance,
+    Int,
+    Property,
     Str,
     Typed,
-    Coerced,
-    Event,
-    Property,
-    ForwardInstance,
     observe,
 )
-from enaml.icon import Icon
 from enaml.core.declarative import d_
-from enaml.widgets.control import Control, ProxyControl
+from enaml.icon import Icon
 from enaml.layout.geometry import Size
+from enaml.widgets.control import Control, ProxyControl
 
 
 class ProxyAbstractWidgetItemGroup(ProxyControl):

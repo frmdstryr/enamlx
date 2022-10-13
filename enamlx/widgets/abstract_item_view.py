@@ -6,12 +6,12 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 23, 2015
 """
 from atom.api import (
-    ContainerList,
-    Int,
-    Enum,
     Bool,
-    Property,
+    ContainerList,
+    Enum,
     ForwardInstance,
+    Int,
+    Property,
     observe,
     set_default,
 )
@@ -195,7 +195,7 @@ class AbstractItemView(Control):
         "horizontal_headers",
         "horizontal_stretch",
         "show_vertical_header",
-        "vertical_header",
+        "vertical_headers",
         "vertical_stretch",
         "visible_row",
         "visible_column",

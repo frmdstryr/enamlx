@@ -6,69 +6,64 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Sept 4, 2018
 """
 import warnings
-from atom.api import Atom, Typed, Instance, Property, Int, Coerced, atomref
 
-from enaml.qt.QtWidgets import (
-    QGraphicsView,
-    QGraphicsScene,
-    QGraphicsObject,
-    QGraphicsEllipseItem,
-    QGraphicsRectItem,
-    QGraphicsLineItem,
-    QGraphicsSimpleTextItem,
-    QGraphicsPathItem,
-    QGraphicsPolygonItem,
-    QGraphicsPixmapItem,
-    QGraphicsItemGroup,
-    QGraphicsProxyWidget,
-    QWidgetAction,
-    QGraphicsItem,
-    QApplication,
-    QFrame,
-)
-from enaml.qt.QtCore import Qt, QPoint, QPointF, QRectF, __version_info__
-from enaml.qt.QtGui import (
-    QPainter,
-    QColor,
-    QPen,
-    QBrush,
-    QPixmap,
-    QPolygonF,
-    QTransform,
-    QDrag,
-    QCursor,
-)
-
+from atom.api import Atom, Coerced, Int, Typed, atomref
+from enaml.drag_drop import DropAction
 from enaml.qt.q_resource_helpers import (
     get_cached_qcolor,
     get_cached_qfont,
     get_cached_qimage,
 )
 from enaml.qt.qt_control import QtControl
-from enaml.qt.qt_widget import QtWidget, focus_registry
 from enaml.qt.qt_drag_drop import QtDropEvent
 from enaml.qt.qt_toolkit_object import QtToolkitObject
+from enaml.qt.qt_widget import QtWidget, focus_registry
+from enaml.qt.QtCore import QPoint, QPointF, QRectF, Qt
+from enaml.qt.QtGui import (
+    QBrush,
+    QColor,
+    QCursor,
+    QDrag,
+    QPainter,
+    QPen,
+    QPixmap,
+    QPolygonF,
+)
+from enaml.qt.QtWidgets import (
+    QFrame,
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsItemGroup,
+    QGraphicsLineItem,
+    QGraphicsObject,
+    QGraphicsPathItem,
+    QGraphicsPixmapItem,
+    QGraphicsPolygonItem,
+    QGraphicsProxyWidget,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsSimpleTextItem,
+    QGraphicsView,
+    QWidgetAction,
+)
 from enaml.widgets.widget import Feature
-from enaml.drag_drop import DropAction
 
 from enamlx.widgets.graphics_view import (
-    ProxyGraphicsView,
-    ProxyGraphicsItem,
+    GraphicFeature,
+    Point,
     ProxyAbstractGraphicsShapeItem,
     ProxyGraphicsEllipseItem,
-    ProxyGraphicsRectItem,
-    ProxyGraphicsLineItem,
-    ProxyGraphicsTextItem,
-    ProxyGraphicsPolygonItem,
-    ProxyGraphicsPathItem,
     ProxyGraphicsImageItem,
+    ProxyGraphicsItem,
     ProxyGraphicsItemGroup,
+    ProxyGraphicsLineItem,
+    ProxyGraphicsPathItem,
+    ProxyGraphicsPolygonItem,
+    ProxyGraphicsRectItem,
+    ProxyGraphicsTextItem,
+    ProxyGraphicsView,
     ProxyGraphicsWidget,
-    Point,
-    Rect,
-    GraphicFeature,
 )
-
 
 PEN_STYLES = {
     "none": Qt.NoPen,
@@ -124,11 +119,13 @@ DRAG_MODES = {
 # --------------------------------------------------------------------------
 # Qt Resource Helpers
 # --------------------------------------------------------------------------
+
+
 def QPen_from_Pen(pen):
     qpen = QPen()
     if pen.color:
         qpen.setColor(get_cached_qcolor(pen.color))
-    qpen.setWidth(pen.width)
+    qpen.setWidth(int(pen.width))
     qpen.setStyle(PEN_STYLES.get(pen.line_style))
     qpen.setCapStyle(CAP_STYLES.get(pen.cap_style))
     qpen.setJoinStyle(JOIN_STYLES.get(pen.join_style))
@@ -1089,10 +1086,10 @@ class QtGraphicsEllipseItem(QtAbstractGraphicsShapeItem, ProxyGraphicsEllipseIte
         self.widget.setRect(pos.x, pos.y, d.width, d.height)
 
     def set_span_angle(self, angle):
-        self.widget.setSpanAngle(angle * 16)
+        self.widget.setSpanAngle(int(angle * 16))
 
     def set_start_angle(self, angle):
-        self.widget.setStartAngle(angle * 16)
+        self.widget.setStartAngle(int(angle * 16))
 
 
 class QtGraphicsRectItem(QtAbstractGraphicsShapeItem, ProxyGraphicsRectItem):

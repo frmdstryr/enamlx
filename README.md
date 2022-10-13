@@ -14,8 +14,6 @@ pip install enamlx
 
 ```
 
-
-
 #### Widgets ####
 
 1. TableView

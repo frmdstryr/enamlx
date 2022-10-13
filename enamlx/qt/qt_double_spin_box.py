@@ -6,9 +6,10 @@ The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
 from atom.api import Typed
-from enamlx.widgets.double_spin_box import ProxyDoubleSpinBox
 from enaml.qt.qt_spin_box import QtSpinBox
 from qtpy.QtWidgets import QDoubleSpinBox
+
+from enamlx.widgets.double_spin_box import ProxyDoubleSpinBox
 
 
 class QtDoubleSpinBox(QtSpinBox, ProxyDoubleSpinBox):

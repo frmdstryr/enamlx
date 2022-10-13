@@ -4,14 +4,15 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Jun 3, 2015
 """
-from atom.api import ContainerList, Typed, Int, Bool, Property, ForwardTyped, observe
+from atom.api import Bool, ContainerList, ForwardTyped, Int, Property, Typed, observe
 from enaml.core.declarative import d_
-from enamlx.widgets.abstract_item_view import AbstractItemView, ProxyAbstractItemView
+
 from enamlx.widgets.abstract_item import (
-    ProxyAbstractWidgetItemGroup,
-    ProxyAbstractWidgetItem,
     AbstractWidgetItem,
+    ProxyAbstractWidgetItem,
+    ProxyAbstractWidgetItemGroup,
 )
+from enamlx.widgets.abstract_item_view import AbstractItemView, ProxyAbstractItemView
 
 
 class ProxyTreeView(ProxyAbstractItemView):

@@ -3,7 +3,7 @@ def install(allow_def=False):
     by this library.
 
     """
-    from enamlx.qt import qt_factories
+    from enamlx.qt import qt_factories  # noqa: F401
 
     if allow_def:
         allow_def_funcs()

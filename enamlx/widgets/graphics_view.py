@@ -6,21 +6,20 @@ Created on Sept 5, 2018
 """
 import sys
 from enum import IntFlag
+
 from atom.api import (
     Atom,
-    Float,
-    Int,
-    Typed,
     Bool,
     Coerced,
-    ForwardTyped,
     Enum,
-    List,
-    Instance,
-    Str,
-    Value,
     Event,
-    Property,
+    Float,
+    ForwardTyped,
+    Instance,
+    List,
+    Str,
+    Typed,
+    Value,
     observe,
     set_default,
 )
@@ -28,13 +27,14 @@ from enaml.colors import ColorMember
 from enaml.core.declarative import d_, d_func
 from enaml.fonts import FontMember
 from enaml.image import Image
-from enaml.layout.constrainable import ConstrainableMixin, PolicyEnum
-from enaml.widgets.widget import Feature
+from enaml.layout.constrainable import ConstrainableMixin
 from enaml.widgets.control import Control, ProxyControl
-from enaml.widgets.toolkit_object import ToolkitObject, ProxyToolkitObject
+from enaml.widgets.toolkit_object import ProxyToolkitObject, ToolkitObject
+from enaml.widgets.widget import Feature
 
-
-NUMERIC = (int, float, long) if sys.version_info.major < 3 else (int, float)
+NUMERIC = (
+    (int, float, long) if sys.version_info.major < 3 else (int, float)  # noqa: F821
+)
 
 
 class GraphicFeature(IntFlag):

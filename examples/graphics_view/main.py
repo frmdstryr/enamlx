@@ -1,12 +1,10 @@
-import sys
-sys.path.append('../../')
-import enamlx
-enamlx.install(allow_def=True)
-
 import enaml
 from enaml.qt.qt_application import QtApplication
 
-if __name__ == '__main__':
+import enamlx
+
+if __name__ == "__main__":
+    enamlx.install(allow_def=True)
     with enaml.imports():
         from graphics_items import Main
 
@@ -14,4 +12,3 @@ if __name__ == '__main__':
     view = Main()
     view.show()
     app.start()
-

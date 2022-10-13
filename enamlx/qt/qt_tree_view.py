@@ -5,23 +5,20 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 28, 2015
 """
-from atom.api import Typed, Instance, Property, Int
-from enamlx.qt.qt_abstract_item_view import (
-    QtAbstractItemView,
-    QAbstractAtomItemModel,
-)
-from enamlx.widgets.tree_view import (
-    ProxyTreeViewItem,
-    ProxyTreeView,
-    ProxyTreeViewColumn,
-    AbstractWidgetItem,
-)
-from enamlx.qt.qt_abstract_item import AbstractQtWidgetItem, RESIZE_MODES
-from qtpy.QtWidgets import QTreeView
-from qtpy.QtCore import QAbstractItemModel, QModelIndex
+from atom.api import Instance, Int, Typed
+from enaml.application import timed_call
 from enaml.core.pattern import Pattern
 from enaml.qt.qt_widget import QtWidget
-from enaml.application import timed_call
+from qtpy.QtCore import QAbstractItemModel, QModelIndex
+from qtpy.QtWidgets import QTreeView
+
+from enamlx.qt.qt_abstract_item import RESIZE_MODES, AbstractQtWidgetItem
+from enamlx.qt.qt_abstract_item_view import QAbstractAtomItemModel, QtAbstractItemView
+from enamlx.widgets.tree_view import (
+    ProxyTreeView,
+    ProxyTreeViewColumn,
+    ProxyTreeViewItem,
+)
 
 
 class QAtomTreeModel(QAbstractAtomItemModel, QAbstractItemModel):

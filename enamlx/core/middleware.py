@@ -42,7 +42,7 @@ def remote_token_stream_processor(processor):
 
     """
     _token_stream_processors.remove(processor)
-    if not token_stream_processors:
+    if not _token_stream_processors:
         uninstall()
 
 

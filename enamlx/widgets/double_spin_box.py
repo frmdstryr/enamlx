@@ -7,7 +7,7 @@ Created on Aug 29, 2015
 """
 from atom.api import Float, ForwardTyped, Int, observe
 from enaml.core.declarative import d_
-from enaml.widgets.spin_box import SpinBox, ProxySpinBox
+from enaml.widgets.spin_box import ProxySpinBox, SpinBox
 
 
 class ProxyDoubleSpinBox(ProxySpinBox):

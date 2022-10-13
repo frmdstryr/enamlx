@@ -5,25 +5,22 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 28, 2015
 """
-from atom.api import Typed, Instance, Int
+from atom.api import Int, Typed
 from enaml.application import timed_call
+from qtpy.QtCore import QAbstractTableModel
 from qtpy.QtWidgets import QTableView
-from qtpy.QtCore import QAbstractTableModel, QModelIndex
 
-from enamlx.qt.qt_abstract_item_view import (
-    QtAbstractItemView,
-    QAbstractAtomItemModel,
-)
-from enamlx.widgets.table_view import (
-    ProxyTableViewItem,
-    ProxyTableView,
-    ProxyTableViewColumn,
-    ProxyTableViewRow,
-)
 from enamlx.qt.qt_abstract_item import (
+    RESIZE_MODES,
     AbstractQtWidgetItem,
     AbstractQtWidgetItemGroup,
-    RESIZE_MODES,
+)
+from enamlx.qt.qt_abstract_item_view import QAbstractAtomItemModel, QtAbstractItemView
+from enamlx.widgets.table_view import (
+    ProxyTableView,
+    ProxyTableViewColumn,
+    ProxyTableViewItem,
+    ProxyTableViewRow,
 )
 
 

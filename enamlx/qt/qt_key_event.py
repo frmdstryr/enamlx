@@ -5,9 +5,10 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
-from atom.api import Instance, Callable, Dict
+from atom.api import Callable, Dict, Instance
 from enaml.qt.qt_control import QtControl
 from qtpy import QtCore
+
 from enamlx.widgets.key_event import ProxyKeyEvent
 
 Qt = QtCore.Qt
