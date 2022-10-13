@@ -2,7 +2,7 @@
 
 Additional Qt Widgets for Enaml, mainly used for the Tree and Table widgets.
 
-Supports 3.5+ Qt4 and Qt5.
+Supports 3.5+ Qt5 and Qt6.
 
 ## Install
 
