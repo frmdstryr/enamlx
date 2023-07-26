@@ -51,7 +51,6 @@ class ListLooper(Looper):
                     old.destroy()
 
     def insert_item(self, loop_index, loop_item):
-
         iteration = []
         self._iter_data[loop_item] = iteration
         for nodes, key, f_locals in self.pattern_nodes:

@@ -30,7 +30,6 @@ KEYS = {
 
 
 class QtKeyEvent(QtControl, ProxyKeyEvent):
-
     # Reference to the original handler
     _keyPressEvent = Callable()
 

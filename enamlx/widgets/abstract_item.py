@@ -61,7 +61,6 @@ class ProxyAbstractWidgetItem(ProxyControl):
 
 
 class AbstractWidgetItemGroup(Control):
-
     #: Triggered when clicked
     clicked = d_(Event(), writable=False)
 

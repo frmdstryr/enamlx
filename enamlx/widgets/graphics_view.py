@@ -737,7 +737,6 @@ class GraphicsItem(ToolkitObject, ConstrainableMixin):
 
 
 class GraphicsView(Control):
-
     #: Proxy reference
     proxy = Typed(ProxyGraphicsView)
 

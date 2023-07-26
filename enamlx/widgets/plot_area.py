@@ -193,7 +193,6 @@ class PlotItem(Control):
 
 
 class PlotItem2D(PlotItem):
-
     #: x-axis values, as a list
     x = d_(ContainerList())
 
@@ -208,7 +207,6 @@ class PlotItem2D(PlotItem):
 
 
 class PlotItem3D(PlotItem2D):
-
     #: z-axis values, as a list
     z = d_(ContainerList())
 
