@@ -105,6 +105,7 @@ enamldef Main(Window):
             minimum_size = (640,360)
             horizontal_headers << ['#','First','Last','Age','Color']#,str(table.visible_rows)]
             horizontal_stretch = True
+            horizontal_sizes = [10, 100, 100, 20, 30]
             items << model.people
             
             Looper:

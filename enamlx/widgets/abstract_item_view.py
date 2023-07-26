@@ -64,6 +64,9 @@ class ProxyAbstractItemView(ProxyControl):
     def set_vertical_stretch(self, stretch):
         pass
 
+    def set_vertical_sizes(self, sizes):
+        pass
+
     def set_vertical_minimum_section_size(self, size):
         pass
 
@@ -71,6 +74,9 @@ class ProxyAbstractItemView(ProxyControl):
         pass
 
     def set_horizontal_headers(self, headers):
+        pass
+
+    def set_horizontal_sizes(self, sizes):
         pass
 
     def set_horizontal_stretch(self, stretch):
@@ -90,7 +96,6 @@ class ProxyAbstractItemView(ProxyControl):
 
 
 class AbstractItemView(Control):
-
     #: Table should expand by default
     hug_width = set_default("ignore")
 
@@ -138,6 +143,9 @@ class AbstractItemView(Control):
     #: Stretch last row
     vertical_stretch = d_(Bool(False))
 
+    #: Sizes for vertical headers (list of int)
+    vertical_sizes = d_(ContainerList())
+
     #: Minimum row size
     vertical_minimum_section_size = d_(Int(0))
 
@@ -152,6 +160,9 @@ class AbstractItemView(Control):
 
     #: Minimum column size
     horizontal_minimum_section_size = d_(Int(0))
+
+    #: Sizes for horizontal headers (list of int)
+    horizontal_sizes = d_(ContainerList())
 
     #: Table is sortable
     sortable = d_(Bool(True))
@@ -193,10 +204,12 @@ class AbstractItemView(Control):
         "word_wrap",
         "show_horizontal_header",
         "horizontal_headers",
+        "horizontal_sizes",
         "horizontal_stretch",
         "show_vertical_header",
         "vertical_headers",
         "vertical_stretch",
+        "vertical_sizes",
         "visible_row",
         "visible_column",
     )

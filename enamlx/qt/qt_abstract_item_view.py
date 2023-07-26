@@ -190,9 +190,12 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
             self.set_cell_padding(d.cell_padding)
         if d.vertical_minimum_section_size:
             self.set_vertical_minimum_section_size(d.vertical_minimum_section_size)
+        if d.vertical_sizes:
+            self.set_vertical_sizes(d.vertical_sizes)
         if d.horizontal_minimum_section_size:
             self.set_horizontal_minimum_section_size(d.horizontal_minimum_section_size)
-
+        if d.horizontal_sizes:
+            self.set_horizontal_sizes(d.horizontal_sizes)
         self.init_signals()
 
     def init_model(self):
@@ -275,6 +278,18 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
     def set_selection(self, items):
         pass
+
+    def set_horizontal_sizes(self, sizes):
+        header = self.widget.horizontalHeader()
+        for i, s in enumerate(sizes):
+            if s is not None and s >= 0:
+                header.resizeSection(i, s)
+
+    def set_vertical_sizes(self, sizes):
+        header = self.widget.verticalHeader()
+        for i, s in enumerate(sizes):
+            if s is not None and s >= 0:
+                header.resizeSection(i, s)
 
     # -------------------------------------------------------------------------
     # Widget Events
