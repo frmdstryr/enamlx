@@ -109,7 +109,7 @@ class QAbstractAtomItemModel(object):
             return False
         d = item.declaration
         if role == Qt.CheckStateRole:
-            checked = value == Qt.Checked
+            checked = Qt.CheckState(value) == Qt.CheckState.Checked
             if checked != d.checked:
                 d.checked = checked
                 d.toggled(checked)
