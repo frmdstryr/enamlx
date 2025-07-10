@@ -271,10 +271,8 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         are added.
 
         """
-        self.model.beginResetModel()
         self._pending_view_refreshes += 1
         timed_call(self._pending_timeout, self._refresh_layout)
-        self.model.endResetModel()
 
     def set_selection(self, items):
         pass
@@ -410,14 +408,18 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
 
         """
         self._pending_view_refreshes -= 1
-        if self._pending_view_refreshes == 0:
-            try:
-                self.model.layoutChanged.emit()
-                self.on_layout_refreshed()
-            except RuntimeError:
-                # View can be destroyed before we get here
-                return
+        if self._pending_view_refreshes > 0:
+            return
+        self.model.beginResetModel()
+        try:
+            self.model.layoutChanged.emit()
+            self.on_layout_refreshed()
             self._refresh_sizes()
+        except RuntimeError:
+            # View can be destroyed before we get here
+            return
+        finally:
+            self.model.endResetModel()
 
     def _refresh_sizes(self):
         """Refresh column sizes when the data changes."""
