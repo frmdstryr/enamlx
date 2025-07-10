@@ -1,4 +1,5 @@
 *.pyc
+*.pypirc
 *.enamlc
 __pycache__/
 __enamlcache__/
@@ -9,3 +10,4 @@ dist/
 *.dist-info
 *.kdev4
 *.kate-swp
+*.swp
