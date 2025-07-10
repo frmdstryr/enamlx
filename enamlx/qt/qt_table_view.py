@@ -192,7 +192,7 @@ class QtTableViewItem(AbstractQtWidgetItem, ProxyTableViewItem):
     def data_changed(self, change):
         """Notify the model that data has changed in this cell!"""
         index = self.index
-        if index:
+        if index and index.isValid():
             self.view.model.dataChanged.emit(index, index)
 
 

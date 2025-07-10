@@ -213,7 +213,9 @@ class AbstractQtTreeViewItem(AbstractQtWidgetItem):
 
     def data_changed(self, change):
         """Notify the model that data has changed in this cell!"""
-        self.view.model.dataChanged.emit(self.index, self.index)
+        index = self.index
+        if index and index.isValid():
+            self.view.model.dataChanged.emit(index, index)
 
 
 class QtTreeViewItem(AbstractQtTreeViewItem, ProxyTreeViewItem):
