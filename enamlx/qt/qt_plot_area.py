@@ -1,20 +1,26 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2015, Jairus Martin.
 Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
-Created on Aug 31, 2015
 """
+
 import types
+from typing import Optional
 
 import pyqtgraph as pg
-from atom.api import Bool, ForwardInstance, Instance, Int, Typed
+from atom.api import Bool, ForwardInstance, Instance, Int, Typed, observe
 from enaml.application import timed_call
 from enaml.qt.q_resource_helpers import get_cached_qcolor
 from enaml.qt.qt_control import QtControl
+from enaml.qt.qt_toolkit_object import QtToolkitObject
 from pyqtgraph.widgets.GraphicsLayoutWidget import GraphicsLayoutWidget
 
-from enamlx.widgets.plot_area import ProxyPlotArea
+from enamlx.widgets.plot_area import (
+    PlotItem,
+    ProxyPlotArea,
+    ProxyPlotAxis,
+    ProxyPlotItem,
+)
 
 
 def gl_view_widget():
@@ -48,12 +54,12 @@ class QtPlotArea(QtControl, ProxyPlotArea):
             self.widget.removeItem(child.widget)
 
 
-class AbstractQtPlotItem(QtControl):
+class AbstractQtPlotItem(QtToolkitObject, ProxyPlotItem):
     #: So we can receive signals
     __weakref__ = None
 
     #: Plot item or parent plot item if nested
-    widget = Instance(pg.PlotItem)
+    widget = Instance(pg.GraphicsWidget)
 
     #: Actual plot
     plot = Instance(pg.GraphicsObject)
@@ -64,9 +70,10 @@ class AbstractQtPlotItem(QtControl):
     #: View box
     viewbox = Instance(pg.ViewBox)
 
-    #: Axis item
-    axis = Instance(pg.AxisItem)
+    #: The scene
+    scene = Instance(pg.GraphicsScene)
 
+    #: Counter to track refreshes
     _pending_refreshes = Int(0)
 
     def create_widget(self):
@@ -77,44 +84,58 @@ class AbstractQtPlotItem(QtControl):
             self.is_root = True
             self.widget = pg.PlotItem()
 
-    def init_widget(self):
-        # super(AbstractQtPlotItem, self).init_widget()
-        d = self.declaration
+    def init_layout(self):
+        super().init_layout()
+        self._refresh_axis_items()
+        self.refresh_plot()
+        self._refresh_limits()
+
+        # Set after plot is generated
         if self.is_root:
+            d = self.declaration
             if d.grid:
                 self.set_grid(d.grid)
             if d.title:
                 self.set_title(d.title)
-            if d.label_left:
-                self.set_label_left(d.label_left)
-            if d.label_right:
-                self.set_label_right(d.label_right)
-            if d.label_top:
-                self.set_label_top(d.label_top)
-            if d.label_bottom:
-                self.set_label_bottom(d.label_bottom)
+            if label := d.label_left:
+                self.set_label("left", label)
+            if label := d.label_right:
+                self.set_label("right", label)
+            if label := d.label_top:
+                self.set_label("top", label)
+            if label := d.label_bottom:
+                self.set_label("bottom", label)
             if d.show_legend:
                 self.set_show_legend(d.show_legend)
             if d.multi_axis:
                 self.set_multi_axis(d.multi_axis)
             self.set_antialias(d.antialias)
             self.set_aspect_locked(d.aspect_locked)
-            if d.background:
-                self.set_background(d.background)
+            # if d.background:
+            #    self.set_background(d.background)
 
-            if d.axis_left_ticks:
-                self.set_axis_left_ticks(d.axis_left_ticks)
+            if f := d.axis_left_ticks:
+                self.set_axis_ticks("left", f)
+            if f := d.axis_right_ticks:
+                self.set_axis_ticks("right", f)
+            if f := d.axis_bottom_ticks:
+                self.set_axis_ticks("bottom", f)
+            if f := d.axis_top_ticks:
+                self.set_axis_ticks("top", f)
+            self.set_auto_range(d.auto_range)
 
-            if d.axis_bottom_ticks:
-                self.set_axis_bottom_ticks(d.axis_bottom_ticks)
-
-        self._refresh_plot()
-        self.set_auto_range(d.auto_range)
         self.init_signals()
 
     def init_signals(self):
         self.widget.sigRangeChanged.connect(self.on_range_changed)
         self.widget.vb.sigResized.connect(self.on_resized)
+
+    def plot_area(self):
+        if isinstance(self.parent(), QtPlotArea):
+            return self.parent_widget()
+        if isinstance(self.parent(), AbstractQtPlotItem):
+            return self.parent().parent_widget()
+        raise RuntimeError("Unexpected plot widget hierarchy")
 
     def _format_data(self):
         raise NotImplementedError
@@ -144,11 +165,18 @@ class AbstractQtPlotItem(QtControl):
                 data["symbolSize"] = d.symbol_size
 
         if d.antialias:
-            data["antialias"] = d.antialias
-
+            data["antialias"] = True
         return data
 
-    def _refresh_plot(self):
+    def _refresh_axis_items(self):
+        axis_items = {
+            c.declaration.orientation: c.widget
+            for c in self.children()
+            if isinstance(c, QtPlotAxis)
+        }
+        self.widget.setAxisItems(axis_items)
+
+    def refresh_plot(self):
         """Defer drawing until all changes are done so we don't draw
         during initialization or when many values change at once.
         """
@@ -158,24 +186,46 @@ class AbstractQtPlotItem(QtControl):
 
     def _redraw_plot(self):
         self._pending_refreshes -= 1
-        if self._pending_refreshes != 0:
+        if self._pending_refreshes > 0:
             return  # Another change occurred
 
-        if self.plot:
-            self.plot.clear()
-        if self.viewbox:
-            self.viewbox.close()
-
         d = self.declaration
+        if d.draw_enabled:
+            d.draw(self)
+            return
+
+        if plot := self.plot:
+            try:
+                plot.clear()
+            except RuntimeError:
+                pass
+        if vb := self.viewbox:
+            try:
+                vb.close()
+            except RuntimeError:
+                pass
 
         data = self._format_data()
         style = self._format_style()
 
+        plot_item = self.plot = pg.PlotDataItem(*data, **style)
         if not self.is_root and d.parent.multi_axis:
             self._refresh_multi_axis()
-            self.plot = self.viewbox.addItem(pg.PlotDataItem(*data, **style))
+            self.viewbox.addItem(plot_item)
         else:
-            self.plot = self.widget.plot(*data, **style)
+            self.widget.addItem(plot_item)
+
+    @observe("plot")
+    def _refresh_plot_signals(self, change):
+        if oldplot := change.get("oldvalue", None):
+            if scene := oldplot.scene():
+                scene.sigMouseClicked.disconnect(self.on_mouse_clicked)
+                scene.sigMouseMoved.disconnect(self.on_mouse_moved)
+        if plot := change.get("value", None):
+            if scene := plot.scene():
+                d = self.declaration
+                scene.sigMouseClicked.connect(self.on_mouse_clicked)
+                scene.sigMouseMoved.connect(self.on_mouse_moved)
 
     def _refresh_multi_axis(self):
         """If linked axis' are used, setup and link them"""
@@ -190,49 +240,71 @@ class AbstractQtPlotItem(QtControl):
         ]
         i = _plots.index(self)
         if i == 0:
-            self.axis = self.widget.getAxis("right")
+            axis = self.widget.getAxis("right")
             self.widget.showAxis("right")
         else:
-            self.axis = pg.AxisItem("right")
-            self.axis.setZValue(-10000)
+            axis = self.widget.getAxis("right")
+            axis.setZValue(-10000)
 
             #: Add new axis to scene
-            self.widget.layout.addItem(self.axis, 2, i + 2)
+            self.widget.layout.addItem(axis, 2, i + 2)
 
         #: Link x axis to the parent axis
         self.viewbox.setXLink(self.widget.vb)
+        self.viewbox.setYLink(self.widget.vb)
 
         #: Link y axis to the view
-        self.axis.linkToView(self.viewbox)
+        axis.linkToView(self.viewbox)
 
         #: Set axis label
-        self.axis.setLabel(d.label_right)
+        # axis.setLabel(d.label_right)
 
         #: Add Viewbox to parent scene
-        self.parent().parent_widget().scene().addItem(self.viewbox)
+        self.plot_area().scene().addItem(self.viewbox)
+        self.on_resized()
+
+    def _refresh_limits(self):
+        d = self.declaration
+        limits = {}
+        if d.pan_x_min is not None:
+            limits["xMin"] = d.pan_x_min
+        if d.pan_x_max is not None:
+            limits["xMax"] = d.pan_x_max
+        if d.pan_y_min is not None:
+            limits["yMin"] = d.pan_y_min
+        if d.pan_y_max is not None:
+            limits["yMax"] = d.pan_y_max
+        self.widget.vb.setLimits(**limits)
+
+    def index_at_point(self, point) -> Optional[int]:
+        vb = self.viewbox or self.widget.vb
+        try:
+            return int(vb.mapSceneToView(point).x())
+        except Exception:
+            return None
 
     def set_row(self, row):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_column(self, column):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_aspect_locked(self, locked):
-        return
-        # self.widget.setAspectLocked(locked)
+        self.widget.setAspectLocked(locked)
 
     def set_background(self, background):
         color = get_cached_qcolor(background) if background else None
-        if isinstance(self.parent(), AbstractQtPlotItem):
-            self.parent().parent_widget().setBackground(color)
-        else:
-            self.parent_widget().setBackground(color)
+        area = self.plot_area()
+        area.setBackground(color)
 
     def set_line_pen(self, pen):
         self.widget.setPen(pen)
 
     def set_shadow_pen(self, pen):
         self.widget.setShadowPen(pen)
+
+    def set_axis_items(self, axis_items: Optional[dict[str, "pg.AxisItem"]]):
+        self.widget.setAxisItems(axis_items)
 
     def set_axis_left_ticks(self, callback):
         self.set_axis_ticks("left", callback)
@@ -252,13 +324,14 @@ class AbstractQtPlotItem(QtControl):
             else axis._tickStrings
         )
 
-    def set_grid(self, grid):
-        self.widget.showGrid(grid[0], grid[1], self.declaration.grid_alpha)
+    def set_grid(self, grid: tuple[bool, bool], alpha: Optional[float] = None):
+        a = alpha or self.declaration.grid_alpha
+        self.widget.showGrid(grid[0], grid[1], a)
 
     def set_grid_alpha(self, alpha):
         self.set_grid(self.declaration.grid)
 
-    def set_show_legend(self, show):
+    def set_show_legend(self, show: bool):
         if show:
             if not self.widget.legend:
                 self.widget.addLegend()
@@ -268,25 +341,40 @@ class AbstractQtPlotItem(QtControl):
     def set_title(self, title):
         self.widget.setTitle(title)
 
+    def set_label(self, axis: str, text: str):
+        self.widget.setLabel(axis, text)
+
     def set_label_top(self, text):
-        self.widget.setLabels("top", text)
+        self.set_label("top", text)
 
     def set_label_left(self, text):
-        self.widget.setLabel("left", text)
+        self.set_label("left", text)
 
     def set_label_right(self, text):
         if not self.is_root and self.declaration.parent.multi_axis:
             return  # don't override multi axis label
-        self.widget.setLabel("right", text)
+        self.set_label("right", text)
 
     def set_label_bottom(self, text):
-        self.widget.setLabel("bottom", text)
+        self.set_label("bottom", text)
 
     def set_auto_downsampling(self, enabled):
         self.widget.setDownsampling(auto=enabled)
 
     def set_antialias(self, enabled):
-        self._refresh_plot()
+        self.refresh_plot()
+
+    def set_pan_x_min(self, limit: Optional[float]):
+        self._refresh_limits()
+
+    def set_pan_x_max(self, limit: Optional[float]):
+        self._refresh_limits()
+
+    def set_pan_y_min(self, limit: Optional[float]):
+        self._refresh_limits()
+
+    def set_pan_y_max(self, limit: Optional[float]):
+        self._refresh_limits()
 
     def set_auto_range(self, auto_range):
         d = self.declaration
@@ -301,33 +389,35 @@ class AbstractQtPlotItem(QtControl):
     #
     # Setters that require a full refresh
     #
+    def set_draw_enabled(self, arg):
+        self._redraw_plot()
 
     def set_symbol(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_symbol_size(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_symbol_brush(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_fill_brush(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_fill_level(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_multi_axis(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_log_mode(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_clip_to_view(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_step_mode(self, arg):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def set_range_x(self, val):
         """Set visible range of x data.
@@ -351,10 +441,10 @@ class AbstractQtPlotItem(QtControl):
             return
         self.widget.setYRange(*val, padding=0)
 
-    #
+    # -------------------------------------------------------------------------
     # Widget events
-    #
-    def on_range_changed(self, vb, rect):
+    # -------------------------------------------------------------------------
+    def on_range_changed(self, vb, rect: tuple[list[int], list[int]]):
         d = self.declaration
         d.range_x = rect[0]
         d.range_y = rect[1]
@@ -366,23 +456,54 @@ class AbstractQtPlotItem(QtControl):
         """Update linked views"""
         d = self.declaration
         if not self.is_root and d.parent.multi_axis:
-            if self.viewbox:
-                self.viewbox.setGeometry(self.widget.vb.sceneBoundingRect())
-                self.viewbox.linkedViewChanged(self.widget.vb, self.viewbox.XAxis)
+            if vb := self.viewbox:
+                vb.setGeometry(self.widget.vb.sceneBoundingRect())
+                vb.linkedViewChanged(self.widget.vb, vb.XAxis)
+
+    def on_mouse_clicked(self, e):
+        self.declaration.clicked(e)
+
+    def on_mouse_moved(self, e):
+        self.declaration.mouse_moved(e)
+
+    # -------------------------------------------------------------------------
+    # Child events
+    # -------------------------------------------------------------------------
+    def child_added(self, child):
+        if isinstance(child, QtPlotAxis):
+            self._refresh_axis_items()
+        elif isinstance(child, AbstractQtPlotItem):
+            self._redraw_plot()
+
+    def child_removed(self, child):
+        if isinstance(child, QtPlotAxis):
+            self._refresh_axis_items()
+        elif isinstance(child, AbstractQtPlotItem):
+            self._redraw_plot()
 
 
-#     #
-#     # Child events
-#     #
-#
-#     def child_added(self, child):
-#         # TODO support layouts
-#         if isinstance(child,AbstractQtPlotItem):
-#             self.addItem(child.widget)
-#
-#     def child_removed(self, child):
-#         if isinstance(child,AbstractQtPlotItem):
-#             self.removeItem(child.widget)
+class QtPlotAxis(QtToolkitObject, ProxyPlotAxis):
+    widget = Instance(pg.AxisItem)
+
+    def create_widget(self):
+        d = self.declaration
+        kwargs = {
+            "orientation": d.orientation,
+            "showValues": d.show_values,
+            "parent": self.parent_widget(),
+        }
+        if d.mode == "date":
+            self.widget = pg.DateAxisItem(**kwargs)
+        else:
+            self.widget = pg.AxisItem(**kwargs)
+
+    def init_widget(self):
+        axis = self.widget
+        d = self.declaration
+        if d.pen:
+            axis.setPen(d.pen)
+        if label := d.label:
+            axis.setLabel(label, units=d.units, unitPrefix=d.unit_prefix)
 
 
 class QtPlotItem2D(AbstractQtPlotItem):
@@ -390,13 +511,13 @@ class QtPlotItem2D(AbstractQtPlotItem):
         # Only refresh when they are equal
         # because one can be set at a time
         if len(self.declaration.y) == len(x):
-            self._refresh_plot()
+            self.refresh_plot()
 
     def set_y(self, y):
         # Only refresh when they are equal
         # because one can be set at a time
         if len(self.declaration.x) == len(y):
-            self._refresh_plot()
+            self.refresh_plot()
 
     def _format_data(self):
         data = [self.declaration.y]
@@ -407,10 +528,11 @@ class QtPlotItem2D(AbstractQtPlotItem):
 
 class QtPlotItemDict(QtPlotItem2D):
     def set_data(self, data):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def _format_data(self):
-        return self.declaration.data
+        data = self.declaration.data
+        return (data,)
 
 
 class QtPlotItemList(QtPlotItemDict):
@@ -456,7 +578,7 @@ class QtPlotItem3D(QtPlotItem2D):
         self.widget.addItem(gz)
 
     def set_z(self, z):
-        self._refresh_plot()
+        self.refresh_plot()
 
     def _refresh_plot(self):
         import numpy as np

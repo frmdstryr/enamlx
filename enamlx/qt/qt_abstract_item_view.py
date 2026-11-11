@@ -410,6 +410,7 @@ class QtAbstractItemView(QtControl, ProxyAbstractItemView):
         self._pending_view_refreshes -= 1
         if self._pending_view_refreshes > 0:
             return
+
         self.model.beginResetModel()
         try:
             self.model.layoutChanged.emit()

@@ -4,6 +4,7 @@ from enaml.widgets.api import Window, Form, Label, Field, SpinBox
 from enaml.layout.api import hbox, vbox
 from enamlx.widgets.api import DoubleSpinBox
 
+
 enamldef Main(Window):
     title = 'DoubleSpinBox Example'
     Form:

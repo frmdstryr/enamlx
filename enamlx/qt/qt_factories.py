@@ -92,6 +92,18 @@ def plot_area_factory():
     return QtPlotArea
 
 
+def plot_axis_factory():
+    from .qt_plot_area import QtPlotAxis
+
+    return QtPlotAxis
+
+
+def plot_item_factory():
+    from .qt_plot_area import QtPlotItem
+
+    return QtPlotItem
+
+
 def plot_item_2d_factory():
     from .qt_plot_area import QtPlotItem2D
 
@@ -229,6 +241,8 @@ qt_factories.QT_FACTORIES.update(
         "GraphicsWidget": graphics_widget_factory,
         "KeyEvent": key_event_factory,
         "PlotArea": plot_area_factory,
+        "PlotAxis": plot_axis_factory,
+        "PlotItem": plot_item_factory,
         "PlotItem2D": plot_item_2d_factory,
         "PlotItem3D": plot_item_3d_factory,
         "PlotItemArray": plot_item_array_factory,

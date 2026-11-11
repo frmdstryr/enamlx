@@ -26,6 +26,7 @@ from .graphics_view import (  # noqa: F401
 from .key_event import KeyEvent  # noqa: F401
 from .plot_area import (  # noqa: F401
     PlotArea,
+    PlotAxis,
     PlotItem2D,
     PlotItem3D,
     PlotItemArray,

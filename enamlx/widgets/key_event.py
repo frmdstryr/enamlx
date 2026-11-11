@@ -4,6 +4,7 @@ Distributed under the terms of the MIT License.
 The full license is in the file COPYING.txt, distributed with this software.
 Created on Aug 29, 2015
 """
+
 import sys
 
 from atom.api import Bool, Event, ForwardTyped, List, Typed, observe

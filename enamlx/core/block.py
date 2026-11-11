@@ -3,6 +3,7 @@ Created on Apr 15, 2017
 
 @author: jrm
 """
+
 from atom.api import ForwardInstance
 from enaml.core.declarative import Declarative, d_
 

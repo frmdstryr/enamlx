@@ -13,6 +13,8 @@ from atom.api import (
     ContainerList,
     Dict,
     Enum,
+    Event,
+    FixedTuple,
     Float,
     FloatRange,
     ForwardInstance,
@@ -26,9 +28,11 @@ from atom.api import (
     observe,
 )
 from atom.atom import set_default
-from enaml.core.declarative import d_
+from enaml.core.declarative import d_, d_func
 from enaml.widgets.api import Container
 from enaml.widgets.control import Control, ProxyControl
+from enaml.widgets.toolkit_object import ProxyToolkitObject, ToolkitObject
+from typing import Optional
 
 if sys.version_info.major < 3:
     str = basestring  # noqa: F821
@@ -44,10 +48,12 @@ class ProxyPlotArea(ProxyControl):
     declaration = ForwardTyped(lambda: PlotArea)
 
 
-class PlotArea(Container):
+class PlotArea(Control):
+    proxy = Typed(ProxyPlotArea)
+
     hug_width = set_default("ignore")
     hug_height = set_default("ignore")
-    proxy = Typed(ProxyPlotArea)
+
     setup = d_(Callable(lambda graph: None))
 
 
@@ -55,7 +61,20 @@ PEN_ARGTYPES = (tuple, list, str, dict)
 BRUSH_ARGTYPES = (tuple, list, str, dict, int, float)
 
 
-class PlotItem(Control):
+class ProxyPlotItem(ProxyToolkitObject):
+    declaration = ForwardInstance(lambda: PlotItem)
+
+    def refresh_plot(self):
+        raise NotImplementedError()
+
+    def index_at_point(self, point) -> Optional[int]:
+        raise NotImplementedError()
+
+
+class PlotItem(ToolkitObject):
+    #: The dec
+    proxy = Instance(ProxyPlotItem)
+
     #: Title of data series
     title = d_(Str())
 
@@ -105,20 +124,23 @@ class PlotItem(Control):
     #: Show legend
     show_legend = d_(Bool(False))
 
+    #: Axis label shortcuts
     label_left = d_(Str())
     label_right = d_(Str())
     label_top = d_(Str())
     label_bottom = d_(Str())
 
     # H, V
-    grid = d_(Tuple(bool, default=(False, False)))
+    grid = d_(FixedTuple(bool, bool, default=(False, False)))
     grid_alpha = d_(FloatRange(low=0.0, high=1.0, value=0.5))
 
     #: Display a separate axis for each nested plot
     multi_axis = d_(Bool(True))
 
     axis_left_ticks = d_(Callable())
+    axis_right_ticks = d_(Callable())
     axis_bottom_ticks = d_(Callable())
+    axis_top_ticks = d_(Callable())
 
     #: Display the axis on log scale
     log_mode = d_(Tuple(bool, default=(False, False)))  # x,y
@@ -127,9 +149,13 @@ class PlotItem(Control):
     antialias = d_(Bool(False))
 
     #: Set auto range for each axis
-    auto_range = d_(
-        Enum(True, False, (True, True), (True, False), (False, True), (False, False))
-    )
+    auto_range = d_(FixedTuple(bool, bool, default=(True, True)))
+
+    # Panning limits
+    pan_x_min = d_(Typed(float))
+    pan_x_max = d_(Typed(float))
+    pan_y_min = d_(Typed(float))
+    pan_y_max = d_(Typed(float))
 
     # x-range to use if auto_range is disabled
     range_x = d_(ContainerList(default=[0, 100]))
@@ -151,6 +177,17 @@ class PlotItem(Control):
 
     #: Time between updates
     refresh_time = d_(Int(100))
+
+    #: Call custom draw function
+    draw_enabled = d_(Bool(False))
+
+    #: Triggered when the plot is clicked.
+    #: The event value contains the pyqtgraph MouseClickEvent
+    clicked = d_(Event())
+
+    #: Triggered when mouse is moved over the plot
+    #: The event value contains the qt click point
+    mouse_moved = d_(Event())
 
     @observe(
         "line_pen",
@@ -176,20 +213,98 @@ class PlotItem(Control):
         "step_mode",
         "aspect_locked",
         "axis_left_ticks",
+        "axis_right_ticks",
+        "axis_top_ticks",
         "axis_bottom_ticks",
+        "pan_x_min",
+        "pan_x_max",
+        "pan_y_min",
+        "pan_y_max",
         "show_legend",
         "row",
         "column",
+        "draw_enabled",
     )
     def _update_proxy(self, change):
         """An observer which sends state change to the proxy."""
         # The superclass handler implementation is sufficient.
         super(PlotItem, self)._update_proxy(change)
 
-    @observe("range_x", "range_y")
-    def _update_range(self, change):
-        """Handle updates and changes"""
-        getattr(self.proxy, "set_%s" % change["name"])(change["value"])
+    @observe("range_x")
+    def _update_range_x(self, change):
+        self.proxy.set_range_x(change["value"])
+
+    @observe("range_y")
+    def _update_range_y(self, change):
+        self.proxy.set_range_y(change["value"])
+
+    @d_func
+    def draw(self, widget):
+        """A method invoked to manually draw the plot.
+        This is only invoked when `draw_enabled = True`
+
+        Parameters
+        ----------
+        widget: Widget
+            The underlying proxy widget.
+        """
+        raise NotImplementedError()
+
+    def index_at_point(self, point) -> Optional[int]:
+        """ Get the index in data from the given point """
+        return self.proxy.index_at_point(point)
+
+
+class ProxyPlotAxis(ProxyToolkitObject):
+    declaration = ForwardTyped(lambda: PlotAxis)
+
+
+class PlotAxis(ToolkitObject):
+    proxy = Typed(ProxyPlotAxis)
+
+    #: Label to display
+    label = d_(Str())
+
+    #: Label units
+    units = d_(Typed(str))
+
+    #: Label unit prefix
+    unit_prefix = d_(Typed(str))
+
+    #: Axis range of type tuple[float, float]
+    display_range = d_(Typed(tuple))
+
+    #: Pen type to use for the axis
+    pen = d_(Instance(PEN_ARGTYPES))
+
+    #: Pen type to use for the axis text
+    text_pen = d_(Instance(PEN_ARGTYPES))
+
+    #: Pen type to use for the axis ticks
+    tick_pen = d_(Instance(PEN_ARGTYPES))
+
+    #: Whether to display values adjacent to ticks
+    show_values = d_(Bool(True))
+
+    #: Whether to show the label
+    show_label = d_(Bool(True))
+
+    #: Whether axis values should be displayed as dates
+    mode = d_(Enum("numeric", "date"))
+
+    #: Side of the plot the axis is attached to
+    orientation = d_(Enum("left", "right", "top", "bottom"))
+
+    #: Range of values to link to
+    link_to = d_(Instance(PlotItem))
+
+    #: Callable to generate custom ticks
+    ticks = d_(Callable())
+
+    @observe("label", "units","unit_prefix",  "pen", "text_pen", "tick_pen")
+    def _update_proxy(self, change):
+        """An observer which sends state change to the proxy."""
+        self.proxy.init_widget()
 
 
 class PlotItem2D(PlotItem):
@@ -201,9 +316,7 @@ class PlotItem2D(PlotItem):
 
     @observe("x", "y")
     def _update_proxy(self, change):
-        """An observer which sends state change to the proxy."""
-        # The superclass handler implementation is sufficient.
-        super(PlotItem2D, self)._update_proxy(change)
+        self.proxy.refresh_plot()
 
 
 class PlotItem3D(PlotItem2D):
@@ -212,9 +325,7 @@ class PlotItem3D(PlotItem2D):
 
     @observe("z")
     def _update_proxy(self, change):
-        """An observer which sends state change to the proxy."""
-        # The superclass handler implementation is sufficient.
-        super(PlotItem3D, self)._update_proxy(change)
+        self.proxy.refresh_plot()
 
 
 class PlotItemArray(PlotItem2D):
@@ -248,9 +359,7 @@ class AbstractDataPlotItem(PlotItem):
 
     @observe("data")
     def _update_proxy(self, change):
-        """An observer which sends state change to the proxy."""
-        # The superclass handler implementation is sufficient.
-        super(AbstractDataPlotItem, self)._update_proxy(change)
+        self.proxy.refresh_plot()
 
 
 class PlotItemList(AbstractDataPlotItem):
