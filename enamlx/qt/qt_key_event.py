@@ -7,7 +7,7 @@ Created on Aug 29, 2015
 """
 from atom.api import Callable, Dict, Instance
 from enaml.qt.qt_control import QtControl
-from qtpy import QtCore
+from qtpy import QtCore, QT_VERSION_MIN
 
 from enamlx.widgets.key_event import ProxyKeyEvent
 
@@ -22,11 +22,20 @@ MODIFIERS = {
     "group": Qt.GroupSwitchModifier,
 }
 
-KEYS = {
-    k.split("Key_")[-1].lower(): getattr(Qt.Key, k)
-    for k in Qt.Key.__dict__
-    if k.startswith("Key_")
-}
+
+QT_MAJOR_VERSION = int(QT_VERSION_MIN.split(".")[0])
+if QT_MAJOR_VERSION >= 6:
+    KEYS = {
+        k.split("Key_")[-1].lower(): getattr(Qt.Key, k)
+        for k in Qt.Key.__dict__
+        if k.startswith("Key_")
+    }
+else:
+    KEYS = {
+        k.split("Key_")[-1].lower(): getattr(Qt, k)
+        for k in Qt.__dict__
+        if k.startswith("Key_")
+    }
 
 
 class QtKeyEvent(QtControl, ProxyKeyEvent):
