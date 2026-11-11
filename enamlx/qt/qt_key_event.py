@@ -23,8 +23,8 @@ MODIFIERS = {
 }
 
 KEYS = {
-    k.split("Key_")[-1].lower(): getattr(Qt, k)
-    for k in Qt.__dict__
+    k.split("Key_")[-1].lower(): getattr(Qt.Key, k)
+    for k in Qt.Key.__dict__
     if k.startswith("Key_")
 }
 
